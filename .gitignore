@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+.env
+.env*
+uploads/
+backend/node_modules/
+frontend/node_modules/
+frontend/.next/
+backend/dist/
+*.log
+.DS_Store
+.kiro/
+.vscode/

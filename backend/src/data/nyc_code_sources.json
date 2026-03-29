@@ -1,0 +1,12 @@
+[
+  { "code": "BC", "name": "NYC Building Code", "year": 2022, "priority": "CORE" },
+  { "code": "PC", "name": "NYC Plumbing Code", "year": 2022, "priority": "OPTIONAL" },
+  { "code": "MC", "name": "NYC Mechanical Code", "year": 2022, "priority": "SECONDARY" },
+  { "code": "FGC", "name": "NYC Fuel Gas Code", "year": 2022, "priority": "OPTIONAL" },
+  { "code": "AC", "name": "NYC Administrative Code", "year": null, "priority": "OPTIONAL" },
+  { "code": "FC", "name": "NYC Fire Code", "year": null, "priority": "CORE" },
+  { "code": "EC", "name": "NYC Electrical Code", "year": null, "priority": "SECONDARY" },
+  { "code": "NYCECC", "name": "NYC Energy Conservation Code", "year": null, "priority": "CORE" },
+  { "code": "ZR", "name": "NYC Zoning Resolution", "year": null, "priority": "OPTIONAL" },
+  { "code": "ADA", "name": "Accessibility Code (ADA + NYC)", "year": null, "priority": "OPTIONAL" }
+]

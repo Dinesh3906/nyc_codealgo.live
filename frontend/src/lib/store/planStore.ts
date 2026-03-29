@@ -1,0 +1,100 @@
+import { create } from 'zustand';
+import api from '@/lib/api';
+import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
+
+interface PlanState {
+  plans: any[];
+  searchQuery: string;
+  filter: 'all' | 'critical' | 'analyzed';
+  loading: boolean;
+  socketConnected: boolean;
+  setSearchQuery: (query: string) => void;
+  setFilter: (filter: 'all' | 'critical' | 'analyzed') => void;
+  fetchPlans: () => Promise<void>;
+  deletePlan: (id: string) => Promise<void>;
+  filteredPlans: () => any[];
+  initSocket: () => void;
+}
+
+export const usePlanStore = create<PlanState>((set, get) => ({
+  plans: [],
+  searchQuery: '',
+  filter: 'all',
+  loading: false,
+  socketConnected: false,
+  setSearchQuery: (query: string) => set({ searchQuery: query }),
+  setFilter: (filter: 'all' | 'critical' | 'analyzed') => set({ filter }),
+  fetchPlans: async () => {
+    set({ loading: true });
+    try {
+      const res = await api.get('/plans');
+      set({ plans: res.data, loading: false });
+    } catch (err) {
+      console.error(err);
+      set({ loading: false });
+    }
+  },
+  deletePlan: async (id: string) => {
+    try {
+      await api.delete(`/plans/${id}`);
+      const plans = get().plans.filter((p) => p.id !== id);
+      set({ plans });
+    } catch (err) {
+       toast.error("Error deleting plan.");
+    }
+  },
+  initSocket: () => {
+    if (get().socketConnected) return;
+
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5000'
+        : 'https://cofuncion.com/brickly-backend'
+    );
+
+    const socket = io(socketUrl);
+
+    socket.on('connect', () => {
+      set({ socketConnected: true });
+      console.log('Socket connected to backend');
+    });
+
+    socket.on('analysis-status', (data) => {
+      console.log('Analysis Status Update:', data);
+      
+      if (data.status === 'COMPLETE') {
+         toast.success(`Scan Complete: ${data.report.score}% Compliance`, {
+           duration: 5000,
+           position: 'top-right'
+         });
+         get().fetchPlans();
+      }
+
+      if (data.status === 'FAILED') {
+         toast.error(`Scan Failed for plan: ${data.planId}`);
+         get().fetchPlans();
+      }
+    });
+
+    socket.on('disconnect', () => {
+      set({ socketConnected: false });
+    });
+  },
+  filteredPlans: () => {
+     const { plans, searchQuery, filter } = get();
+     let results = [...plans];
+
+     if (searchQuery) {
+        results = results.filter(p => p.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
+     }
+
+     if (filter === 'critical') {
+        results = results.filter(p => p.analysisResult?.issues?.some((i: any) => i.severity === 'critical'));
+     } else if (filter === 'analyzed') {
+        results = results.filter(p => p.status === 'analyzed');
+     }
+
+     return results;
+  }
+}));
