@@ -10,7 +10,35 @@ export const checkUsageLimit = async (req: any, res: Response, next: NextFunctio
     return next();
   }
 
-  const limit = Number(scanLimit) > 0 ? Number(scanLimit) : (subStatus === 'free' ? 2 : 10);
+  // Free users get 0 scans — they must subscribe first
+  const limit = Number(scanLimit) > 0 ? Number(scanLimit) : (subStatus === 'free' ? 0 : 10);
+
+  // Block free users immediately — no plan = no upload
+  if (subStatus === 'free' || limit === 0) {
+    if (req.file?.path) {
+      try { fs.unlinkSync(req.file.path); } catch { /* ignore */ }
+    }
+    return res.status(402).json({
+      message: 'You need an active plan to upload and scan. Subscribe to get started!',
+      code: 'NO_PLAN',
+      limit: 0,
+      current: 0
+    });
+  }
+
+  // Check subscription expiry
+  if (req.user.subPeriodEnd) {
+    const expiry = new Date(req.user.subPeriodEnd);
+    if (expiry < new Date()) {
+      if (req.file?.path) {
+        try { fs.unlinkSync(req.file.path); } catch { /* ignore */ }
+      }
+      return res.status(402).json({
+        message: 'Your plan has expired. Please renew your subscription to continue.',
+        code: 'PLAN_EXPIRED'
+      });
+    }
+  }
 
   try {
     const startOfMonth = new Date();
@@ -34,7 +62,7 @@ export const checkUsageLimit = async (req: any, res: Response, next: NextFunctio
       }
 
       return res.status(402).json({
-        message: 'Monthly limit reached. Please upgrade or wait for next month.',
+        message: 'Scan limit reached for your current plan. You can subscribe again to add 12 more scans instantly, or wait until next month for your limit to reset.',
         code: 'LIMIT_REACHED',
         limit,
         current: planCount

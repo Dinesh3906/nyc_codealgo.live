@@ -9,19 +9,26 @@ import { Upload, FileText, ShieldCheck, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import api from "@/lib/api";
 
 function AnalyzerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const { plans, fetchPlans, loading } = usePlanStore();
+  const [usage, setUsage] = useState<any>(null);
+  const { plans, fetchPlans, loading: plansLoading } = usePlanStore();
 
   useEffect(() => {
     fetchPlans();
+    
+    // Fetch usage to check if user has a plan
+    api.get("/billing/usage")
+      .then(res => setUsage(res.data))
+      .catch(() => setUsage({ status: 'free', limit: 0 }));
   }, [fetchPlans]);
 
   useEffect(() => {
-    if (searchParams.get('new') === 'true') {
+    if (searchParams.get('new') === 'true' && usage?.limit > 0) {
       setShowUploadModal(true);
       const current = new URLSearchParams(Array.from(searchParams.entries()));
       current.delete('new');
@@ -29,9 +36,20 @@ function AnalyzerContent() {
       const query = search ? `?${search}` : "";
       router.replace(`${window.location.pathname}${query}`);
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, usage]);
 
   const recentScans = plans.slice(0, 5);
+
+  const handleNewCheck = () => {
+    const isExpired = usage?.expiryDate && new Date(usage.expiryDate) < new Date();
+    if (usage?.limit === 0 || isExpired) {
+      router.push('/dashboard/billing');
+      return;
+    }
+    setShowUploadModal(true);
+  };
+
+  const isExpired = usage?.expiryDate && new Date(usage.expiryDate) < new Date();
 
   return (
     <div className="space-y-8">
@@ -40,6 +58,11 @@ function AnalyzerContent() {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-primary" />
             <Badge variant="secondary">AI-Powered Analysis</Badge>
+            {(usage?.limit === 0 || isExpired) && (
+              <Badge variant="destructive" className="animate-pulse cursor-pointer" onClick={() => router.push('/dashboard/billing')}>
+                {isExpired ? 'Plan Expired' : 'Subscription Required'}
+              </Badge>
+            )}
           </div>
           <div>
             <CardTitle className="text-3xl">NYC DOB Compliance Analyzer</CardTitle>
@@ -48,9 +71,9 @@ function AnalyzerContent() {
             </CardDescription>
           </div>
           <div className="flex gap-3 pt-2">
-            <Button size="lg" onClick={() => setShowUploadModal(true)}>
+            <Button size="lg" onClick={handleNewCheck}>
               <Upload className="w-4 h-4 mr-2" />
-              New Compliance Check
+              {usage?.limit === 0 ? 'Claim $1 Offer to Start' : 'New Compliance Check'}
             </Button>
             <Link href="/dashboard/plans">
               <Button variant="outline" size="lg">

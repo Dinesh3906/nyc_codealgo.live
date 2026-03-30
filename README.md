@@ -10,6 +10,7 @@ AI-powered compliance checking system for NYC Department of Buildings (DOB) arch
 - **Structured Output**: Returns compliance score, summary, and detailed issues with recommendations
 - **PDF Reports**: Download comprehensive compliance reports
 - **Real-time Updates**: Socket.io for live analysis progress
+- **Documentation**: In-app [Architecture Documentation](./ARCHITECTURE.md)
 
 ## Tech Stack
 

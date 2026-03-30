@@ -75,29 +75,30 @@ export default function BillingPage() {
   const progressPercent = Math.min((usage.used / (usage.limit === Infinity ? 1 : usage.limit)) * 100, 100);
 
   const plans = [
-    {
-      id: 'trial',
-      name: "Month 1",
-      description: "First Upload Special",
-      price: "$1",
-      period: "first month",
-      features: [
-        "1 Full AI Plan Scan",
-        "OCR Extraction",
-        "Detailed Report PDF",
-        "Immediate Analysis"
-      ],
-      highlighted: false,
-      badge: null
-    },
+    // {
+    //   id: 'trial',
+    //   name: "Month 1",
+    //   description: "First Upload Special",
+    //   price: "$1",
+    //   period: "first month",
+    //   features: [
+    //     "1 Full AI Plan Scan",
+    //     "OCR Extraction",
+    //     "Detailed Report PDF",
+    //     "Immediate Analysis"
+    //   ],
+    //   highlighted: false,
+    //   badge: null
+    // },
     {
       id: 'intro',
       name: "Month 2",
-      description: "83% Intro Discount",
-      price: "$49.99",
+      description: usage?.introCount >= 2 ? "Professional Access" : "83% Intro Discount",
+      price: usage?.introCount >= 2 ? "$299  " : "$49.99",
+      originalPrice: usage?.introCount >= 2 ? null : "$299",
       period: "month",
       features: [
-        "10 AI Scans / Month",
+        "12 AI Scans / Month",
         "Priority Processing",
         "Expert Code Mapping",
         "Full Compliance Check"
@@ -105,21 +106,21 @@ export default function BillingPage() {
       highlighted: true,
       badge: "Popular"
     },
-    {
-      id: 'pro',
-      name: "Month 3+",
-      description: "Professional Access",
-      price: "$299",
-      period: "month",
-      features: [
-        "10 AI Scans / Month",
-        "Bulk Uploads",
-        "Team Dashboard",
-        "Custom PDF Headers"
-      ],
-      highlighted: false,
-      badge: null
-    }
+    // {
+    //   id: 'pro',
+    //   name: "Month 3+",
+    //   description: "Professional Access",
+    //   price: "$299",
+    //   period: "month",
+    //   features: [
+    //     "10 AI Scans / Month",
+    //     "Bulk Uploads",
+    //     "Team Dashboard",
+    //     "Custom PDF Headers"
+    //   ],
+    //   highlighted: false,
+    //   badge: null
+    // }
   ];
 
   return (
@@ -132,6 +133,25 @@ export default function BillingPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
+            {usage.expiryDate && (
+              <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Plan Expiry Date</p>
+                  <p className="text-lg font-semibold">
+                    {new Date(usage.expiryDate).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                {new Date(usage.expiryDate) < new Date() ? (
+                  <Badge variant="destructive">Expired</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active</Badge>
+                )}
+              </div>
+            )}
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               Usage This Month
@@ -142,7 +162,7 @@ export default function BillingPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="h-2 w-full bg-muted border border-border rounded-full overflow-hidden">
-              <div 
+              <div
                 className={`h-full transition-all duration-500 ${progressPercent > 80 ? 'bg-destructive' : 'bg-primary'}`}
                 style={{ width: `${progressPercent}%` }}
               />
@@ -154,41 +174,46 @@ export default function BillingPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-primary bg-accent/50">
-          <CardHeader>
-            <CardTitle>Special Offer</CardTitle>
-            <CardDescription>Limited time founder's pricing</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-2xl font-bold">Start for $1</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Try Professional tier for just $1 for your first scan
-              </p>
-            </div>
-            <Button className="w-full" onClick={() => handleUpgrade('trial')}>
-              <CreditCard className="w-4 h-4 mr-2" />
-              Claim Offer
-            </Button>
-          </CardContent>
-        </Card>
+        {!usage.trialClaimed && (
+          <Card className="border-2 border-primary bg-accent/50">
+            <CardHeader>
+              <CardTitle>Special Offer</CardTitle>
+              <CardDescription>Limited time founder's pricing</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-2xl font-bold">Start for $1</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Try Professional tier for just $1 for your first scan
+                </p>
+              </div>
+              <Button className="w-full" onClick={() => handleUpgrade('trial')}>
+                <CreditCard className="w-4 h-4 mr-2" />
+                Claim Offer
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div>
         <h2 className="text-2xl font-bold mb-6">Pricing Plans</h2>
         <div className="grid gap-6 md:grid-cols-3">
           {plans.map((plan, index) => (
-            <Card 
+            <Card
               key={index}
               className={plan.highlighted ? 'border-2 border-primary shadow-lg' : ''}
             >
               <CardHeader>
-                <div className="flex items-center justify-between mb-2">
+                {/* <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-xl">{plan.name}</CardTitle>
                   {plan.badge && <Badge>{plan.badge}</Badge>}
-                </div>
+                </div> */}
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
+                  {plan.originalPrice && (
+                    <span className="text-xl text-muted-foreground line-through mr-2">{plan.originalPrice}</span>
+                  )}
                   <span className="text-4xl font-bold">{plan.price}</span>
                   <span className="text-muted-foreground ml-2">/ {plan.period}</span>
                 </div>
@@ -202,7 +227,7 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-                <Button 
+                <Button
                   variant={plan.highlighted ? 'default' : 'outline'}
                   className="w-full"
                   onClick={() => handleUpgrade(plan.id)}

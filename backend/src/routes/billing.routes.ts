@@ -13,7 +13,7 @@ const resolveMonthlyLimit = (subStatus: string, scanLimit: any) => {
   if (Number.isFinite(numericLimit) && numericLimit > 0) {
     return numericLimit;
   }
-  return subStatus === 'free' ? 2 : 10;
+  return subStatus === 'free' ? 0 : 12;
 };
 
 type PlanType = 'trial' | 'intro' | 'pro';
@@ -36,13 +36,17 @@ const normalizePlanType = (plan: any): PlanType | null => {
   return null;
 };
 
-const getPlanPricing = (planType: PlanType) => {
+const getPlanPricing = (planType: PlanType, introCount: number = 0) => {
   if (planType === 'trial') {
     return { unitAmount: 100, productName: 'The Trial (Month 1 - Promo)' };
   }
 
   if (planType === 'intro') {
-    return { unitAmount: 4999, productName: 'Intro Tier (Month 2)' };
+    // Discounted only for first 2 times
+    if (introCount < 2) {
+      return { unitAmount: 4999, productName: 'Intro Tier (Month 2 - Discounted)' };
+    }
+    return { unitAmount: 29900, productName: 'Intro Tier (Month 2 - Full Price)' };
   }
 
   return { unitAmount: 29900, productName: 'Pro Tier (Month 3+)' };
@@ -54,22 +58,30 @@ const getPlanEntitlement = (planType: PlanType) => {
   }
 
   if (planType === 'intro') {
-    return { status: 'intro', limit: 10 };
+    return { status: 'intro', limit: 12 };
   }
 
-  return { status: 'pro', limit: 10 };
+  return { status: 'pro', limit: 12 };
 };
 
 const applyPlanUpgrade = async (
   userId: string,
   planType: PlanType,
   subscriptionId?: string | null,
-  customerId?: string | null
+  customerId?: string | null,
+  periodEnd?: Date | null,
+  sessionId?: string | null
 ) => {
-  const { status, limit } = getPlanEntitlement(planType);
   const userColumns = await getUserColumns();
-  const updates: string[] = ['subStatus = ?', 'scanLimit = ?'];
-  const params: any[] = [status, limit];
+  const { status, limit: newLimit } = getPlanEntitlement(planType);
+  
+  // Base monthly updates
+  const updates: string[] = ['subStatus = ?'];
+  const params: any[] = [status];
+
+  // Atomic additive logic
+  updates.push('scanLimit = (CASE WHEN subStatus = "free" THEN 0 ELSE scanLimit END) + ?');
+  params.push(newLimit);
 
   if (userColumns.has('subscriptionId')) {
     updates.push('subscriptionId = COALESCE(?, subscriptionId)');
@@ -81,14 +93,40 @@ const applyPlanUpgrade = async (
     params.push(customerId || null);
   }
 
+  if (userColumns.has('subPeriodEnd') && planType !== 'trial') {
+    updates.push('subPeriodEnd = (CASE WHEN subPeriodEnd > NOW() THEN DATE_ADD(subPeriodEnd, INTERVAL 30 DAY) ELSE COALESCE(?, DATE_ADD(NOW(), INTERVAL 30 DAY)) END)');
+    params.push(periodEnd || null);
+  }
+
+  if (planType === 'intro' && userColumns.has('introSubscriptionCount')) {
+    updates.push('introSubscriptionCount = introSubscriptionCount + 1');
+  }
+
+  if (planType === 'trial' && userColumns.has('trialClaimed')) {
+    updates.push('trialClaimed = 1');
+  }
+
+  let query = `UPDATE \`user\` SET ${updates.join(', ')} WHERE id = ?`;
   params.push(userId);
 
-  await pool.query(
-    `UPDATE \`user\` SET ${updates.join(', ')} WHERE id = ?`,
-    params
-  );
+  // ATOMIC GUARD: If sessionId is present, ensure we only update if it hasn't been handled.
+  if (sessionId && userColumns.has('lastHandledSessionId')) {
+    query += ' AND (lastHandledSessionId IS NULL OR lastHandledSessionId <> ?)';
+    params.push(sessionId);
+    // Also set the session ID in the same update
+    query = query.replace('SET ', `SET lastHandledSessionId = ?, `);
+    params.unshift(sessionId);
+  }
 
-  return { status, limit };
+  const [result]: any = await pool.query(query, params);
+
+  // If already handled (affectedRows = 0), fetch current values to return accurate state
+  if (result.affectedRows === 0) {
+     const [users]: any = await pool.query('SELECT subStatus, scanLimit FROM `user\` WHERE id = ?', [userId]);
+     return { status: users[0]?.subStatus || status, limit: users[0]?.scanLimit || newLimit };
+  }
+
+  return { status, limit: newLimit };
 };
 
 // GET billing usage
@@ -110,7 +148,10 @@ router.get('/usage', protect, async (req: any, res) => {
       status: subStatus,
       limit: resolveMonthlyLimit(subStatus, scanLimit),
       used,
-      resetDate: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1)
+      resetDate: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1),
+      expiryDate: req.user.subPeriodEnd,
+      introCount: Number(req.user.introSubscriptionCount || 0),
+      trialClaimed: Boolean(req.user.trialClaimed)
     });
   } catch (error) {
     console.error('Failed to fetch billing usage:', error);
@@ -141,7 +182,8 @@ router.post('/create-checkout', protect, async (req: any, res) => {
   console.log(`[STRIPE] Creating checkout for: ${userId} (${email}), plan: ${planType}`);
   
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const { unitAmount, productName } = getPlanPricing(planType);
+  const introCount = Number(req.user.introSubscriptionCount || 0);
+  const { unitAmount, productName } = getPlanPricing(planType, introCount);
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -223,11 +265,16 @@ router.post('/confirm-session', protect, async (req: any, res) => {
       return res.status(400).json({ message: 'Could not determine purchased plan.' });
     }
 
+    const periodEndSeconds = (session.subscription as any)?.current_period_end;
+    const periodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000) : null;
+
     const updated = await applyPlanUpgrade(
       req.user.id,
       planType,
       typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
-      typeof session.customer === 'string' ? session.customer : session.customer?.id
+      typeof session.customer === 'string' ? session.customer : session.customer?.id,
+      periodEnd,
+      session.id
     );
 
     return res.json({
@@ -271,11 +318,24 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const planType = normalizePlanType(session.metadata?.planType);
     
     if (userId && planType) {
+      let periodEnd = null;
+      if (session.subscription && typeof session.subscription !== 'string') {
+        const periodEndSeconds = (session.subscription as any).current_period_end;
+        if (periodEndSeconds) periodEnd = new Date(periodEndSeconds * 1000);
+      } else if (session.subscription && typeof session.subscription === 'string') {
+        try {
+          const sub = await stripe.subscriptions.retrieve(session.subscription);
+          periodEnd = new Date((sub as any).current_period_end * 1000);
+        } catch (e) { console.error('Failed to fetch subscription for webhook:', e); }
+      }
+
       await applyPlanUpgrade(
         userId,
         planType,
         typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
-        typeof session.customer === 'string' ? session.customer : session.customer?.id
+        typeof session.customer === 'string' ? session.customer : session.customer?.id,
+        periodEnd,
+        session.id
       );
     }
   }
@@ -300,7 +360,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
     
     if (user) {
       const planType = normalizePlanType(user.subStatus) || 'pro';
-      await applyPlanUpgrade(user.id, planType, subscriptionId, user.stripeCustomerId || null);
+      
+      let periodEnd = null;
+      try {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        periodEnd = new Date((sub as any).current_period_end * 1000);
+      } catch (e) { /* ignore */ }
+
+      await applyPlanUpgrade(user.id, planType, subscriptionId, user.stripeCustomerId || null, periodEnd);
     }
   }
 

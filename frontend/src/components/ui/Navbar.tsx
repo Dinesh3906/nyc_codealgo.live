@@ -1,13 +1,20 @@
 "use client";
 
-import { Building2, Menu, X } from "lucide-react";
+import { Building2, Menu, X, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
 
 export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,8 +28,8 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
     <nav 
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b ${
         scrolled 
-          ? "bg-white/95 backdrop-blur-sm border-border shadow-sm" 
-          : "bg-white/80 backdrop-blur-sm border-transparent"
+          ? "bg-background/95 backdrop-blur-sm border-border shadow-sm" 
+          : "bg-background/80 backdrop-blur-sm border-transparent"
       }`}
     >
       <div className="container mx-auto px-6 max-w-7xl flex items-center justify-between h-16">
@@ -41,12 +48,40 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
           <Button onClick={onOpenModal} size="sm">
             Check Your Plans
           </Button>
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
+            </Button>
+          )}
         </div>
 
         <div className="md:hidden flex items-center gap-2">
           <Button onClick={onOpenModal} size="sm" variant="default">
             Join
           </Button>
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="icon"
