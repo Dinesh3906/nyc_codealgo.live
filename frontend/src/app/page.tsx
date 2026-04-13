@@ -6,12 +6,12 @@ import Hero from "@/components/sections/Hero";
 import LeadModal from "@/components/ui/LeadModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  ProblemSection, 
-  SolutionSection, 
-  HowItWorks, 
-  Pricing, 
-  Footer 
+import {
+  ProblemSection,
+  SolutionSection,
+  HowItWorks,
+  Pricing,
+  Footer
 } from "@/components/sections/Sections";
 
 export default function LandingPage() {
@@ -23,15 +23,15 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-background">
       <Navbar onOpenModal={openModal} />
-      
+
       <Hero onOpenModal={openModal} />
-      
+
       <ProblemSection />
-      
+
       <SolutionSection />
-      
+
       <HowItWorks />
-      
+
       <section className="py-24 bg-background">
         <div className="container mx-auto px-6 max-w-7xl">
           <Card className="shadow-xl">

@@ -29,7 +29,7 @@ export const register = async (req: Request, res: Response) => {
     // Insert user using pool
     await pool.query(
       'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, email, hashedPassword, name, 'architect', 'free', 2]
+      [id, email, hashedPassword, name, 'architect', 'free', 0]
     );
 
     res.status(201).json({

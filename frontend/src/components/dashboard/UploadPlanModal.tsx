@@ -243,7 +243,9 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   <div>
                     <p className="font-medium text-slate-900">{file.name}</p>
                     <p className="text-sm text-slate-500 mt-1">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB • Ready to analyze
+                      {file.size < 1024 * 1024
+                        ? `${(file.size / 1024).toFixed(2)} KB`
+                        : `${(file.size / 1024 / 1024).toFixed(2)} MB`} • Ready to analyze
                     </p>
                   </div>
                 ) : (
@@ -368,13 +370,29 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto">
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-1">{errorMessage || "Something went wrong"}</h3>
-                <p className="text-sm text-slate-500">Please try again or contact support</p>
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-semibold mb-1 leading-tight">{errorMessage || "Something went wrong"}</h3>
+                <p className="text-sm text-slate-500">
+                  {errorMessage.includes('limit reached') 
+                   ? "You can add more scans to your account immediately from the billing page." 
+                   : "Please try again or contact support"}
+                </p>
               </div>
-              <Button onClick={() => setStatus('idle')}>
-                Try Again
-              </Button>
+              {errorMessage.includes('limit reached') ? (
+                <Button 
+                  onClick={() => {
+                    onClose();
+                    window.location.href = '/dashboard/billing';
+                  }}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Manage Subscription
+                </Button>
+              ) : (
+                <Button onClick={() => setStatus('idle')}>
+                  Try Again
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

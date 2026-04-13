@@ -19,7 +19,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
     // Fetch user using pool
     try {
       const [users]: any = await pool.query(
-        'SELECT id, email, subStatus, scanLimit FROM `user` WHERE id = ?',
+        'SELECT id, email, subStatus, scanLimit, subPeriodEnd, introSubscriptionCount, trialClaimed FROM `user` WHERE id = ?',
         [decoded.id]
       );
 
