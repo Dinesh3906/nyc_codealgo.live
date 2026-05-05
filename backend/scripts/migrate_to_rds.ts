@@ -32,11 +32,24 @@ async function migrate() {
         role VARCHAR(50) DEFAULT 'architect',
         subStatus VARCHAR(50) DEFAULT 'free',
         scanLimit INT DEFAULT 0,
+        subPeriodEnd DATETIME,
+        introSubscriptionCount INT DEFAULT 0,
+        trialClaimed BOOLEAN DEFAULT FALSE,
         lastHandledSessionId VARCHAR(255),
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     `);
     console.log('✅ User table ready.');
+
+    // Add missing columns if they don't exist (Fix for existing tables)
+    try {
+      await connection.query('ALTER TABLE \`user\` ADD COLUMN IF NOT EXISTS subPeriodEnd DATETIME');
+      await connection.query('ALTER TABLE \`user\` ADD COLUMN IF NOT EXISTS introSubscriptionCount INT DEFAULT 0');
+      await connection.query('ALTER TABLE \`user\` ADD COLUMN IF NOT EXISTS trialClaimed BOOLEAN DEFAULT FALSE');
+      console.log('✅ User table columns updated.');
+    } catch (e) {
+      // Ignore if columns already exist
+    }
 
     // 2. Plan Table
     await connection.query(`
