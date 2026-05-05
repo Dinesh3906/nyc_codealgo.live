@@ -17,7 +17,7 @@ import {
   Sparkles
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
 import { usePlanStore } from "@/lib/store/planStore";
@@ -27,6 +27,18 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center text-sm text-muted-foreground">
+        Loading layout...
+      </div>
+    }>
+      <DashboardContent>{children}</DashboardContent>
+    </Suspense>
+  );
+}
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
