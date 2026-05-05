@@ -1,7 +1,7 @@
-# Brickly Architecture Documentation
+# NYC House Code Architecture Documentation
 
 ## Overview
-Brickly is an AI-powered system designed to automate the NYC Building Code compliance analysis process. It leverages Retrieval-Augmented Generation (RAG) to compare architectural plans against 113 specialized NYC Building Code documents.
+NYC House Code is an AI-powered system designed to automate the NYC Building Code compliance analysis process. It leverages Retrieval-Augmented Generation (RAG) to compare architectural plans against 113 specialized NYC Building Code documents.
 
 ## System Components
 

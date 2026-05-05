@@ -1,8 +1,7 @@
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
-const openai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY || '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',
-  baseURL: 'https://api.groq.com/openai/v1',
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || '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',
 });
 
 export interface ComplianceReport {
@@ -21,9 +20,9 @@ export class AIService {
 
   static async analyzeWithGrounding(text: string, rules: any[]): Promise<any> {
     try {
-      const formattedRules = rules.map(r => `[${r.id}] ${r.title}: ${r.description}`).join('\n');
+      const formattedRules = rules.slice(0, 20).map(r => `[${r.id}] ${r.title}: ${r.description}`).join('\n');
 
-      const response = await openai.chat.completions.create({
+      const response = await groq.chat.completions.create({
         model: "llama-3.1-8b-instant",
         temperature: 0,
         messages: [
@@ -232,7 +231,7 @@ Produce a deterministic, safety-focused, legally defensible compliance analysis 
             content: `Analyze the following building plan content:
 
 [EXTRACTED TEXT]
-${text.substring(0, 10000)}
+${text.substring(0, 4000)}
 
 Relevant NYC Codes to compare against:
 ${formattedRules}
@@ -257,10 +256,10 @@ Return ONLY a JSON object in this format:
       });
 
       let content = response.choices[0].message.content || '{}';
-      
+
       // Safety: Clean Markdown blocks if AI hallucinated them
       content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-      
+
       try {
         return JSON.parse(content);
       } catch (e) {

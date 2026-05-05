@@ -44,16 +44,29 @@ export class CompliancePipeline {
         message: 'Initializing Vectorless RAG Agent across 114 NYC models...'
       });
 
-      // STEP 2: Building full path to script
-      const scriptPath = path.join(__dirname, '../../scripts/langchain_query.py');
+      // STEP 2: Data Extraction
+      io.emit('analysis-status', { 
+        planId, 
+        status: 'EXTRACTING_DATA', 
+        progress: 20,
+        message: 'Extracting technical data from building plan...'
+      });
       const absoluteFilePath = path.resolve(filePath);
       
-      // STEP 3: Progress update before heavy lifting
+      // STEP 3: Rule Retrieval
+      io.emit('analysis-status', { 
+        planId, 
+        status: 'RETRIEVING_RULES', 
+        progress: 40,
+        message: 'Querying NYC Building Code vector database (113 chapters)...'
+      });
+
+      // STEP 4: AI Analysis
       io.emit('analysis-status', { 
         planId, 
         status: 'AI_ANALYZING', 
-        progress: 30,
-        message: 'Agent is performing multi-document cross-verification (parallel processing)...'
+        progress: 60,
+        message: 'Senior Plan Examiner is verifying compliance against NYC mandates...'
       });
 
       // Add a mid-analysis progress update to keep the bar moving
@@ -61,20 +74,25 @@ export class CompliancePipeline {
          io.emit('analysis-status', { 
            planId, 
            status: 'CHECKING_COMPLIANCE', 
-           progress: Math.min(85, Math.floor(Math.random() * 20) + 40),
-           message: 'Scanning chapters (Gas, Building, Plumbing)...'
+           progress: Math.min(85, Math.floor(Math.random() * 10) + 70),
+           message: 'Performing cross-document safety verification...'
          });
-      }, 8000);
+      }, 5000);
 
-// STEP 4: Execute Full TS RAG Loop
+      // STEP 5: Execute Full TS RAG Loop
       const agentResponse = await checkComplianceTS(absoluteFilePath);
 
       clearInterval(progressTimer);
 
-      // STEP 5: Progress update before compiling final report
-      io.emit('analysis-status', { planId, status: 'GENERATING_REPORT', progress: 90 });
+      // STEP 6: Progress update before compiling final report
+      io.emit('analysis-status', { 
+        planId, 
+        status: 'GENERATING_REPORT', 
+        progress: 90,
+        message: 'Compiling final forensic compliance report...'
+      });
 
-      // STEP 6: Format result for Brickly UI
+      // STEP 6: Format result for NYC House Code UI
       let issues: AnalysisIssue[] = [];
       let severity = { critical: 0, major: 0, minor: 0 };
       

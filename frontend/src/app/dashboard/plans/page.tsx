@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { usePlanStore } from "@/lib/store/planStore";
+import { useAuthStore } from "@/lib/store/authStore";
 import Link from "next/link";
-import { Search, Trash2, FileText, Loader2 } from "lucide-react";
+import { Search, Trash2, FileText, Loader2, CreditCard, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export default function PlansHub() {
   const { fetchPlans, deletePlan, filteredPlans, loading, searchQuery, setSearchQuery } = usePlanStore();
+  const { user } = useAuthStore();
   const plans = filteredPlans();
 
   useEffect(() => {
@@ -20,9 +22,11 @@ export default function PlansHub() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Plans</h1>
-        <p className="text-muted-foreground mt-1">Manage your compliance analysis history</p>
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Plans</h1>
+          <p className="text-muted-foreground mt-1">Manage your compliance analysis history</p>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

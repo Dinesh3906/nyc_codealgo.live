@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Hexagon, Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -21,7 +21,7 @@ export default function LoginPage() {
   const login = useAuthStore((state: any) => state.login);
 
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem("BRICKLY_REMEMBERED_EMAIL");
+    const rememberedEmail = localStorage.getItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL");
     if (rememberedEmail) {
       setEmail(rememberedEmail);
       setRememberMe(true);
@@ -41,9 +41,9 @@ export default function LoginPage() {
 
       if (response.data.token) {
         if (rememberMe) {
-          localStorage.setItem("BRICKLY_REMEMBERED_EMAIL", email);
+          localStorage.setItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL", email);
         } else {
-          localStorage.removeItem("BRICKLY_REMEMBERED_EMAIL");
+          localStorage.removeItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL");
         }
 
         const userData = {
@@ -52,9 +52,9 @@ export default function LoginPage() {
           email: response.data.email
         };
         login(userData, response.data.token);
-        const pendingSessionId = sessionStorage.getItem('brickly-pending-checkout-session');
+        const pendingSessionId = sessionStorage.getItem('nyc-house-code-pending-checkout-session');
         if (pendingSessionId) {
-          sessionStorage.removeItem('brickly-pending-checkout-session');
+          sessionStorage.removeItem('nyc-house-code-pending-checkout-session');
           router.push(`/dashboard/billing?success=true&session_id=${pendingSessionId}`);
         } else {
           router.push("/dashboard");
@@ -68,24 +68,28 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-md shadow-xl">
+    <main className="min-h-screen flex items-center justify-center bg-background p-6 relative overflow-hidden">
+      {/* Background orbs */}
+      <div className="absolute -top-1/3 -right-1/3 w-[60%] h-[60%] rounded-full bg-primary/5 blur-[160px]" />
+      <div className="absolute -bottom-1/3 -left-1/3 w-[60%] h-[60%] rounded-full bg-accent/5 blur-[160px]" />
+
+      <Card className="w-full max-w-md shadow-2xl border-border/40 relative z-10">
         <CardHeader className="space-y-4 text-center">
-          <Link href="/" className="flex items-center gap-2 justify-center group">
-            <div className="bg-primary rounded-md p-1.5">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
+          <Link href="/" className="flex items-center gap-2.5 justify-center group">
+            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-1.5 shadow-md shadow-primary/20">
+              <Hexagon className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold text-foreground">Brickly</span>
+            <span className="text-xl font-bold text-foreground">NYC House Code</span>
           </Link>
           <div>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl font-extrabold">Welcome Back</CardTitle>
             <CardDescription>Log in to manage your plan compliance.</CardDescription>
           </div>
         </CardHeader>
 
         <CardContent>
           {error && (
-            <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-sm">
+            <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-sm">
               <AlertCircle className="w-4 h-4" />
               {error}
             </div>
@@ -93,7 +97,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
+              <label className="text-sm font-semibold">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -109,8 +113,8 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Password</label>
-                <a href="#" className="text-sm text-primary hover:underline">Forgot?</a>
+                <label className="text-sm font-semibold">Password</label>
+                <a href="#" className="text-sm text-primary hover:underline font-medium">Forgot?</a>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -136,7 +140,7 @@ export default function LoginPage() {
               <input 
                 type="checkbox" 
                 id="remember"
-                className="w-4 h-4 rounded border-input"
+                className="w-4 h-4 rounded border-input accent-primary"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
@@ -145,7 +149,7 @@ export default function LoginPage() {
               </label>
             </div>
 
-            <Button disabled={loading} className="w-full" size="lg">
+            <Button disabled={loading} className="w-full shadow-lg shadow-primary/20" size="lg">
               {loading ? (
                 <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
@@ -158,7 +162,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account? <Link href="/register" className="text-primary font-medium hover:underline">Register for free</Link>
+            Don't have an account? <Link href="/register" className="text-primary font-semibold hover:underline">Register for free</Link>
           </p>
         </CardContent>
       </Card>

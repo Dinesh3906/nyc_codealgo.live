@@ -1,22 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { protect } from '../middleware/auth.middleware';
 import pool from '../db';
-import Stripe from 'stripe';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {}) : null;
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+const razorpay = razorpayKeyId && razorpayKeySecret 
+  ? new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }) 
+  : null;
 
 const router = Router();
 
-const resolveMonthlyLimit = (subStatus: string, scanLimit: any) => {
-  const numericLimit = Number(scanLimit);
-  if (Number.isFinite(numericLimit) && numericLimit > 0) {
-    return numericLimit;
-  }
-  return subStatus === 'free' ? 0 : 12;
-};
-
-type PlanType = 'trial' | 'intro' | 'pro';
+type PlanType = 'pack-1' | 'pack-11' | 'pack-12' | 'pack-55' | 'pack-65';
 type UserColumnSet = Set<string>;
 let userColumnCache: UserColumnSet | null = null;
 
@@ -31,80 +27,36 @@ const getUserColumns = async (): Promise<UserColumnSet> => {
 };
 
 const normalizePlanType = (plan: any): PlanType | null => {
-  if (plan === 'enterprise') return 'pro';
-  if (plan === 'trial' || plan === 'intro' || plan === 'pro') return plan;
+  if (plan === 'pack-1' || plan === 'pack-11' || plan === 'pack-12' || plan === 'pack-55' || plan === 'pack-65') return plan;
   return null;
 };
 
-const getPlanPricing = (planType: PlanType, introCount: number = 0) => {
-  if (planType === 'trial') {
-    return { unitAmount: 100, productName: 'The Trial (Month 1 - Promo)' };
-  }
-
-  if (planType === 'intro') {
-    // Discounted only for first 2 times
-    if (introCount < 2) {
-      return { unitAmount: 4999, productName: 'Intro Tier (Month 2 - Discounted)' };
-    }
-    return { unitAmount: 29900, productName: 'Intro Tier (Month 2 - Full Price)' };
-  }
-
-  return { unitAmount: 29900, productName: 'Pro Tier (Month 3+)' };
+const getPlanPricing = (planType: PlanType) => {
+  if (planType === 'pack-1') return { unitAmount: 200, productName: '1 Upload Pack' };
+  if (planType === 'pack-11' || planType === 'pack-12') return { unitAmount: 2000, productName: '12 Uploads Pack' };
+  return { unitAmount: 10000, productName: '65 Uploads Pack' };
 };
 
 const getPlanEntitlement = (planType: PlanType) => {
-  if (planType === 'trial') {
-    return { status: 'trial', limit: 1 };
-  }
-
-  if (planType === 'intro') {
-    return { status: 'intro', limit: 12 };
-  }
-
-  return { status: 'pro', limit: 12 };
+  if (planType === 'pack-1') return { status: 'active', limit: 1 };
+  if (planType === 'pack-11' || planType === 'pack-12') return { status: 'active', limit: 12 };
+  return { status: 'active', limit: 65 };
 };
 
 const applyPlanUpgrade = async (
   userId: string,
   planType: PlanType,
-  subscriptionId?: string | null,
-  customerId?: string | null,
-  periodEnd?: Date | null,
   sessionId?: string | null
 ) => {
   const userColumns = await getUserColumns();
   const { status, limit: newLimit } = getPlanEntitlement(planType);
   
-  // Base monthly updates
   const updates: string[] = ['subStatus = ?'];
   const params: any[] = [status];
 
-  // Atomic additive logic
+  // Add purchased uploads to their existing limit
   updates.push('scanLimit = (CASE WHEN subStatus = "free" THEN 0 ELSE scanLimit END) + ?');
   params.push(newLimit);
-
-  if (userColumns.has('subscriptionId')) {
-    updates.push('subscriptionId = COALESCE(?, subscriptionId)');
-    params.push(subscriptionId || null);
-  }
-
-  if (userColumns.has('stripeCustomerId')) {
-    updates.push('stripeCustomerId = COALESCE(?, stripeCustomerId)');
-    params.push(customerId || null);
-  }
-
-  if (userColumns.has('subPeriodEnd') && planType !== 'trial') {
-    updates.push('subPeriodEnd = (CASE WHEN subPeriodEnd > NOW() THEN DATE_ADD(subPeriodEnd, INTERVAL 30 DAY) ELSE COALESCE(?, DATE_ADD(NOW(), INTERVAL 30 DAY)) END)');
-    params.push(periodEnd || null);
-  }
-
-  if (planType === 'intro' && userColumns.has('introSubscriptionCount')) {
-    updates.push('introSubscriptionCount = introSubscriptionCount + 1');
-  }
-
-  if (planType === 'trial' && userColumns.has('trialClaimed')) {
-    updates.push('trialClaimed = 1');
-  }
 
   let query = `UPDATE \`user\` SET ${updates.join(', ')} WHERE id = ?`;
   params.push(userId);
@@ -113,7 +65,6 @@ const applyPlanUpgrade = async (
   if (sessionId && userColumns.has('lastHandledSessionId')) {
     query += ' AND (lastHandledSessionId IS NULL OR lastHandledSessionId <> ?)';
     params.push(sessionId);
-    // Also set the session ID in the same update
     query = query.replace('SET ', `SET lastHandledSessionId = ?, `);
     params.unshift(sessionId);
   }
@@ -134,24 +85,16 @@ router.get('/usage', protect, async (req: any, res) => {
   const { id: userId, subStatus, scanLimit } = req.user;
 
   try {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
     const [rows]: any = await pool.query(
-      'SELECT COUNT(*) as count FROM `plan` WHERE userId = ? AND createdAt >= ?',
-      [userId, startOfMonth]
+      'SELECT COUNT(*) as count FROM `plan` WHERE userId = ?',
+      [userId]
     );
     const used = Number(rows[0]?.count || 0);
 
     res.json({
       status: subStatus,
-      limit: resolveMonthlyLimit(subStatus, scanLimit),
-      used,
-      resetDate: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1),
-      expiryDate: req.user.subPeriodEnd,
-      introCount: Number(req.user.introSubscriptionCount || 0),
-      trialClaimed: Boolean(req.user.trialClaimed)
+      limit: Number(scanLimit) || 0,
+      used
     });
   } catch (error) {
     console.error('Failed to fetch billing usage:', error);
@@ -164,9 +107,9 @@ router.post('/create-checkout', protect, async (req: any, res) => {
   const { id: userId, email } = req.user;
   const { plan } = req.body || {};
 
-  if (!stripe) {
+  if (!razorpay) {
     return res.status(503).json({
-      message: 'Stripe is not configured. Add STRIPE_SECRET_KEY in backend environment variables.'
+      message: 'Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend environment variables.'
     });
   }
 
@@ -175,106 +118,80 @@ router.post('/create-checkout', protect, async (req: any, res) => {
   }
 
   const planType = normalizePlanType(plan);
+  console.log(`[RAZORPAY] Received plan: "${plan}", normalized to: "${planType}"`);
   if (!planType) {
     return res.status(400).json({ message: 'Invalid plan selected.' });
   }
   
-  console.log(`[STRIPE] Creating checkout for: ${userId} (${email}), plan: ${planType}`);
+  console.log(`[RAZORPAY] Creating order for: ${userId} (${email}), plan: ${planType}`);
   
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const introCount = Number(req.user.introSubscriptionCount || 0);
-  const { unitAmount, productName } = getPlanPricing(planType, introCount);
+  const { unitAmount, productName } = getPlanPricing(planType);
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: { name: productName },
-          unit_amount: unitAmount,
-          recurring: { interval: 'month' }
-        },
-        quantity: 1,
-      }],
-      mode: 'subscription',
-      success_url: `${frontendUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${frontendUrl}/dashboard/billing?canceled=true`,
-      client_reference_id: userId,
-      customer_email: email,
-      metadata: { userId, planType },
-      // Metadata to help webhook
-      subscription_data: {
-        metadata: { userId, planType }
-      }
+    const options = {
+      amount: unitAmount,
+      currency: "USD",
+      receipt: `receipt_${userId}_${Date.now()}`.slice(0, 40),
+      notes: { userId, planType, productName }
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    res.json({
+      orderId: order.id,
+      amount: options.amount,
+      currency: options.currency
     });
-
-    if (!session.url) {
-      return res.status(500).json({ message: 'Stripe did not return a checkout URL.' });
-    }
-
-    res.json({ url: session.url });
   } catch (error) {
-    console.error('Stripe error:', error);
-    const detail = error instanceof Error ? error.message : 'Unknown Stripe error';
+    console.error('Razorpay error:', error);
+    const detail = error instanceof Error ? error.message : 'Unknown Razorpay error';
     res.status(500).json({
       message: process.env.NODE_ENV === 'development'
-        ? `Failed to create checkout session: ${detail}`
-        : 'Failed to create checkout session.'
+        ? `Failed to create order: ${detail}`
+        : 'Failed to create order.'
     });
   }
 });
 
 // POST confirm checkout session after redirect success
 router.post('/confirm-session', protect, async (req: any, res) => {
-  if (!stripe) {
-    return res.status(503).json({ message: 'Stripe is not configured.' });
+  if (!razorpay) {
+    return res.status(503).json({ message: 'Razorpay is not configured.' });
   }
 
-  const { sessionId } = req.body || {};
-  if (!sessionId || typeof sessionId !== 'string') {
-    return res.status(400).json({ message: 'sessionId is required.' });
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return res.status(400).json({ message: 'Razorpay payment details are required.' });
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription']
-    });
+    const secret = process.env.RAZORPAY_KEY_SECRET || '';
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body.toString())
+      .digest('hex');
 
-    const sessionUserId = session.client_reference_id || session.metadata?.userId;
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ message: 'Invalid payment signature.' });
+    }
+
+    const order = await razorpay.orders.fetch(razorpay_order_id);
+
+    const sessionUserId = order.notes?.userId;
     if (!sessionUserId || sessionUserId !== req.user.id) {
-      return res.status(403).json({ message: 'Session does not belong to this user.' });
+      return res.status(403).json({ message: 'Order does not belong to this user.' });
     }
 
-    const isSettled =
-      session.payment_status === 'paid' ||
-      session.payment_status === 'no_payment_required' ||
-      session.status === 'complete';
-
-    if (!isSettled) {
-      return res.status(400).json({ message: 'Payment not completed yet.' });
-    }
-
-    let planType = normalizePlanType(session.metadata?.planType);
-
-    if (!planType && session.subscription && typeof session.subscription !== 'string') {
-      planType = normalizePlanType((session.subscription as any).metadata?.planType);
-    }
-
+    const planType = normalizePlanType(order.notes?.planType);
     if (!planType) {
       return res.status(400).json({ message: 'Could not determine purchased plan.' });
     }
 
-    const periodEndSeconds = (session.subscription as any)?.current_period_end;
-    const periodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000) : null;
-
     const updated = await applyPlanUpgrade(
       req.user.id,
       planType,
-      typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
-      typeof session.customer === 'string' ? session.customer : session.customer?.id,
-      periodEnd,
-      session.id
+      razorpay_order_id
     );
 
     return res.json({
@@ -283,94 +200,14 @@ router.post('/confirm-session', protect, async (req: any, res) => {
       limit: updated.limit
     });
   } catch (error) {
-    console.error('Failed to confirm checkout session:', error);
-    return res.status(500).json({ message: 'Could not confirm checkout session.' });
+    console.error('Failed to confirm payment:', error);
+    return res.status(500).json({ message: 'Could not confirm payment.' });
   }
 });
 
-// POST STRIPE WEBHOOK
+// POST RAZORPAY WEBHOOK (Stubbed)
 router.post('/webhook', async (req: Request, res: Response) => {
-  if (!stripe) {
-    return res.status(503).json({ message: 'Stripe is not configured.' });
-  }
-
-  let event: any;
-  try {
-    if (Buffer.isBuffer(req.body)) {
-      event = JSON.parse(req.body.toString('utf8'));
-    } else {
-      event = req.body;
-    }
-  } catch {
-    return res.status(400).json({ message: 'Invalid webhook payload.' });
-  }
-
-  if (!event?.type) {
-    return res.status(400).json({ message: 'Invalid Stripe event.' });
-  }
-
-  console.log(`[STRIPE WEBHOOK] Received event: ${event.type}`);
-
-  // Handle successful payment
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.client_reference_id || session.metadata?.userId;
-    const planType = normalizePlanType(session.metadata?.planType);
-    
-    if (userId && planType) {
-      let periodEnd = null;
-      if (session.subscription && typeof session.subscription !== 'string') {
-        const periodEndSeconds = (session.subscription as any).current_period_end;
-        if (periodEndSeconds) periodEnd = new Date(periodEndSeconds * 1000);
-      } else if (session.subscription && typeof session.subscription === 'string') {
-        try {
-          const sub = await stripe.subscriptions.retrieve(session.subscription);
-          periodEnd = new Date((sub as any).current_period_end * 1000);
-        } catch (e) { console.error('Failed to fetch subscription for webhook:', e); }
-      }
-
-      await applyPlanUpgrade(
-        userId,
-        planType,
-        typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
-        typeof session.customer === 'string' ? session.customer : session.customer?.id,
-        periodEnd,
-        session.id
-      );
-    }
-  }
-
-  // Handle recurring payments (Invoices)
-  if (event.type === 'invoice.payment_succeeded') {
-    const invoice = event.data.object as any;
-    const subscriptionId = invoice.subscription as string;
-
-    if (!subscriptionId) {
-      return res.json({ received: true });
-    }
-
-    const userColumns = await getUserColumns();
-    if (!userColumns.has('subscriptionId')) {
-      return res.json({ received: true });
-    }
-    
-    // Find user by subscriptionId
-    const [users]: any = await pool.query('SELECT * FROM `user` WHERE subscriptionId = ?', [subscriptionId]);
-    const user = users[0];
-    
-    if (user) {
-      const planType = normalizePlanType(user.subStatus) || 'pro';
-      
-      let periodEnd = null;
-      try {
-        const sub = await stripe.subscriptions.retrieve(subscriptionId);
-        periodEnd = new Date((sub as any).current_period_end * 1000);
-      } catch (e) { /* ignore */ }
-
-      await applyPlanUpgrade(user.id, planType, subscriptionId, user.stripeCustomerId || null, periodEnd);
-    }
-  }
-
+  // We rely on frontend signature verification for simplicity in this implementation.
   res.json({ received: true });
 });
 

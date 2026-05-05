@@ -50,7 +50,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:5000'
-        : 'https://cofuncion.com/brickly-backend'
+        : 'https://cofuncion.com/nyc-house-code-backend'
     );
 
     const socket = io(socketUrl);

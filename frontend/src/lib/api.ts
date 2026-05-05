@@ -4,7 +4,7 @@ import axios from 'axios';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:5000/api'
-    : 'https://cofuncion.com/brickly-backend/api'
+    : 'https://cofuncion.com/nyc-house-code-backend/api'
 );
 
 const api = axios.create({
@@ -15,7 +15,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     try {
-      const raw = localStorage.getItem('brickly-auth');
+      const raw = localStorage.getItem('nyc-house-code-auth');
       if (raw) {
         const parsed = JSON.parse(raw);
         const token = parsed?.state?.user?.token;

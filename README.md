@@ -229,4 +229,4 @@ MIT
 
 ## Support
 
-For issues or questions, please open a GitHub issue or contact support@brickly.com
+For issues or questions, please open a GitHub issue or contact support@nychousecode.com

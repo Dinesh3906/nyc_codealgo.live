@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { usePlanStore } from "@/lib/store/planStore";
+import { useAuthStore } from "@/lib/store/authStore";
 import Link from "next/link";
-import { FileText, AlertTriangle, Activity, Loader2, Trash2 } from "lucide-react";
+import { FileText, AlertTriangle, Activity, Loader2, Trash2, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export default function DashboardOverview() {
   const { fetchPlans, deletePlan, filteredPlans, loading } = usePlanStore();
+  const { user } = useAuthStore();
   const plans = filteredPlans();
 
   useEffect(() => {

@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
       }),
     }),
     {
-      name: 'brickly-auth',
+      name: 'nyc-house-code-auth',
       onRehydrateStorage: () => (state) => {
         if (!state) return;
 

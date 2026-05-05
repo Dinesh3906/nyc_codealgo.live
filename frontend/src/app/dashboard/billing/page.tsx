@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Script from "next/script";
 import api from "@/lib/api";
 import { CreditCard, CheckCircle2, Loader2, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,35 +11,11 @@ import { Badge } from "@/components/ui/badge";
 export default function BillingPage() {
   const [usage, setUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState(1);
 
   useEffect(() => {
-    const syncCheckoutAndFetchUsage = async () => {
+    const fetchUsage = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const success = params.get('success');
-        const sessionId = params.get('session_id');
-
-        if (success === 'true' && sessionId) {
-          let confirmed = false;
-
-          for (let attempt = 0; attempt < 4 && !confirmed; attempt++) {
-            try {
-              await api.post('/billing/confirm-session', { sessionId });
-              confirmed = true;
-            } catch (err) {
-              if (attempt < 3) {
-                await new Promise((resolve) => setTimeout(resolve, 1500));
-              } else {
-                console.error('Could not confirm checkout session:', err);
-              }
-            }
-          }
-
-          if (confirmed) {
-            window.history.replaceState({}, '', '/dashboard/billing');
-          }
-        }
-
         const res = await api.get("/billing/usage");
         setUsage(res.data);
       } catch (err) {
@@ -47,17 +24,54 @@ export default function BillingPage() {
         setLoading(false);
       }
     };
-    syncCheckoutAndFetchUsage();
+    fetchUsage();
   }, []);
 
   const handleUpgrade = async (plan: string) => {
     try {
       setLoading(true);
       const res = await api.post("/billing/create-checkout", { plan });
-      window.location.href = res.data.url;
+      const { orderId, amount, currency } = res.data;
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: amount,
+        currency: currency,
+        name: "NYC House Code",
+        description: "Purchase Scan Pack",
+        order_id: orderId,
+        handler: async function (response: any) {
+          try {
+            setLoading(true);
+            await api.post('/billing/confirm-session', {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
+            });
+            const usageRes = await api.get("/billing/usage");
+            setUsage(usageRes.data);
+            alert("Payment successful! Scan pack added.");
+          } catch (err) {
+            console.error(err);
+            alert("Payment verification failed.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        theme: {
+          color: "#0f172a"
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any){
+        alert("Payment failed: " + response.error.description);
+      });
+      rzp.open();
+      setLoading(false);
     } catch (err: any) {
       setLoading(false);
-      alert(err.response?.data?.message || "Failed to create checkout session.");
+      alert(err.response?.data?.message || "Failed to create order.");
     }
   };
 
@@ -72,92 +86,71 @@ export default function BillingPage() {
     );
   }
 
-  const progressPercent = Math.min((usage.used / (usage.limit === Infinity ? 1 : usage.limit)) * 100, 100);
+  const progressPercent = Math.min((usage.used / (usage.limit === 0 ? 1 : usage.limit)) * 100, 100);
 
   const plans = [
-    // {
-    //   id: 'trial',
-    //   name: "Month 1",
-    //   description: "First Upload Special",
-    //   price: "$1",
-    //   period: "first month",
-    //   features: [
-    //     "1 Full AI Plan Scan",
-    //     "OCR Extraction",
-    //     "Detailed Report PDF",
-    //     "Immediate Analysis"
-    //   ],
-    //   highlighted: false,
-    //   badge: null
-    // },
     {
-      id: 'intro',
-      name: "Month 2",
-      description: usage?.introCount >= 2 ? "Professional Access" : "83% Intro Discount",
-      price: usage?.introCount >= 2 ? "$299  " : "$49.99",
-      originalPrice: usage?.introCount >= 2 ? null : "$299",
-      period: "month",
+      id: 'pack-1',
+      name: "Single Scan",
+      description: "Perfect for a quick check",
+      price: "$2",
+      period: "pack",
       features: [
-        "12 AI Scans / Month",
+        "1 Full AI Plan Scan",
+        "OCR Extraction",
+        "Detailed Report PDF",
+        "Immediate Analysis"
+      ],
+      badge: null
+    },
+    {
+      id: 'pack-12',
+      name: "Pro Pack",
+      description: "Best for smaller projects",
+      price: "$20",
+      period: "pack",
+      features: [
+        "12 AI Scans (Buy 10, Get 2 Free)",
         "Priority Processing",
         "Expert Code Mapping",
         "Full Compliance Check"
       ],
-      highlighted: true,
-      badge: "Popular"
+      badge: "Best Value"
     },
-    // {
-    //   id: 'pro',
-    //   name: "Month 3+",
-    //   description: "Professional Access",
-    //   price: "$299",
-    //   period: "month",
-    //   features: [
-    //     "10 AI Scans / Month",
-    //     "Bulk Uploads",
-    //     "Team Dashboard",
-    //     "Custom PDF Headers"
-    //   ],
-    //   highlighted: false,
-    //   badge: null
-    // }
+    {
+      id: 'pack-65',
+      name: "Enterprise Pack",
+      description: "Bulk compliance checking",
+      price: "$100",
+      period: "pack",
+      features: [
+        "65 AI Scans (Buy 50, Get 15 Free)",
+        "Lifetime Credits",
+        "Priority Support",
+        "Bulk Processing"
+      ],
+      badge: null
+    }
   ];
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Billing & Subscription</h1>
-        <p className="text-muted-foreground mt-1">Manage your subscription and usage</p>
+    <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      <div className="space-y-8">
+        <div>
+        <h1 className="text-3xl font-bold tracking-tight">Billing & Credits</h1>
+        <p className="text-muted-foreground mt-1">Manage your scan credits and usage</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            {usage.expiryDate && (
-              <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Plan Expiry Date</p>
-                  <p className="text-lg font-semibold">
-                    {new Date(usage.expiryDate).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-                {new Date(usage.expiryDate) < new Date() ? (
-                  <Badge variant="destructive">Expired</Badge>
-                ) : (
-                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active</Badge>
-                )}
-              </div>
-            )}
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
-              Usage This Month
+              Scan Credits
             </CardTitle>
             <CardDescription>
-              {usage.used} of {usage.limit === Infinity ? 'unlimited' : usage.limit} scans used
+              {usage.used} of {usage.limit} lifetime scans used
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -168,53 +161,45 @@ export default function BillingPage() {
               />
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Current Plan</span>
-              <Badge>{usage.status}</Badge>
+              <span className="text-muted-foreground">Credits Remaining</span>
+              <Badge variant={usage.limit - usage.used > 0 ? "default" : "destructive"}>
+                {Math.max(0, usage.limit - usage.used)} Scans
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
-        {!usage.trialClaimed && (
-          <Card className="border-2 border-primary bg-accent/50">
-            <CardHeader>
-              <CardTitle>Special Offer</CardTitle>
-              <CardDescription>Limited time founder's pricing</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-2xl font-bold">Start for $1</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Try Professional tier for just $1 for your first scan
-                </p>
-              </div>
-              <Button className="w-full" onClick={() => handleUpgrade('trial')}>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Claim Offer
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="bg-accent/30 border-dashed">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">How it works</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>• Credits never expire and stay on your account until used.</p>
+            <p>• Each plan upload and analysis consumes 1 credit.</p>
+            <p>• You can purchase more packs at any time to add credits instantly.</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-6">Pricing Plans</h2>
+        <h2 className="text-2xl font-bold mb-6">Purchase Scan Packs</h2>
         <div className="grid gap-6 md:grid-cols-3">
-          {plans.map((plan, index) => (
+          {plans.map((plan, index) => {
+            const isSelected = selectedPlan === index;
+            return (
             <Card
               key={index}
-              className={plan.highlighted ? 'border-2 border-primary shadow-lg' : ''}
+              onClick={() => setSelectedPlan(index)}
+              className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isSelected ? 'border-2 border-primary shadow-lg shadow-primary/10 bg-gradient-to-b from-primary/5 to-transparent' : 'border-border/60'}`}
             >
               <CardHeader>
-                {/* <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
-                  {plan.badge && <Badge>{plan.badge}</Badge>}
-                </div> */}
+                <div className="flex items-center justify-between mb-2">
+                  <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
+                  {plan.badge && <Badge className="bg-accent text-accent-foreground">{plan.badge}</Badge>}
+                </div>
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
-                  {plan.originalPrice && (
-                    <span className="text-xl text-muted-foreground line-through mr-2">{plan.originalPrice}</span>
-                  )}
-                  <span className="text-4xl font-bold">{plan.price}</span>
+                  <span className="text-4xl font-extrabold">{plan.price}</span>
                   <span className="text-muted-foreground ml-2">/ {plan.period}</span>
                 </div>
               </CardHeader>
@@ -228,17 +213,19 @@ export default function BillingPage() {
                   ))}
                 </ul>
                 <Button
-                  variant={plan.highlighted ? 'default' : 'outline'}
-                  className="w-full"
-                  onClick={() => handleUpgrade(plan.id)}
+                  variant={isSelected ? 'default' : 'outline'}
+                  className={`w-full ${isSelected ? 'shadow-lg shadow-primary/20' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); handleUpgrade(plan.id); }}
                 >
-                  {index === 0 ? 'Start Now' : 'Upgrade'}
+                  Buy {plan.name}
                 </Button>
               </CardContent>
             </Card>
-          ))}
+          );})}
+
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -1,7 +1,7 @@
-# Product Requirements Document (PRD): NYC Code Analyzer (Brickly MVP)
+# Product Requirements Document (PRD): NYC Code Analyzer (NYC House Code MVP)
 
 ## 1. Product Overview
-**Product Name:** NYC Code Analyzer (Feature: Brickly MVP)
+**Product Name:** NYC Code Analyzer (Feature: NYC House Code MVP)
 **Description:** An AI-powered Retrieval-Augmented Generation (RAG) application designed to strictly validate architectural queries and building plans against the 2022 NYC Building Code. The platform analyzes 113 highly formatted PDF chapters and appendices to deliver accurate, localized compliance evaluations.
 
 ## 2. Problem Statement

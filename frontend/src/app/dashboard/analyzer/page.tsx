@@ -60,7 +60,7 @@ function AnalyzerContent() {
             <Badge variant="secondary">AI-Powered Analysis</Badge>
             {(usage?.limit === 0 || isExpired) && (
               <Badge variant="destructive" className="animate-pulse cursor-pointer" onClick={() => router.push('/dashboard/billing')}>
-                {isExpired ? 'Plan Expired' : 'Subscription Required'}
+                {isExpired ? 'Plan Expired' : 'Credits Required'}
               </Badge>
             )}
           </div>
@@ -73,7 +73,7 @@ function AnalyzerContent() {
           <div className="flex gap-3 pt-2">
             <Button size="lg" onClick={handleNewCheck}>
               <Upload className="w-4 h-4 mr-2" />
-              {usage?.limit === 0 ? 'Claim $1 Offer to Start' : 'New Compliance Check'}
+              {usage?.limit === 0 ? 'Buy Credits to Start' : 'New Compliance Check'}
             </Button>
             <Link href="/dashboard/plans">
               <Button variant="outline" size="lg">

@@ -69,47 +69,145 @@ export async function checkComplianceTS(housePlanPath: string) {
   console.log(`[RAG] Retrieved context: ${contexts.length} chars from ${queryResponse.matches.length} documents`);
   console.log(`[RAG] Context preview (first 300 chars): ${contexts.substring(0, 300)}...`);
   
-  const prompt = `You are an expert NYC Building Code Inspector analyzing a building plan for compliance.
+  const messages: any[] = [
+    {
+      role: "system",
+      content: `SYSTEM ROLE:
+You are a senior NYC Department of Buildings (DOB) compliance officer and forensic plan examiner with strict adherence to the 2022 NYC Construction Codes and related regulations. Your evaluation must be conservative, evidence-based, and non-speculative.
+
+PRIMARY OBJECTIVE:
+Analyze the provided document (PDF/image/text) and determine:
+1. Whether it is a legitimate architectural / engineering / DOB-related document.
+2. If yes → perform a strict compliance evaluation against NYC codes.
+3. If no → exit early with a specific structured response.
+
+--------------------------------------------------
+PHASE 1: DOCUMENT CLASSIFICATION (MANDATORY FIRST CHECK)
+--------------------------------------------------
+
+You MUST first classify the document.
+
+VALID DOCUMENT TYPES (ONLY these qualify for compliance analysis):
+- Architectural drawings (floor plans, sections, elevations, site plans)
+- Structural drawings / calculations
+- MEP (Mechanical, Electrical, Plumbing) drawings
+- Fire safety plans / egress diagrams
+- DOB forms (PW1, TR1, TR8, etc.)
+- Construction specifications
+- Permit sets / construction documents
+
+INVALID DOCUMENT TYPES:
+- Real estate listings
+- Marketing brochures
+- Business plans
+- Financial documents
+- Legal agreements unrelated to construction
+- Generic text without technical building data
+- Images without measurable architectural meaning
+
+CLASSIFICATION RULE:
+- If NO clear architectural or engineering indicators → mark as NON-PLAN
+
+OUTPUT IF NOT A PLAN:
+Return EXACTLY:
+{
+  "percentage": 100,
+  "summary": "This document is NOT an architectural plan. No building code analysis could be performed.",
+  "issues": []
+}
+
+DO NOT PROCEED further if invalid.
+
+--------------------------------------------------
+PHASE 2: DATA EXTRACTION (ONLY IF VALID PLAN)
+--------------------------------------------------
+
+Extract ONLY what is explicitly visible. DO NOT infer beyond evidence.
+
+--------------------------------------------------
+PHASE 3: CODE EVALUATION (STRICT + NON-HALLUCINATIVE)
+--------------------------------------------------
+
+Evaluate ONLY using these NYC codes:
+- NYC Building Code (2022) [BC]
+- NYC Fire Code [FC]
+- NYC Energy Conservation Code [NYCECC]
+- NYC Electrical Code [EC]
+- NYC Mechanical Code (2022) [MC]
+- NYC Plumbing Code (2022) [PC]
+- NYC Fuel Gas Code (2022) [FGC]
+- NYC Zoning Resolution [ZR]
+- Accessibility (ADA + NYC mods) [ADA]
+
+--------------------------------------------------
+CRITICAL SAFETY RULE:
+--------------------------------------------------
+
+If ANY of the following are missing, unclear, or unverifiable → mark as CRITICAL:
+- Means of egress (exits, stairs) → BC Chapter 10
+- Fire protection (sprinklers, alarms) → BC Chapter 9 / FC
+- Accessibility (ADA compliance) → ADA / BC Chapter 11
+
+DO NOT assume compliance. Absence of proof = NON-COMPLIANT.
+
+--------------------------------------------------
+PHASE 4: SCORING MODEL (MANDATORY)
+--------------------------------------------------
+
+Start with score = 100
+
+Deduct:
+- Critical issue → -25 each
+- Major issue → -10 each
+- Minor issue → -3 each
+- Missing core data → treat as CRITICAL
+
+Minimum score = 0
+
+--------------------------------------------------
+PHASE 5: OUTPUT FORMAT (STRICT JSON ONLY)
+--------------------------------------------------
+
+Required JSON structure:
+{
+  "percentage": number (0-100),
+  "summary": "Clear, strict, professional compliance verdict",
+  "issues": [
+    {
+      "title": "short issue name",
+      "description": "detailed explanation",
+      "severity": "critical | major | minor",
+      "code": "specific NYC code section",
+      "recommendation": "how to fix it"
+    }
+  ]
+}
+
+STRICT RULES:
+- DO NOT hallucinate missing details
+- ALWAYS prioritize safety over completeness
+- If uncertain → mark as missing_data`
+    },
+    {
+      role: "user",
+      content: `Analyze the following building plan content:
 
 BUILDING PLAN CONTENT:
 ${housePlanText.substring(0, 4000)}
 
 RELEVANT NYC BUILDING CODE SECTIONS:
-${contexts.substring(0, 20000)}
-
-TASK: Analyze the plan against the NYC Building Code sections provided above.
-
-RESPONSE FORMAT: Return ONLY a valid JSON object (no markdown, no code blocks, no extra text).
-
-Required JSON structure:
-{
-  "percentage": <number 0-100>,
-  "summary": "<2-3 sentence overview>",
-  "issues": [
-    {
-      "title": "<short issue name>",
-      "description": "<what the violation is>",
-      "severity": "<critical|major|minor>",
-      "code": "<specific NYC code section>",
-      "recommendation": "<how to fix it>"
+${contexts.substring(0, 20000)}`
     }
-  ]
-}
+  ];
 
-If the plan is compliant, return percentage 90-100 with empty issues array.
-If issues found, list each one with specific code references from the NYC Building Code sections above.
-
-JSON response:`;
-
-  console.log(`[RAG] Prompt length: ${prompt.length} chars`);
-  console.log(`[RAG] Context included in prompt: ${contexts.length > 0 ? 'YES' : 'NO'}`);
   console.log(`[RAG] Sending to Groq model: llama-3.1-8b-instant`);
 
   const chatCompletion = await groq.chat.completions.create({
-    messages: [{ role: "user", content: prompt }],
+    messages: messages,
     model: "llama-3.1-8b-instant",
-    temperature: 0.1,
+    temperature: 0,
     max_tokens: 3000,
+    response_format: { type: "json_object" }
   });
 
   const rawOut = chatCompletion.choices[0]?.message?.content || "{}";

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Building2, Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Hexagon, Mail, Lock, User, ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuthStore } from "@/lib/store/authStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -30,7 +32,6 @@ export default function RegisterPage() {
       });
 
       if (response.data.token) {
-        // Map response fields to user object for store
         const userData = {
           id: response.data.id,
           name: response.data.name,
@@ -47,95 +48,96 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl p-8 md:p-12"
-      >
-        <div className="flex flex-col items-center mb-10">
-          <Link href="/" className="flex items-center gap-2 mb-6 group">
-            <div className="bg-indigo-600 rounded-lg p-1.5 group-hover:bg-indigo-700 transition-colors">
-              <Building2 className="w-6 h-6 text-white" />
+    <main className="min-h-screen flex items-center justify-center bg-background p-6 relative overflow-hidden">
+      {/* Background orbs */}
+      <div className="absolute -top-1/3 -left-1/3 w-[60%] h-[60%] rounded-full bg-primary/5 blur-[160px]" />
+      <div className="absolute -bottom-1/3 -right-1/3 w-[60%] h-[60%] rounded-full bg-accent/5 blur-[160px]" />
+
+      <Card className="w-full max-w-md shadow-2xl border-border/40 relative z-10">
+        <CardHeader className="space-y-4 text-center">
+          <Link href="/" className="flex items-center gap-2.5 justify-center group">
+            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-1.5 shadow-md shadow-primary/20">
+              <Hexagon className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-black text-slate-950 tracking-tight">Brickly</span>
+            <span className="text-xl font-bold text-foreground">NYC House Code</span>
           </Link>
-          <h1 className="text-3xl font-black text-slate-950 mb-2">Create Account</h1>
-          <p className="text-slate-500 font-medium">Start automating your architectural compliance.</p>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-600 text-sm font-bold">
-            <AlertCircle className="w-5 h-5" />
-            {error}
+          <div>
+            <CardTitle className="text-2xl font-extrabold">Create Account</CardTitle>
+            <CardDescription>Start automating your architectural compliance.</CardDescription>
           </div>
-        )}
+        </CardHeader>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Full Name</label>
-            <div className="relative group">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input
-                required
-                type="text"
-                placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
-              />
+        <CardContent>
+          {error && (
+            <div className="mb-6 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-sm font-medium">
+              <AlertCircle className="w-4 h-4" />
+              {error}
             </div>
-          </div>
+          )}
 
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
-            <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input
-                required
-                type="email"
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
-              />
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  required
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Password</label>
-            <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input
-                required
-                type="password"
-                placeholder="Min. 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
-              />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  required
+                  type="email"
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-          </div>
 
-          <button
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 mt-6 shadow-xl shadow-indigo-500/20 text-lg"
-          >
-            {loading ? (
-               <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                Create Account
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </button>
-        </form>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  required
+                  type="password"
+                  placeholder="Min. 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
 
-        <p className="mt-10 text-center text-slate-500 font-medium">
-          Already have an account? <Link href="/login" className="text-indigo-600 font-bold hover:underline">Log in</Link>
-        </p>
-      </motion.div>
+            <Button disabled={loading} className="w-full shadow-lg shadow-primary/20 mt-2" size="lg">
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <>
+                  Create Account
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have an account? <Link href="/login" className="text-primary font-semibold hover:underline">Log in</Link>
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

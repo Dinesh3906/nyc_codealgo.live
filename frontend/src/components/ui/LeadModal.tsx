@@ -58,7 +58,7 @@ export default function LeadModal({ isOpen, onClose }: { isOpen: boolean, onClos
                 <Send className="w-8 h-8" />
               </div>
               <CardTitle className="mb-2">You're on the list!</CardTitle>
-              <CardDescription>We'll notify you the moment Brickly is ready for your first plan.</CardDescription>
+              <CardDescription>We'll notify you the moment NYC House Code is ready for your first plan.</CardDescription>
             </div>
           ) : (
             <>
