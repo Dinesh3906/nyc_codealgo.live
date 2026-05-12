@@ -42,9 +42,13 @@ io.on('connection', (socket) => {
 
 // Debug Route (Temporary)
 app.get('/api/debug-keys', (req, res) => {
+  const groq = process.env.GROQ_API_KEY || '';
+  const pinecone = process.env.PINECONE_API_KEY || '';
   res.json({
-    groq_prefix: process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 7) : 'MISSING',
-    pinecone_prefix: process.env.PINECONE_API_KEY ? process.env.PINECONE_API_KEY.substring(0, 7) : 'MISSING',
+    groq_prefix: groq.substring(0, 7),
+    groq_length: groq.length,
+    pinecone_prefix: pinecone.substring(0, 7),
+    pinecone_length: pinecone.length,
     cors_origin: process.env.CORS_ORIGIN || 'NOT SET'
   });
 });
