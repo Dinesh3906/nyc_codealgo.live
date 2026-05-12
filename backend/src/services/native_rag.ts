@@ -69,6 +69,7 @@ export async function checkComplianceTS(housePlanPath: string) {
     .map(m => `[Source: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
+  console.log(`[DEBUG] Groq Key Check: Length=${process.env.GROQ_API_KEY?.length}, EndsWith=${process.env.GROQ_API_KEY?.substring((process.env.GROQ_API_KEY?.length || 0) - 4)}`);
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   
   console.log(`[RAG] Retrieved context: ${contexts.length} chars from ${queryResponse.matches.length} documents`);
