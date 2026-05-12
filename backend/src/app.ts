@@ -40,6 +40,15 @@ io.on('connection', (socket) => {
   });
 });
 
+// Debug Route (Temporary)
+app.get('/api/debug-keys', (req, res) => {
+  res.json({
+    groq_prefix: process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 7) : 'MISSING',
+    pinecone_prefix: process.env.PINECONE_API_KEY ? process.env.PINECONE_API_KEY.substring(0, 7) : 'MISSING',
+    cors_origin: process.env.CORS_ORIGIN || 'NOT SET'
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/plans', planRoutes);
