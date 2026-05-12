@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/authStore";
 import Navbar from "@/components/ui/Navbar";
 import Hero from "@/components/sections/Hero";
-import LeadModal from "@/components/ui/LeadModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Quote } from "lucide-react";
@@ -16,16 +16,22 @@ import {
 } from "@/components/sections/Sections";
 
 export default function LandingPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const handleAction = () => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background lg:ml-56 mt-14 lg:mt-0">
-      <Navbar onOpenModal={openModal} />
+      <Navbar onOpenModal={handleAction} />
 
-      <Hero onOpenModal={openModal} />
+      <Hero onOpenModal={handleAction} />
 
       <ProblemSection />
 
@@ -40,7 +46,7 @@ export default function LandingPage() {
             <CardContent className="p-12 md:p-20 text-center relative z-10">
               <h2 className="text-3xl md:text-5xl font-extrabold mb-6 text-foreground">Stop Guessing. Start Submitting with Confidence.</h2>
               <p className="text-xl text-muted-foreground mb-10">Try our AI scanner today and save weeks on your next DOB filing.</p>
-              <Button size="lg" onClick={openModal} className="text-lg px-10 py-6 shadow-xl shadow-primary/25 hover:shadow-primary/40 transition-shadow">
+              <Button size="lg" onClick={handleAction} className="text-lg px-10 py-6 shadow-xl shadow-primary/25 hover:shadow-primary/40 transition-shadow">
                 <Sparkles className="w-5 h-5 mr-2" />
                 Upload Your First Plan
               </Button>
@@ -49,7 +55,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <Pricing onOpenModal={openModal} />
+      <Pricing onOpenModal={handleAction} />
 
       <section className="py-24 bg-muted/30 border-t border-border">
         <div className="container mx-auto px-6 max-w-7xl text-center">
@@ -62,8 +68,6 @@ export default function LandingPage() {
       </section>
 
       <Footer />
-
-      <LeadModal isOpen={isModalOpen} onClose={closeModal} />
     </main>
   );
 }
