@@ -11,7 +11,7 @@ import Tesseract from "tesseract.js";
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const INDEX_NAME = "nyc-code-compliance";
+const INDEX_NAME = process.env.PINECONE_INDEX || "codealgo";
 
 if (!PINECONE_API_KEY) {
   console.error("Missing PINECONE_API_KEY in .env");
