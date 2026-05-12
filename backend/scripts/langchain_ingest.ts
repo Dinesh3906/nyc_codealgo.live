@@ -18,18 +18,40 @@ if (!PINECONE_API_KEY) {
   process.exit(1);
 }
 
-// Function to generate embeddings using Pinecone server-side model
-async function generateEmbeddings(texts: string[], pc: Pinecone): Promise<number[][]> {
-  const model = "llama-text-embed-v2";
-  console.log(`   -> Generating embeddings for ${texts.length} chunks via Pinecone Inference (${model})...`);
+// Initialize local embedding model
+let embeddingModel: any = null;
+
+async function initEmbeddingModel() {
+  if (!embeddingModel) {
+    console.log("Loading local embedding model (Xenova/all-MiniLM-L6-v2)...");
+    embeddingModel = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+    console.log("✓ Embedding model loaded\n");
+  }
+  return embeddingModel;
+}
+
+// Function to generate embeddings using local model
+async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+  const model = await initEmbeddingModel();
+  const embeddings: number[][] = [];
   
-  const embeddings = await pc.inference.embed(
-    model,
-    texts,
-    { inputType: 'passage' }
-  );
+  console.log(`   -> Generating embeddings for ${texts.length} chunks (local model)...`);
   
-  return embeddings.data.map(e => Array.from((e as any).values as number[]));
+  for (let i = 0; i < texts.length; i++) {
+    try {
+      const output = await model(texts[i], { pooling: "mean", normalize: true });
+      embeddings.push(Array.from(output.data));
+      
+      if ((i + 1) % 20 === 0) {
+        console.log(`   -> Progress: ${i + 1}/${texts.length} embeddings generated`);
+      }
+    } catch (error: any) {
+      console.error(`   -> Error generating embedding for chunk ${i}: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  return embeddings;
 }
 
 // OCR a page using Tesseract.js
@@ -204,7 +226,7 @@ async function extractTextFromPDF(filePath: string): Promise<{ text: string; pag
 
 async function ingest() {
   console.log("Starting NYC Building Code PDF Ingestion...");
-  console.log("Using Pinecone Inference (llama-text-embed-v2 - 1024 dimensions)");
+  console.log("Using local Xenova/all-MiniLM-L6-v2 for embeddings (FREE)");
   console.log("Using enhanced text extraction with diagram detection\n");
 
   const pinecone = new Pinecone({ apiKey: PINECONE_API_KEY as string });
@@ -292,7 +314,7 @@ async function ingest() {
       const texts = validChunks.map(c => c.pageContent);
       let vectors;
       try {
-        vectors = await generateEmbeddings(texts, pinecone);
+        vectors = await generateEmbeddings(texts);
       } catch (embeddingError: any) {
         console.error(`   -> ✗ EMBEDDING ERROR: ${embeddingError.message}`);
         console.error(`   -> Stack: ${embeddingError.stack}`);
@@ -357,7 +379,7 @@ async function ingest() {
             r.id && 
             r.values && 
             Array.isArray(r.values) && 
-            r.values.length === 1024 &&
+            r.values.length === 384 &&
             r.metadata
           );
           
