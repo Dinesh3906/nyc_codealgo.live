@@ -50,7 +50,7 @@ export async function checkComplianceTS(housePlanPath: string) {
   );
   
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
-  const index = pc.Index("nyc-code-compliance");
+  const index = pc.Index(process.env.PINECONE_INDEX as string);
 
   const queryResponse = await index.query({
     topK: 20,
