@@ -209,7 +209,7 @@ ${contexts.substring(0, 20000)}`
     }
   ];
 
-  console.log(`[RAG] Sending to OpenRouter model: meta-llama/llama-3.1-8b-instruct:free`);
+  console.log(`[RAG] Sending to OpenRouter model: meta-llama/llama-3.1-8b-instruct`);
 
   // Use OpenRouter directly via fetch (Groq SDK constructs wrong URL paths)
   const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -222,7 +222,7 @@ ${contexts.substring(0, 20000)}`
     },
     body: JSON.stringify({
       messages: messages,
-      model: "meta-llama/llama-3.1-8b-instruct:free",
+      model: "meta-llama/llama-3.1-8b-instruct",
       temperature: 0,
       max_tokens: 3000,
       response_format: { type: "json_object" }
