@@ -232,7 +232,7 @@ async function ingest() {
   const pinecone = new Pinecone({ apiKey: PINECONE_API_KEY as string });
   const index = pinecone.Index(INDEX_NAME);
 
-  const pdfDir = path.join(__dirname, "../../pdfs");
+  const pdfDir = path.join(__dirname, "../pdfs");
   if (!fs.existsSync(pdfDir)) {
     console.error(`PDF directory not found at ${pdfDir}`);
     return;
