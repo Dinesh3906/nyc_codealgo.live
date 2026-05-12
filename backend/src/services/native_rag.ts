@@ -69,8 +69,11 @@ export async function checkComplianceTS(housePlanPath: string) {
     .map(m => `[Source: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
-  console.log(`[DEBUG] Groq Key Check: Length=${process.env.GROQ_API_KEY?.length}, EndsWith=${process.env.GROQ_API_KEY?.substring((process.env.GROQ_API_KEY?.length || 0) - 4)}`);
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  // Use OpenRouter as proxy (Groq blocks AWS IPs)
+  const groq = new Groq({
+    apiKey: process.env.OPENROUTER_API_KEY,
+    baseURL: 'https://openrouter.ai/api/v1'
+  });
   
   console.log(`[RAG] Retrieved context: ${contexts.length} chars from ${queryResponse.matches.length} documents`);
   console.log(`[RAG] Context preview (first 300 chars): ${contexts.substring(0, 300)}...`);
@@ -212,11 +215,11 @@ ${contexts.substring(0, 20000)}`
     }
   ];
 
-  console.log(`[RAG] Sending to Groq model: llama-3.1-8b-instant`);
+  console.log(`[RAG] Sending to OpenRouter model: meta-llama/llama-3.1-8b-instant`);
 
   const chatCompletion = await groq.chat.completions.create({
     messages: messages,
-    model: "llama-3.1-8b-instant",
+    model: "meta-llama/llama-3.1-8b-instant",
     temperature: 0,
     max_tokens: 3000,
     response_format: { type: "json_object" }
