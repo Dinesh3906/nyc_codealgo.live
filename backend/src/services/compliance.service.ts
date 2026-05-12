@@ -80,7 +80,7 @@ export class CompliancePipeline {
       }, 5000);
 
       // STEP 5: Execute Full TS RAG Loop
-      const agentResponse = await checkComplianceTS(absoluteFilePath);
+      const agentResponse = await checkComplianceTS(absoluteFilePath) as any;
 
       clearInterval(progressTimer);
 

@@ -286,13 +286,11 @@ ${contexts.substring(0, 20000)}`
      console.log(`[RAG] Using fallback values: ${percentage}%, 0 issues`);
   }
 
-  const finalResult = {
+  return {
     percentage: resultJSON.percentage || 50,
     summary: resultJSON.summary || "Analysis complete. Review details below.",
-    issues: resultJSON.issues || []
+    issues: resultJSON.issues || [],
+    is_valid_plan: resultJSON.is_valid_plan !== false, // default to true if missing
+    document_type: resultJSON.document_type || "unknown"
   };
-  
-  console.log(`[RAG] Final result: ${finalResult.percentage}%, ${finalResult.issues.length} issues, summary length: ${finalResult.summary.length}`);
-  
-  return finalResult;
 }
