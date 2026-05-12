@@ -9,6 +9,7 @@ import { X, Upload, FileText, CheckCircle2, AlertCircle, Loader2, Download } fro
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface UploadPlanModalProps {
   isOpen: boolean;
@@ -46,13 +47,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         if (data.progress) setProgress(data.progress);
 
         const messages: Record<string, string> = {
-          'INITIALIZING': 'Initializing analysis...',
-          'EXTRACTING_DATA': 'Extracting plan data...',
-          'RETRIEVING_RULES': 'Retrieving NYC codes...',
-          'AI_ANALYZING': 'Analyzing compliance...',
-          'CHECKING_COMPLIANCE': 'Checking violations...',
-          'GENERATING_REPORT': 'Generating report...',
-          'COMPLETE': 'Analysis complete!'
+          'INITIALIZING': 'Initializing NYC Vectorless RAG Agent...',
+          'EXTRACTING_DATA': 'Extracting architectural metadata...',
+          'RETRIEVING_RULES': 'Retrieving 2022 NYC Building Codes...',
+          'AI_ANALYZING': 'Performing forensic compliance audit...',
+          'CHECKING_COMPLIANCE': 'Verifying safety & egress mandates...',
+          'GENERATING_REPORT': 'Compiling final forensic report...',
+          'COMPLETE': 'Analysis 100% complete!'
         };
         
         if (data.status && messages[data.status]) {
@@ -275,33 +276,81 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           )}
 
           {(status === 'uploading' || status === 'analyzing') && (
-            <div className="text-center py-12 space-y-6">
-              <div className="relative w-24 h-24 mx-auto">
-                <svg className="w-full h-full -rotate-90">
-                  <circle
-                    cx="48" cy="48" r="44"
-                    className="fill-none stroke-slate-200 stroke-[8]"
-                  />
-                  <circle
-                    cx="48" cy="48" r="44"
-                    className="fill-none stroke-slate-900 stroke-[8] transition-all duration-500"
-                    strokeDasharray={276}
-                    strokeDashoffset={276 - (276 * progress) / 100}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold">{progress}%</span>
-                </div>
-              </div>
+            <div className="text-center py-12 space-y-8 relative overflow-hidden">
+              {/* Animated Glow Background */}
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.1, 0.2, 0.1]
+                }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full"
+              />
 
-              <div>
-                <h3 className="text-lg font-semibold mb-1">
-                  {status === 'uploading' ? 'Uploading...' : statusMessage}
-                </h3>
-                <p className="text-sm text-slate-500">
-                  {status === 'uploading' ? 'Preparing your file' : 'This may take a moment'}
-                </p>
+              <div className="relative z-10 space-y-6">
+                <div className="relative w-32 h-32 mx-auto">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle
+                      cx="64" cy="64" r="58"
+                      className="fill-none stroke-slate-100 dark:stroke-slate-800 stroke-[6]"
+                    />
+                    <motion.circle
+                      cx="64" cy="64" r="58"
+                      className="fill-none stroke-primary stroke-[6]"
+                      strokeDasharray={364}
+                      initial={{ strokeDashoffset: 364 }}
+                      animate={{ strokeDashoffset: 364 - (364 * progress) / 100 }}
+                      transition={{ duration: 0.5, ease: "easeInOut" }}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <motion.span 
+                      key={progress}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-3xl font-bold tracking-tight"
+                    >
+                      {progress}%
+                    </motion.span>
+                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Progress</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={statusMessage}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                        {status === 'uploading' ? 'Securing Connection...' : statusMessage}
+                      </h3>
+                      <p className="text-sm text-slate-500 max-w-[280px] mx-auto mt-1">
+                        {status === 'uploading' 
+                          ? 'Encrypting and uploading your architectural data to our secure servers.'
+                          : 'Our senior AI plan examiner is verifying your designs against 113 NYC Building Code chapters.'}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                {/* Progress Steps Visualizer */}
+                <div className="flex justify-center gap-1.5 px-8">
+                  {[10, 30, 50, 70, 90, 100].map((step, idx) => (
+                    <motion.div 
+                      key={idx}
+                      className={`h-1.5 rounded-full flex-1 transition-colors duration-500 ${
+                        progress >= step ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-800'
+                      }`}
+                      animate={progress >= step ? { scaleY: [1, 1.5, 1] } : {}}
+                      transition={{ duration: 0.4 }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}

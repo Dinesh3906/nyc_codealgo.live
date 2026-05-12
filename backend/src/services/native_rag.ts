@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import Groq from "groq-sdk";
 import { pipeline } from "@xenova/transformers";
+import { OCRService } from "./ocr.service";
 
 // Local embedding model
 let embeddingModel: any = null;
@@ -31,12 +32,16 @@ export async function checkComplianceTS(housePlanPath: string) {
     const data = await pdfParse(dataBuffer);
     housePlanText = data.text;
   } else {
-    // If it's an image, in a full product we'd use tesseract.js here.
-    // For this MVP, we will simulate reading the text:
-    housePlanText = "Detected House Plan Text (Fallback)";
+    // Use OCR Service for images
+    console.log(`[RAG] Image detected, performing OCR...`);
+    housePlanText = await OCRService.extractText(housePlanPath, "image");
   }
 
   console.log(`[RAG] Extracted ${housePlanText.length} characters from plan.`);
+
+  if (housePlanText.trim().length < 20) {
+    throw new Error("This document contains too little text for analysis. Please ensure you are uploading a clear, high-resolution architectural plan.");
+  }
 
   // Generate query embedding using OpenAI
   const queryVector = await generateQueryEmbedding(

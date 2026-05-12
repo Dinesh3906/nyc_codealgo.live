@@ -152,6 +152,13 @@ export class CompliancePipeline {
       });
 
       console.log(`[PIPELINE] Finished process for plan ${planId}. Score: ${finalResult.score}`);
+
+      // CLEANUP: Remove file from disk after successful analysis
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`[PIPELINE] Cleaned up file: ${filePath}`);
+      }
+
       return finalResult;
 
     } catch (error: any) {
@@ -165,6 +172,11 @@ export class CompliancePipeline {
         console.error("[PIPELINE] Failed to update DB on error", dbErr);
       }
       
+      // CLEANUP: Remove file from disk after failed analysis
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch(e) {}
+      }
+
       throw error;
     }
   }

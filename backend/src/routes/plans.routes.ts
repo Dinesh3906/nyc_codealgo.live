@@ -25,46 +25,68 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
-
-router.post('/upload', protect, upload.single('plan'), checkUsageLimit, async (req: any, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded' });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF and Images (PNG/JPG) are allowed.'));
+    }
   }
+});
 
-  const { id: userId } = req.user;
-  const filePath = req.file.path;
-  const fileName = req.file.originalname;
-
-  try {
-    // Create DB entry (status: processing)
-    const planId = uuidv4();
-    await pool.query(
-      'INSERT INTO `plan` (id, userId, fileName, fileUrl, status) VALUES (?, ?, ?, ?, ?)',
-      [planId, userId, fileName, filePath, 'processing']
-    );
-
-    const plan = { id: planId };
-
-    // START ASYNC BACKGROUND PROCESS
-    setImmediate(async () => {
-      try {
-        await CompliancePipeline.run(plan.id, filePath, req.file.mimetype);
-      } catch (err) {
-        console.error("Pipeline error:", err);
-        await pool.query('UPDATE `plan` SET status = ? WHERE id = ?', ['failed', plan.id]);
-        io.emit('analysis-status', { planId: plan.id, status: 'FAILED', error: "Scan processing failed." });
+router.post('/upload', protect, checkUsageLimit, (req: any, res: any) => {
+  upload.single('plan')(req, res, async (err: any) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File too large. Maximum size is 10MB.' });
       }
-    });
+      return res.status(400).json({ message: `Upload error: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ message: err.message });
+    }
 
-    res.status(202).json({ 
-      message: 'Plan uploaded successfully. AI analysis started.', 
-      planId: plan.id 
-    });
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
 
-  } catch (error) {
-    res.status(500).json({ message: 'Upload error', error });
-  }
+    const { id: userId } = req.user;
+    const filePath = req.file.path;
+    const fileName = req.file.originalname;
+
+    try {
+      // Create DB entry (status: processing)
+      const planId = uuidv4();
+      await pool.query(
+        'INSERT INTO `plan` (id, userId, fileName, fileUrl, status) VALUES (?, ?, ?, ?, ?)',
+        [planId, userId, fileName, filePath, 'processing']
+      );
+
+      const plan = { id: planId };
+
+      // START ASYNC BACKGROUND PROCESS
+      setImmediate(async () => {
+        try {
+          await CompliancePipeline.run(plan.id, filePath, req.file.mimetype);
+        } catch (err) {
+          console.error("Pipeline error:", err);
+          await pool.query('UPDATE `plan` SET status = ? WHERE id = ?', ['failed', plan.id]);
+          io.emit('analysis-status', { planId: plan.id, status: 'FAILED', error: "Scan processing failed." });
+        }
+      });
+
+      res.status(202).json({ 
+        message: 'Plan uploaded successfully. AI analysis started.', 
+        planId: plan.id 
+      });
+
+    } catch (error) {
+      res.status(500).json({ message: 'Upload error', error });
+    }
+  });
 });
 
 // GET all plans for user
