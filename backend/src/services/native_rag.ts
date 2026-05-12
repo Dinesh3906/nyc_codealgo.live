@@ -116,6 +116,9 @@ CLASSIFICATION RULE:
 OUTPUT IF NOT A PLAN:
 Return EXACTLY:
 {
+  "is_valid_plan": false,
+  "document_type": "non_architectural",
+  "confidence": "high",
   "percentage": 100,
   "summary": "This document is NOT an architectural plan. No building code analysis could be performed.",
   "issues": []
@@ -175,6 +178,9 @@ PHASE 5: OUTPUT FORMAT (STRICT JSON ONLY)
 
 Required JSON structure:
 {
+  "is_valid_plan": true,
+  "document_type": "architectural_plan | structural_plan | mep_plan | dob_form | unknown",
+  "confidence": "high | medium | low",
   "percentage": number (0-100),
   "summary": "Clear, strict, professional compliance verdict",
   "issues": [

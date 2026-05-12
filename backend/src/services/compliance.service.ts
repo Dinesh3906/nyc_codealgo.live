@@ -84,6 +84,40 @@ export class CompliancePipeline {
 
       clearInterval(progressTimer);
 
+      // PHASE 1: Document Classification Check
+      if (agentResponse.is_valid_plan === false) {
+        console.log(`[PIPELINE] Document rejected as NON-PLAN: ${agentResponse.document_type}`);
+        
+        const nonPlanResult: ComplianceResult = {
+          compliant: true, // Mark as "safe" but non-architectural
+          score: 100,
+          summary: agentResponse.summary || "This document is NOT an architectural plan. No building code analysis could be performed.",
+          status: 'complete',
+          issuesCount: 0,
+          severity: { critical: 0, major: 0, minor: 0 },
+          issues: []
+        };
+
+        await pool.query(
+          'UPDATE `plan` SET status = ?, analysisResult = ? WHERE id = ?',
+          ['analyzed', JSON.stringify(nonPlanResult), planId]
+        );
+
+        io.emit('analysis-status', { 
+          planId, 
+          status: 'COMPLETE', 
+          progress: 100, 
+          report: nonPlanResult 
+        });
+
+        // CLEANUP: Remove file from disk
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+
+        return nonPlanResult;
+      }
+
       // STEP 6: Progress update before compiling final report
       io.emit('analysis-status', { 
         planId, 

@@ -2,14 +2,14 @@
 
 ## Milestone 1: Pipeline Optimization & UI Synchronization
 
-### Phase 1: AI Logic Unification
-- [ ] Merge advanced prompt logic from `ai.service.ts` into `native_rag.ts`.
-- [ ] Implement document classification check (Plan vs Non-Plan).
-- [ ] Enhance scoring model with strict NYC DOB rules.
+### Phase 1: AI Logic Unification (COMPLETED)
+- [x] Merge advanced prompt logic from `ai.service.ts` into `native_rag.ts`.
+- [x] Implement document classification check (Plan vs Non-Plan).
+- [x] Enhance scoring model with strict NYC DOB rules.
 
-### Phase 2: Status Synchronization
-- [ ] Update `compliance.service.ts` to emit all statuses expected by `UploadPlanModal.tsx`.
-- [ ] Add `EXTRACTING_DATA` and `RETRIEVING_RULES` statuses.
+### Phase 2: Status Synchronization (COMPLETED)
+- [x] Update `compliance.service.ts` to emit all statuses expected by `UploadPlanModal.tsx`.
+- [x] Add `EXTRACTING_DATA` and `RETRIEVING_RULES` statuses.
 
 ### Phase 3: Pricing & Credits (COMPLETED)
 - [x] Update Pro Pack from 11 to 12 scans.
