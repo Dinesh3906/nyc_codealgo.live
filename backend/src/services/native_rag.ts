@@ -16,7 +16,7 @@ async function generateQueryEmbedding(text: string, pc: Pinecone): Promise<numbe
     { inputType: 'query' }
   );
   
-  return Array.from(embeddings.data[0].values as number[]);
+  return Array.from((embeddings.data[0] as any).values as number[]);
 }
 
 export async function checkComplianceTS(housePlanPath: string) {

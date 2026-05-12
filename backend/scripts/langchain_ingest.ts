@@ -29,7 +29,7 @@ async function generateEmbeddings(texts: string[], pc: Pinecone): Promise<number
     { inputType: 'passage' }
   );
   
-  return embeddings.data.map(e => Array.from(e.values as number[]));
+  return embeddings.data.map(e => Array.from((e as any).values as number[]));
 }
 
 // OCR a page using Tesseract.js
