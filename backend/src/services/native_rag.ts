@@ -5,21 +5,18 @@ import Groq from "groq-sdk";
 import { pipeline } from "@xenova/transformers";
 import { OCRService } from "./ocr.service";
 
-// Local embedding model
-let embeddingModel: any = null;
-
-async function initEmbeddingModel() {
-  if (!embeddingModel) {
-    embeddingModel = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
-  }
-  return embeddingModel;
-}
-
-// Function to generate query embedding using local model
-async function generateQueryEmbedding(text: string): Promise<number[]> {
-  const model = await initEmbeddingModel();
-  const output = await model(text, { pooling: "mean", normalize: true });
-  return Array.from(output.data);
+// Function to generate query embedding using Pinecone server-side model
+async function generateQueryEmbedding(text: string, pc: Pinecone): Promise<number[]> {
+  const model = "llama-text-embed-v2";
+  console.log(`[RAG] Generating embedding via Pinecone Inference (${model})...`);
+  
+  const embeddings = await pc.inference.embed(
+    model,
+    [text],
+    { inputType: 'query' }
+  );
+  
+  return Array.from(embeddings[0].values as number[]);
 }
 
 export async function checkComplianceTS(housePlanPath: string) {
@@ -43,13 +40,14 @@ export async function checkComplianceTS(housePlanPath: string) {
     throw new Error("This document contains too little text for analysis. Please ensure you are uploading a clear, high-resolution architectural plan.");
   }
 
-  // Generate query embedding using OpenAI
+  const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
+
+  // Generate query embedding using Pinecone server-side model (1024 dimensions)
   const queryVector = await generateQueryEmbedding(
     "NYC building code compliance residential commercial construction safety regulations requirements " + 
-    housePlanText.substring(0, 500)
+    housePlanText.substring(0, 500),
+    pc
   );
-  
-  const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
   const index = pc.Index(process.env.PINECONE_INDEX as string);
 
   const queryResponse = await index.query({
