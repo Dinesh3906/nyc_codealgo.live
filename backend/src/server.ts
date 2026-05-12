@@ -9,7 +9,7 @@ const REQUIRED_ENV_VARS = [
   'PINECONE_API_KEY',
   'DB_HOST',
   'DB_USER',
-  'DB_PASSWORD',
+  'DB_PASS',
   'DB_NAME',
   'JWT_SECRET'
 ];

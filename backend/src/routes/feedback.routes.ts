@@ -100,15 +100,36 @@ router.get('/', protect, async (req: any, res) => {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 
+    // Ensure table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id VARCHAR(36) PRIMARY KEY,
+        userId VARCHAR(36),
+        type VARCHAR(50),
+        subject VARCHAR(255),
+        message TEXT,
+        images TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+
     const [feedbacks]: any = await pool.query(
       'SELECT f.*, u.name as userName, u.email as userEmail FROM feedback f LEFT JOIN user u ON f.userId = u.id ORDER BY f.createdAt DESC'
     );
 
-    // Parse images JSON for each feedback
-    const formattedFeedbacks = feedbacks.map((fb: any) => ({
-      ...fb,
-      images: fb.images ? JSON.parse(fb.images) : []
-    }));
+    // Parse images JSON for each feedback safely
+    const formattedFeedbacks = feedbacks.map((fb: any) => {
+      let parsedImages = [];
+      try {
+        parsedImages = fb.images ? JSON.parse(fb.images) : [];
+      } catch (e) {
+        console.warn(`[FEEDBACK] Failed to parse images for feedback ${fb.id}:`, fb.images);
+      }
+      return {
+        ...fb,
+        images: parsedImages
+      };
+    });
 
     console.log(`[ADMIN] Fetched ${formattedFeedbacks.length} feedbacks.`);
     res.json(formattedFeedbacks);
