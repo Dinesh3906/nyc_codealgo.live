@@ -62,7 +62,10 @@ export async function checkComplianceTS(housePlanPath: string) {
     .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const apiKey = process.env.GROQ_API_KEY;
+  console.log(`[DEBUG] Using Groq Key starting with: ${apiKey ? apiKey.substring(0, 8) + '...' : 'MISSING'}`);
+
+  const groq = new Groq({ apiKey: apiKey });
 
   // Prepare multi-modal content for Vision or standard text for PDF
   const userContent: any[] = [
