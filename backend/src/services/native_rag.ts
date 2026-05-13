@@ -62,14 +62,7 @@ export async function checkComplianceTS(housePlanPath: string) {
     .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
-  // GROQ-TUNNEL: We use the OpenRouter gateway to bypass AWS IP blocks
-  // This keeps the model 100% Groq but ensures it works on AWS.
-  const groq = new Groq({ 
-    apiKey: process.env.OPENROUTER_API_KEY, 
-    baseURL: 'https://openrouter.ai/api/v1' 
-  });
-
-  // Prepare multi-modal content for Vision or standard text for PDF
+  // GROQ-TUNNEL: Direct fetch to OpenRouter to bypass AWS IP blocks on Groq
   const userContent: any[] = [
     {
       type: "text",
@@ -92,13 +85,22 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
   }
 
-  console.log(`[RAG] Sending to GROQ-TUNNEL (Model: groq/llama-3.2-90b-vision-preview)`);
+  console.log(`[RAG] Sending to GROQ-TUNNEL via direct fetch...`);
 
-  const chatCompletion = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: `SYSTEM ROLE:
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://nyccodes.codealgo.live',
+      'X-Title': 'NYC Code Compliance Analyzer'
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/llama-3.2-90b-vision-instruct',
+      messages: [
+        {
+          role: "system",
+          content: `SYSTEM ROLE:
 You are a Zero-Tolerance NYC Forensic Plan Examiner. You are NOT an assistant; you are a strict auditor. 
 
 STRICT AUDIT RULES:
@@ -106,19 +108,27 @@ STRICT AUDIT RULES:
 2. ZERO BLUFFING: Do not give a 100% score unless the plan is perfect. 
 3. VISUAL ANALYSIS: If an image is provided, look at the lines, symbols, and labels directly.
 
-OUTPUT: Return STRICT JSON ONLY.`
-      },
-      {
-        role: "user",
-        content: userContent
-      }
-    ],
-    model: "groq/llama-3.2-90b-vision-preview", // Tunneled Groq model
-    temperature: 0.1,
-    response_format: { type: "json_object" }
+OUTPUT: Return STRICT JSON ONLY with these fields: percentage (0-100), summary (string), issues (array of {title, description, severity, code, recommendation}), is_valid_plan (boolean), document_type (string), building_info (object), systems_detected (array).`
+        },
+        {
+          role: "user",
+          content: userContent
+        }
+      ],
+      temperature: 0.1,
+      response_format: { type: "json_object" }
+    })
   });
 
-  const rawOut = chatCompletion.choices[0]?.message?.content || "{}";
+  if (!response.ok) {
+    const errBody = await response.text();
+    console.error(`[RAG] OpenRouter error ${response.status}:`, errBody);
+    throw new Error(`Tunnel error: ${response.status} - ${errBody}`);
+  }
+
+  const chatCompletion = await response.json();
+  console.log(`[RAG] GROQ-TUNNEL response received successfully!`);
+  const rawOut = chatCompletion.choices?.[0]?.message?.content || "{}";
   
   let resultJSON;
   try {
