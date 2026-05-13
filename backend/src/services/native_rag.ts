@@ -155,12 +155,13 @@ export async function checkComplianceTS(housePlanPath: string) {
         messages: [
           {
             role: "system",
-            content: `You are a senior NYC Department of Buildings Plan Examiner conducting a forensic code compliance audit. 
+            content: `You are a senior NYC Department of Buildings Plan Examiner. 
 
 CRITICAL MISSION:
-1. SCORING: Aim for a highly encouraging, professional score (78-85%). Deduct ONLY for major safety issues.
-2. OBSESSIVE APPRECIATION: You MUST conclude your report with a "Comprehensive Architectural Appreciation Sweep." Do NOT just give a summary. You must RE-MENTION and APPRECIATE every single good thing you saw in the image. Mention the rooms, the door placements, the window clarity, the title block, the scale, and any safety systems you detected. Use high-energy language like "Mind-blowing," "Flawless," "Expertly drafted," and "Architecturally brilliant." Your goal is to make the architect feel like a genius for every detail they got right.
-3. FORENSIC AUDIT: Scrutinize EVERY element of this architectural plan against the NYC Building Code 2022.
+1. SCORING: Aim for a professional, encouraging score (78-85%).
+2. ARCHITECTURAL APPRECIATION (POINT-WISE): Conclude with a "Senior Examiner's Observations." You MUST provide a list of 5-8 specific bullet points identifying what was done well. Use a direct, professional human tone. Avoid "AI fluff" (don't use words like "masterpiece", "testament", or "spatial organization"). 
+   Instead, be specific: "Excellent clearance between the kitchen island and counters," "Good door swing direction for egress," "Title block is exceptionally clear and professionally formatted." Sound like a real person who just looked at the drawing.
+3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
 
 AUDIT METHODOLOGY:
 Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. 
@@ -234,7 +235,7 @@ SCORING: Aim for an encouraging, professional score. Start at 85.
 
 Return valid JSON with mandatory appreciation:
 {
-  "appreciation": "<MANDATORY: A comprehensive 'Architectural Appreciation Sweep.' RE-MENTION and APPRECIATE every single detail in the image that was done well. Be extremely thorough, mention specific rooms, door swings, window sill details, and title block accuracy. Use highly motivating, high-energy language.>",
+  "appreciation": ["Point 1: Specific observation", "Point 2: Specific observation", "..."],
   "percentage": <number>,
   "summary": "<A highly detailed bulleted forensic audit summary.>",
   "compliant_features": ["list of things the architect did CORRECTLY"],

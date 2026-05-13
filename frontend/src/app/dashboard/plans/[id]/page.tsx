@@ -413,16 +413,23 @@ export default function PlanDetailPage() {
         doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 8, { align: 'center' });
         currentY += 25;
 
-        const appText = doc.splitTextToSize(analysisResult.appreciation, pageWidth - 60);
+        const appLines = (analysisResult.appreciation || "").split('\n').filter((l: string) => l.trim().length > 0);
+        
         doc.setFillColor(245, 247, 250); // Light blue-grey background
-        doc.roundedRect(25, currentY - 5, pageWidth - 50, (appText.length * 6) + 15, 3, 3, 'F');
+        const cardHeight = (appLines.length * 8) + 15;
+        doc.roundedRect(25, currentY - 5, pageWidth - 50, cardHeight, 3, 3, 'F');
         
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'italic');
-        doc.text(appText, 35, currentY + 5, { lineHeightFactor: 1.6 });
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
         
-        currentY += (appText.length * 6) + 35;
+        appLines.forEach((line: string, idx: number) => {
+          const cleanLine = line.replace(/^[•\-\*]\s*/, ''); // Remove bullets if present
+          const wrappedLine = doc.splitTextToSize(`• ${cleanLine}`, pageWidth - 70);
+          doc.text(wrappedLine, 35, currentY + 5 + (idx * 8));
+        });
+        
+        currentY += cardHeight + 25;
 
         // Final Stamp System
         const stampX = pageWidth - 65;
