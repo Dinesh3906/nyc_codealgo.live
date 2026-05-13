@@ -29,6 +29,8 @@ export interface ComplianceResult {
   summary: string;
   status: 'complete' | 'failed';
   issuesCount: number;
+  building_info?: any;
+  systems_detected?: any[];
 }
 
 export class CompliancePipeline {
@@ -169,7 +171,9 @@ export class CompliancePipeline {
         status: 'complete',
         issuesCount: issues.length,
         severity: severity,
-        issues: issues
+        issues: issues,
+        building_info: agentResponse.building_info || {},
+        systems_detected: agentResponse.systems_detected || []
       };
 
       // STEP 7-8: DB Storage & Socket Completion
