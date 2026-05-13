@@ -169,7 +169,7 @@ export default function PlanDetailPage() {
       doc.line(20, currentY, pageWidth - 20, currentY);
       currentY += 15;
 
-      // Executive Summary
+      // executive summary card
       doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
@@ -180,33 +180,42 @@ export default function PlanDetailPage() {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       
-      const splitSummary = doc.splitTextToSize(analysisResult.summary || "No summary available.", pageWidth - 50);
-      const summaryBoxHeight = (splitSummary.length * 5) + 12;
+      // Clean up raw markdown
+      const cleanSummary = (analysisResult.summary || "No summary available.")
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/### (.*?)\n/g, '$1\n');
       
-      doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
-      doc.roundedRect(20, currentY, pageWidth - 40, summaryBoxHeight, 4, 4, 'F');
+      const splitSummary = doc.splitTextToSize(cleanSummary, pageWidth - 50);
+      const summaryBoxHeight = (splitSummary.length * 5) + 15;
       
-      doc.text(splitSummary, 25, currentY + 10, { lineHeightFactor: 1.5 });
-      currentY += summaryBoxHeight + 15;
+      // Check if summary fits
+      if (currentY + summaryBoxHeight > pageHeight - 35) {
+        doc.addPage();
+        currentY = 30;
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Executive Summary (cont.)", 20, currentY);
+        currentY += 10;
+      }
 
-      // Compliant Features
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+      doc.roundedRect(20, currentY, pageWidth - 40, summaryBoxHeight, 4, 4, 'FD');
+      
+      doc.text(splitSummary, 25, currentY + 11, { lineHeightFactor: 1.5 });
+      currentY += summaryBoxHeight + 20;
+
+      // Compliant Features Section
       if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
-        if (currentY > pageHeight - 60) {
+        if (currentY > pageHeight - 45) {
           doc.addPage();
           currentY = 30;
         }
         
         doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
-        doc.roundedRect(20, currentY, pageWidth - 40, 10, 4, 4, 'F');
+        doc.roundedRect(20, currentY, pageWidth - 40, 10, 2, 2, 'F');
         
-        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("POSITIVE FINDINGS & COMPLIANT FEATURES", 25, currentY + 7);
-        currentY += 18;
-
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
@@ -218,7 +227,10 @@ export default function PlanDetailPage() {
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         
         analysisResult.compliant_features.forEach((feature: string) => {
-          if (currentY > pageHeight - 30) {
+          const sf = doc.splitTextToSize(feature, pageWidth - 60);
+          const featureHeight = (sf.length * 5) + 4;
+
+          if (currentY + featureHeight > pageHeight - 30) {
             doc.addPage();
             currentY = 25;
           }
@@ -228,9 +240,8 @@ export default function PlanDetailPage() {
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           
-          const sf = doc.splitTextToSize(feature, pageWidth - 60);
           doc.text(sf, 32, currentY);
-          currentY += (sf.length * 5) + 4;
+          currentY += featureHeight;
         });
         currentY += 10;
       }

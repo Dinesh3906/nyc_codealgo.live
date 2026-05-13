@@ -258,7 +258,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       doc.line(20, currentY, pageWidth - 20, currentY);
       currentY += 15;
 
-      // Executive Summary Card
+      // executive summary card
       doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
@@ -277,6 +277,17 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       const splitSummary = doc.splitTextToSize(cleanSummary, pageWidth - 50);
       const summaryBoxHeight = (splitSummary.length * 5) + 15;
       
+      // Check if summary fits, if not, move to new page
+      if (currentY + summaryBoxHeight > pageHeight - 35) {
+        doc.addPage();
+        currentY = 30;
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Executive Summary (cont.)", 20, currentY);
+        currentY += 10;
+      }
+
       doc.setFillColor(248, 250, 252); // Slate 50
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
       doc.roundedRect(20, currentY, pageWidth - 40, summaryBoxHeight, 4, 4, 'FD');
@@ -286,7 +297,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
       // Compliant Features Section
       if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
-        if (currentY > pageHeight - 80) {
+        // Safe check for footer overlap
+        if (currentY > pageHeight - 45) {
           doc.addPage();
           currentY = 30;
         }
@@ -305,7 +317,10 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         
         analysisResult.compliant_features.forEach((feature: string) => {
-          if (currentY > pageHeight - 30) {
+          const sf = doc.splitTextToSize(feature, pageWidth - 60);
+          const featureHeight = (sf.length * 5) + 4;
+
+          if (currentY + featureHeight > pageHeight - 30) {
             doc.addPage();
             currentY = 25;
           }
@@ -315,16 +330,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           
-          const sf = doc.splitTextToSize(feature, pageWidth - 60);
           doc.text(sf, 32, currentY);
-          currentY += (sf.length * 5) + 4;
+          currentY += featureHeight;
         });
         currentY += 10;
       }
 
       // Systems Verification Table
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        if (currentY > pageHeight - 60) {
+        if (currentY > pageHeight - 65) {
           doc.addPage();
           currentY = 30;
         }
@@ -337,6 +351,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
         autoTable(doc, {
           startY: currentY,
+          margin: { bottom: 30 },
           head: [['System Description', 'Status', 'Assessment Notes']],
           body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "No issues identified"]),
           theme: 'striped',
