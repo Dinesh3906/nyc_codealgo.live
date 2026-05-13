@@ -60,18 +60,10 @@ export async function checkComplianceTS(housePlanPath: string) {
 
   console.log(`[RAG] Pinecone returned ${queryResponse.matches.length} matches`);
   
-  // Log top 3 matches to verify relevance
-  queryResponse.matches.slice(0, 3).forEach((match, idx) => {
-    console.log(`[RAG] Match ${idx + 1}: score=${match.score?.toFixed(3)}, source=${match.metadata?.source}`);
-  });
-
   const contexts = queryResponse.matches
     .map(m => `[Source: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
-  console.log(`[RAG] Retrieved context: ${contexts.length} chars from ${queryResponse.matches.length} documents`);
-  console.log(`[RAG] Context preview (first 300 chars): ${contexts.substring(0, 300)}...`);
-  
   const messages: any[] = [
     {
       role: "system",
@@ -131,6 +123,17 @@ PHASE 2: DATA EXTRACTION (ONLY IF VALID PLAN)
 Extract ONLY what is explicitly visible. DO NOT infer beyond evidence.
 
 --------------------------------------------------
+PHASE 2.1: BUILDING METADATA EXTRACTION (FOR FORENSIC REPORT)
+--------------------------------------------------
+Extract the following (mark as "Unknown" if not visible):
+- Project Name/Address
+- Occupancy Classification (e.g., R-3, B, M)
+- Construction Type (e.g., Type I, Type II, Type III, Type IV, Type V)
+- Number of Stories
+- Building Height
+- Primary Use (Residential, Commercial, Mixed-Use, etc.)
+
+--------------------------------------------------
 PHASE 3: CODE EVALUATION (STRICT + NON-HALLUCINATIVE)
 --------------------------------------------------
 
@@ -144,6 +147,16 @@ Evaluate ONLY using these NYC codes:
 - NYC Fuel Gas Code (2022) [FGC]
 - NYC Zoning Resolution [ZR]
 - Accessibility (ADA + NYC mods) [ADA]
+
+--------------------------------------------------
+PHASE 3.1: SYSTEMS ANALYSIS (FOR FORENSIC REPORT)
+--------------------------------------------------
+Identify status (detected | missing | partial) and provide notes for:
+- Means of Egress (Exits, Stairs, Corridors)
+- Fire Protection (Sprinklers, Alarms, Standpipes)
+- Accessibility (ADA Ramps, Clearances, Elevators)
+- Structural Systems
+- MEP Systems
 
 --------------------------------------------------
 CRITICAL SAFETY RULE:
@@ -178,6 +191,16 @@ Required JSON structure:
 {
   "is_valid_plan": true,
   "document_type": "architectural_plan | structural_plan | mep_plan | dob_form | unknown",
+  "building_info": {
+    "project_name": "string",
+    "occupancy_group": "string",
+    "construction_type": "string",
+    "stories": "string",
+    "primary_use": "string"
+  },
+  "systems_detected": [
+    {"name": "string", "status": "detected | missing | partial", "notes": "string"}
+  ],
   "confidence": "high | medium | low",
   "percentage": number (0-100),
   "summary": "Clear, strict, professional compliance verdict",
@@ -202,16 +225,15 @@ STRICT RULES:
       content: `Analyze the following building plan content:
 
 BUILDING PLAN CONTENT:
-${housePlanText.substring(0, 4000)}
+${housePlanText.substring(0, 5000)}
 
-RELEVANT NYC BUILDING CODE SECTIONS:
+RELEVANT NYC BUILDING CODE SECTIONS (FOR VERIFICATION):
 ${contexts.substring(0, 20000)}`
     }
   ];
 
-  console.log(`[RAG] Sending to OpenRouter model: meta-llama/llama-3.1-8b-instruct`);
+  console.log(`[RAG] Sending to OpenRouter model: meta-llama/llama-3.3-70b-instruct`);
 
-  // Use OpenRouter directly via fetch (Groq SDK constructs wrong URL paths)
   const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -222,9 +244,9 @@ ${contexts.substring(0, 20000)}`
     },
     body: JSON.stringify({
       messages: messages,
-      model: "meta-llama/llama-3.1-8b-instruct",
+      model: "meta-llama/llama-3.3-70b-instruct",
       temperature: 0,
-      max_tokens: 3000,
+      max_tokens: 4000,
       response_format: { type: "json_object" }
     })
   });
@@ -237,75 +259,33 @@ ${contexts.substring(0, 20000)}`
 
   const chatCompletion = await openRouterResponse.json();
   const rawOut = chatCompletion.choices[0]?.message?.content || "{}";
-  console.log(`[RAG] OpenRouter response length: ${rawOut.length} chars`);
-  console.log(`[RAG] Full response:\n${rawOut}`);
-  console.log(`[RAG] ` + '='.repeat(80));
   
   let resultJSON;
   try {
-     // Remove markdown code blocks if present
-     let cleanedOutput = rawOut.trim();
-     
-     // Remove ```json and ``` markers
-     cleanedOutput = cleanedOutput.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-     
-     // Extract JSON object - find the first { and last }
+     let cleanedOutput = rawOut.trim().replace(/```json\s*/gi, '').replace(/```\s*/g, '');
      const firstBrace = cleanedOutput.indexOf('{');
      const lastBrace = cleanedOutput.lastIndexOf('}');
      
-     if (firstBrace === -1 || lastBrace === -1) {
-       throw new Error("No JSON object found in response");
-     }
+     if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object found");
      
      const jsonStr = cleanedOutput.substring(firstBrace, lastBrace + 1);
-     console.log(`[RAG] Attempting to parse JSON (${jsonStr.length} chars)...`);
-     
      resultJSON = JSON.parse(jsonStr);
-     console.log(`[RAG] ✓ Parsed successfully: ${resultJSON.percentage}%, ${resultJSON.issues?.length || 0} issues`);
-     
-     // Validate the structure
-     if (!resultJSON.percentage) {
-       console.warn(`[RAG] Warning: No percentage in response`);
-       resultJSON.percentage = 50;
-     }
-     if (!resultJSON.summary) {
-       console.warn(`[RAG] Warning: No summary in response`);
-       resultJSON.summary = "Analysis completed";
-     }
-     if (!Array.isArray(resultJSON.issues)) {
-       console.warn(`[RAG] Warning: Issues is not an array, converting...`);
-       resultJSON.issues = [];
-     }
-     
   } catch(e: any) {
-     console.error(`[RAG] ✗ JSON parse error: ${e.message}`);
-     console.error(`[RAG] Raw output for debugging:\n${rawOut}`);
-     
-     // Fallback: extract what we can from the text
-     const percentMatch = rawOut.match(/(\d+)%/);
-     const percentage = percentMatch ? parseInt(percentMatch[1]) : 50;
-     
-     // Try to extract a summary from the text
-     let summary = "Analysis completed. The building plan has been reviewed against NYC Building Code.";
-     const summaryMatch = rawOut.match(/summary["\s:]+([^"]+)/i);
-     if (summaryMatch) {
-       summary = summaryMatch[1].substring(0, 200);
-     }
-     
+     console.error(`[RAG] JSON parse error: ${e.message}`);
      resultJSON = { 
-       percentage,
-       summary,
+       percentage: 50,
+       summary: "Analysis completed with partial results.",
        issues: []
      };
-     
-     console.log(`[RAG] Using fallback values: ${percentage}%, 0 issues`);
   }
 
   return {
     percentage: resultJSON.percentage || 50,
     summary: resultJSON.summary || "Analysis complete. Review details below.",
     issues: resultJSON.issues || [],
-    is_valid_plan: resultJSON.is_valid_plan !== false, // default to true if missing
-    document_type: resultJSON.document_type || "unknown"
+    is_valid_plan: resultJSON.is_valid_plan !== false,
+    document_type: resultJSON.document_type || "unknown",
+    building_info: resultJSON.building_info || {},
+    systems_detected: resultJSON.systems_detected || []
   };
 }

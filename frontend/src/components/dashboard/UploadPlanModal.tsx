@@ -126,90 +126,194 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
   const handleDownload = () => {
     if (!analysisResult || !file) return;
 
-    import('jspdf').then(async (jsPDFModule) => {
+    Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable')
+    ]).then(async ([jsPDFModule, autoTableModule]) => {
       const jsPDF = jsPDFModule.default;
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // --- COLOR PALETTE ---
+      const colors = {
+        primary: [16, 185, 129], // Teal/Green
+        secondary: [15, 23, 42], // Dark Blue/Slate
+        text: [51, 65, 85],      // Slate 600
+        lightText: [148, 163, 184], // Slate 400
+        border: [226, 232, 240],   // Slate 200
+        critical: [220, 38, 38],   // Red
+        major: [245, 158, 11],     // Amber
+        minor: [59, 130, 246]      // Blue
+      };
 
-      doc.setFontSize(20);
-      doc.setTextColor(15, 23, 42);
-      doc.text("NYC Building Code Compliance Report", 20, 25);
+      // --- COVER PAGE ---
+      // Decorative header background
+      doc.setFillColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      doc.rect(0, 0, pageWidth, 60, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text("NYC CODE COMPLIANCE", 20, 30);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal');
+      doc.text("FORENSIC ANALYSIS REPORT", 20, 45);
 
-      doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Project: ${file.name}`, 20, 35);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 40);
-      doc.text(`Compliance Score: ${analysisResult.score || 0}%`, 20, 45);
+      // Score Gauge (Mockup)
+      const score = analysisResult.score || 0;
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect( pageWidth - 80, 20, 60, 60, 10, 10, 'F');
+      
+      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      doc.setFontSize(30);
+      doc.text(`${score}%`, pageWidth - 50, 52, { align: 'center' });
+      doc.setFontSize(8);
+      doc.text("COMPLIANCE", pageWidth - 50, 62, { align: 'center' });
+      doc.text("SCORE", pageWidth - 50, 67, { align: 'center' });
 
+      // Project Details Section
+      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
       doc.setFontSize(14);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Executive Summary", 20, 60);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Project Information", 20, 90);
+      
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+      doc.line(20, 95, pageWidth - 20, 95);
 
+      const buildingInfo = analysisResult.building_info || {};
+      const projectData = [
+        ["Project Name:", buildingInfo.project_name || file.name],
+        ["Document ID:", activePlanId?.substring(0, 8).toUpperCase() || "N/A"],
+        ["Date Analyzed:", new Date().toLocaleDateString()],
+        ["Occupancy Group:", buildingInfo.occupancy_group || "Unknown / Not Detected"],
+        ["Construction Type:", buildingInfo.construction_type || "Unknown / Not Detected"],
+        ["Floor Count:", buildingInfo.stories || "Unknown"],
+        ["Primary Use:", buildingInfo.primary_use || "N/A"]
+      ];
+
+      (doc as any).autoTable({
+        startY: 100,
+        body: projectData,
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 2 },
+        columnStyles: { 0: { fontStyle: 'bold', width: 40 } }
+      });
+
+      let finalY = (doc as any).lastAutoTable.finalY + 15;
+
+      // Executive Summary
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Executive Summary", 20, finalY);
+      doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
+      
       doc.setFontSize(10);
-      doc.setTextColor(71, 85, 105);
-      const summaryText = analysisResult.summary || "No summary available";
-      const splitSummary = doc.splitTextToSize(summaryText, 170);
-      doc.text(splitSummary, 20, 70);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      const splitSummary = doc.splitTextToSize(analysisResult.summary || "No summary available", pageWidth - 40);
+      doc.text(splitSummary, 20, finalY + 15);
+
+      finalY += (splitSummary.length * 5) + 25;
+
+      // Systems Analyzed
+      if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        doc.text("Systems Verification Status", 20, finalY);
+        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
+
+        const systemsData = analysisResult.systems_detected.map((s: any) => [
+          s.name, 
+          s.status.toUpperCase(), 
+          s.notes || "Analyzed against NYC Building Code 2022"
+        ]);
+
+        (doc as any).autoTable({
+          startY: finalY + 10,
+          head: [['System Name', 'Status', 'Assessment Notes']],
+          body: systemsData,
+          headStyles: { fillColor: colors.secondary },
+          columnStyles: {
+            1: { halign: 'center', fontStyle: 'bold' }
+          }
+        });
+        
+        finalY = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // --- PAGE 2: DETAILED FINDINGS ---
+      doc.addPage();
+      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Detailed Compliance Findings", 20, 25);
+      doc.line(20, 30, pageWidth - 20, 30);
 
       const issues = analysisResult.issues || [];
-      if (issues.length > 0) {
-        let yPos = 70 + (splitSummary.length * 5) + 15;
-        
-        doc.setFontSize(14);
-        doc.setTextColor(15, 23, 42);
-        doc.text("Identified Issues", 20, yPos);
-        yPos += 10;
+      if (issues.length === 0) {
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(12);
+        doc.text("✓ No violations or critical safety issues identified.", 20, 45);
+      } else {
+        const issuesData = issues.map((issue: any, idx: number) => [
+          idx + 1,
+          issue.severity.toUpperCase(),
+          issue.title,
+          issue.rule || issue.code || "NYC BC",
+          issue.description + "\n\nRecommendation: " + (issue.recommendation || issue.suggestion || "Review with professional")
+        ]);
 
-        doc.setFontSize(9);
-        issues.forEach((issue: any, idx: number) => {
-          if (yPos > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          const severityText = (issue.severity || 'minor').toUpperCase();
-          doc.setTextColor(220, 38, 38);
-          doc.text(`${idx + 1}. [${severityText}]`, 20, yPos);
-          
-          doc.setTextColor(15, 23, 42);
-          doc.setFontSize(10);
-          const titleText = issue.title || 'Compliance Issue';
-          doc.text(titleText, 20, yPos + 5);
-          
-          doc.setFontSize(9);
-          doc.setTextColor(71, 85, 105);
-          const descText = issue.description || 'No description';
-          const splitDesc = doc.splitTextToSize(descText, 170);
-          doc.text(splitDesc, 20, yPos + 10);
-          
-          doc.setTextColor(100, 116, 139);
-          doc.text(`Code: ${issue.rule || issue.code || 'N/A'}`, 20, yPos + 10 + (splitDesc.length * 4) + 3);
-          
-          if (issue.suggestion || issue.recommendation) {
-            doc.setTextColor(15, 23, 42);
-            const recText = issue.suggestion || issue.recommendation;
-            const splitRec = doc.splitTextToSize(`→ ${recText}`, 170);
-            doc.text(splitRec, 20, yPos + 10 + (splitDesc.length * 4) + 8);
-            yPos += 10 + (splitDesc.length * 4) + 8 + (splitRec.length * 4) + 5;
-          } else {
-            yPos += 10 + (splitDesc.length * 4) + 8;
+        (doc as any).autoTable({
+          startY: 40,
+          head: [['#', 'Severity', 'Title', 'Code Section', 'Description & Recommendation']],
+          body: issuesData,
+          headStyles: { fillColor: colors.secondary },
+          columnStyles: {
+            0: { width: 10 },
+            1: { width: 25, fontStyle: 'bold' },
+            2: { width: 35, fontStyle: 'bold' },
+            3: { width: 30 },
+            4: { width: 70 }
+          },
+          didDrawCell: (data: any) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const severity = data.cell.raw;
+              if (severity === 'CRITICAL') doc.setTextColor(colors.critical[0], colors.critical[1], colors.critical[2]);
+              else if (severity === 'MAJOR') doc.setTextColor(colors.major[0], colors.major[1], colors.major[2]);
+              else doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
+            }
           }
         });
       }
 
-      const pageCount = (doc as any).internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
+      // Methodology Section
+      const finalFindingsY = (doc as any).lastAutoTable?.finalY || 60;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      doc.text("Methodology & Scope", 20, finalFindingsY + 20);
+      doc.line(20, finalFindingsY + 25, pageWidth - 20, finalFindingsY + 25);
+      
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      const methodology = "This analysis was performed using the NYC House Code AI forensic plan examiner engine. The engine utilizes a Vectorless RAG architecture to cross-reference extracted architectural data against 113 chapters of the 2022 NYC Building Code, Fire Code, and Zoning Resolutions. This report is intended for advisory purposes only and does not constitute a legal permit or official DOB approval.";
+      const splitMethod = doc.splitTextToSize(methodology, pageWidth - 40);
+      doc.text(splitMethod, 20, finalFindingsY + 35);
+
+      // Footer logic
+      const totalPages = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.text(
-          `Generated by NYC House Code AI - Page ${i} of ${pageCount}`,
-          doc.internal.pageSize.getWidth() / 2,
-          doc.internal.pageSize.getHeight() - 10,
-          { align: 'center' }
-        );
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
+        doc.text(`CONFIDENTIAL - NYC House Code AI Compliance Engine`, 20, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 20, pageHeight - 10, { align: 'right' });
       }
 
-      doc.save(`Compliance_Report_${file.name.split('.')[0]}.pdf`);
+      doc.save(`Forensic_Compliance_Report_${file.name.split('.')[0]}.pdf`);
     });
   };
 

@@ -37,46 +37,46 @@ export class CompliancePipeline {
       console.log(`[PIPELINE] Starting NYC Vectorless RAG Agent for plan ${planId}`);
 
       // STEP 1: Initialization progress
-      io.emit('analysis-status', { 
-        planId, 
-        status: 'INITIALIZING', 
+      io.emit('analysis-status', {
+        planId,
+        status: 'INITIALIZING',
         progress: 10,
         message: 'Initializing Vectorless RAG Agent across 114 NYC models...'
       });
 
       // STEP 2: Data Extraction
-      io.emit('analysis-status', { 
-        planId, 
-        status: 'EXTRACTING_DATA', 
+      io.emit('analysis-status', {
+        planId,
+        status: 'EXTRACTING_DATA',
         progress: 20,
         message: 'Extracting technical data from building plan...'
       });
       const absoluteFilePath = path.resolve(filePath);
-      
+
       // STEP 3: Rule Retrieval
-      io.emit('analysis-status', { 
-        planId, 
-        status: 'RETRIEVING_RULES', 
+      io.emit('analysis-status', {
+        planId,
+        status: 'RETRIEVING_RULES',
         progress: 40,
         message: 'Querying NYC Building Code vector database (113 chapters)...'
       });
 
       // STEP 4: AI Analysis
-      io.emit('analysis-status', { 
-        planId, 
-        status: 'AI_ANALYZING', 
+      io.emit('analysis-status', {
+        planId,
+        status: 'AI_ANALYZING',
         progress: 60,
         message: 'Senior Plan Examiner is verifying compliance against NYC mandates...'
       });
 
       // Add a mid-analysis progress update to keep the bar moving
       const progressTimer = setInterval(() => {
-         io.emit('analysis-status', { 
-           planId, 
-           status: 'CHECKING_COMPLIANCE', 
-           progress: Math.min(85, Math.floor(Math.random() * 10) + 70),
-           message: 'Performing cross-document safety verification...'
-         });
+        io.emit('analysis-status', {
+          planId,
+          status: 'CHECKING_COMPLIANCE',
+          progress: Math.min(85, Math.floor(Math.random() * 10) + 70),
+          message: 'Performing cross-document safety verification...'
+        });
       }, 5000);
 
       // STEP 5: Execute Full TS RAG Loop
@@ -87,7 +87,7 @@ export class CompliancePipeline {
       // PHASE 1: Document Classification Check
       if (agentResponse.is_valid_plan === false) {
         console.log(`[PIPELINE] Document rejected as NON-PLAN: ${agentResponse.document_type}`);
-        
+
         const nonPlanResult: ComplianceResult = {
           compliant: true, // Mark as "safe" but non-architectural
           score: 100,
@@ -103,11 +103,11 @@ export class CompliancePipeline {
           ['analyzed', JSON.stringify(nonPlanResult), planId]
         );
 
-        io.emit('analysis-status', { 
-          planId, 
-          status: 'COMPLETE', 
-          progress: 100, 
-          report: nonPlanResult 
+        io.emit('analysis-status', {
+          planId,
+          status: 'COMPLETE',
+          progress: 100,
+          report: nonPlanResult
         });
 
         // CLEANUP: Remove file from disk
@@ -119,9 +119,9 @@ export class CompliancePipeline {
       }
 
       // STEP 6: Progress update before compiling final report
-      io.emit('analysis-status', { 
-        planId, 
-        status: 'GENERATING_REPORT', 
+      io.emit('analysis-status', {
+        planId,
+        status: 'GENERATING_REPORT',
         progress: 90,
         message: 'Compiling final forensic compliance report...'
       });
@@ -129,7 +129,7 @@ export class CompliancePipeline {
       // STEP 6: Format result for NYC House Code UI
       let issues: AnalysisIssue[] = [];
       let severity = { critical: 0, major: 0, minor: 0 };
-      
+
       // Use issues from RAG response if available
       if (agentResponse.issues && Array.isArray(agentResponse.issues) && agentResponse.issues.length > 0) {
         issues = agentResponse.issues.map((issue: any) => ({
@@ -139,7 +139,7 @@ export class CompliancePipeline {
           rule: issue.code || "NYC Building Code 2022",
           suggestion: issue.recommendation || "Review with a licensed professional"
         }));
-        
+
         // Count severity
         issues.forEach(issue => {
           if (issue.severity === 'critical') severity.critical++;
@@ -156,7 +156,7 @@ export class CompliancePipeline {
           rule: "NYC Building Code 2022",
           suggestion: "Consult with a licensed architect or engineer for detailed review"
         });
-        
+
         if (agentResponse.percentage < 70) severity.critical = 1;
         else if (agentResponse.percentage < 85) severity.major = 1;
         else severity.minor = 1;
@@ -178,11 +178,11 @@ export class CompliancePipeline {
         ['analyzed', JSON.stringify(finalResult), planId]
       );
 
-      io.emit('analysis-status', { 
-        planId, 
-        status: 'COMPLETE', 
-        progress: 100, 
-        report: finalResult 
+      io.emit('analysis-status', {
+        planId,
+        status: 'COMPLETE',
+        progress: 100,
+        report: finalResult
       });
 
       console.log(`[PIPELINE] Finished process for plan ${planId}. Score: ${finalResult.score}`);
@@ -198,17 +198,17 @@ export class CompliancePipeline {
     } catch (error: any) {
       console.error(`[PIPELINE] Fatal error:`, error);
       io.emit('analysis-status', { planId, status: 'FAILED', error: error.message });
-      
+
       // Update DB to failed
       try {
         await pool.query('UPDATE `plan` SET status = ? WHERE id = ?', ['failed', planId]);
       } catch (dbErr) {
         console.error("[PIPELINE] Failed to update DB on error", dbErr);
       }
-      
+
       // CLEANUP: Remove file from disk after failed analysis
       if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath); } catch(e) {}
+        try { fs.unlinkSync(filePath); } catch (e) { }
       }
 
       throw error;
