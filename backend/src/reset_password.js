@@ -18,14 +18,16 @@ async function reset() {
   console.log(`Resetting password for ${email}...`);
 
   const [result] = await connection.execute(
-    'UPDATE users SET password = ? WHERE email = ?',
+    'UPDATE `user` SET password = ? WHERE email = ?',
     [hashedPassword, email]
   );
 
   if (result.affectedRows > 0) {
     console.log('✅ Password successfully reset to: Dinesh123');
   } else {
-    console.log('❌ User not found.');
+    console.log('❌ User not found. Checking if `user` exist...');
+    const [users] = await connection.execute('SELECT email FROM `user` LIMIT 5');
+    console.log('Current `user` in DB:', users.map(u => u.email));
   }
 
   await connection.end();
