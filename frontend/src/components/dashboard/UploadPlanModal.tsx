@@ -127,9 +127,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
     if (!analysisResult || !file) return;
 
     try {
-      const { default: jsPDF } = await import('jspdf');
-      await import('jspdf-autotable');
+      const [jsPDFModule, autoTableModule] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+      ]);
       
+      const jsPDF = jsPDFModule.default;
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
