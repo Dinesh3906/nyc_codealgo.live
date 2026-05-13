@@ -114,7 +114,7 @@ export async function checkComplianceTS(housePlanPath: string) {
       text: `Analyze this NYC architectural plan for code compliance. 
       
       GLOBAL GROUND TRUTH (Massive Retrieval from 113 NYC Building Code PDFs):
-      ${contexts.substring(0, 300000)}
+      ${contexts.substring(0, 150000)}
       
       EXTRACTED DATA:
       ${housePlanText.substring(0, 5000)}`
@@ -130,22 +130,31 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
   }
 
-  console.log(`[RAG] === VERSION 3.0 STRICT MODE === Sending to OpenRouter...`);
+  console.log(`[RAG] === VERSION 4.1 STABLE === Sending ${contexts.substring(0, 150000).length} chars of PDF data...`);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://nyccodes.codealgo.live',
-      'X-Title': 'NYC Code Compliance Analyzer'
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.0-flash-001',
-      messages: [
-        {
-          role: "system",
-          content: `You are a senior NYC Department of Buildings Plan Examiner conducting a forensic code compliance audit. Your job is to scrutinize EVERY element of this architectural plan against the NYC Building Code 2022, NYC Fire Code, NYC Zoning Resolution, and ADA Standards.
+  let response;
+  let retryCount = 0;
+  const maxRetries = 2;
+  const models = ['google/gemini-2.0-flash-001', 'google/gemini-flash-1.5'];
+
+  while (retryCount <= maxRetries) {
+    const currentModel = models[retryCount % models.length];
+    console.log(`[RAG] Attempt ${retryCount + 1} using ${currentModel}...`);
+
+    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://nyccodes.codealgo.live',
+        'X-Title': 'NYC Code Compliance Analyzer'
+      },
+      body: JSON.stringify({
+        model: currentModel,
+        messages: [
+          {
+            role: "system",
+            content: `You are a senior NYC Department of Buildings Plan Examiner conducting a forensic code compliance audit. Your job is to scrutinize EVERY element of this architectural plan against the NYC Building Code 2022, NYC Fire Code, NYC Zoning Resolution, and ADA Standards.
 
 AUDIT METHODOLOGY:
 Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. There is NO limit on the number of violations. Report EVERY single one you find.
@@ -227,21 +236,31 @@ Return valid JSON:
   "building_info": {"type":"...","rooms":[{"name":"...","dimensions":"..."}]},
   "systems_detected": ["list of safety systems actually visible on the plan"]
 }`
-        },
-        {
-          role: "user",
-          content: userContent
-        }
-      ],
-      temperature: 0.1,
-      response_format: { type: "json_object" }
-    })
-  });
+          },
+          {
+            role: "user",
+            content: userContent
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      })
+    });
 
-  if (!response.ok) {
-    const errBody = await response.text();
-    console.error(`[RAG] OpenRouter error ${response.status}:`, errBody);
-    throw new Error(`Tunnel error: ${response.status} - ${errBody}`);
+    if (response.status === 429) {
+      console.warn(`[RAG] Hit rate limit (429). Waiting 5s before retry ${retryCount + 1}...`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      retryCount++;
+      continue;
+    }
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      throw new Error(`Tunnel error: ${response.status} - ${errBody}`);
+    }
+
+    // Success!
+    break;
   }
 
   const chatCompletion = await response.json();
