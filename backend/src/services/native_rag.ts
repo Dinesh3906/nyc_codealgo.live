@@ -236,7 +236,8 @@ Return valid JSON:
   "is_valid_plan": <boolean>,
   "document_type": "<type>",
   "building_info": {"type":"...","rooms":[{"name":"...","dimensions":"..."}]},
-  "systems_detected": ["list of safety systems actually visible on the plan"]
+  "systems_detected": ["list of safety systems actually visible on the plan"],
+  "appreciation": "<A professional and highly encouraging concluding paragraph appreciating the architect's work. Mention specific strengths found in the plan (e.g. 'Excellent use of space', 'Well-placed egress points', 'Mind-blowing attention to detail on the title block'). End with a positive outlook on the project.>"
 } `
           },
           {
@@ -297,6 +298,7 @@ Return valid JSON:
     is_valid_plan: resultJSON.is_valid_plan !== false,
     document_type: resultJSON.document_type || "unknown",
     building_info: resultJSON.building_info || {},
-    systems_detected: systemsDetected
+    systems_detected: systemsDetected,
+    appreciation: resultJSON.appreciation || "We appreciate the professional quality and detail presented in this architectural plan. The design demonstrates a solid foundation for NYC code compliance."
   };
 }

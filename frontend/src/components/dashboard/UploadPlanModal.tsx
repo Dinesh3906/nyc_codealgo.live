@@ -465,6 +465,40 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           }
         });
       }
+      
+      // --- CONCLUDING ASSESSMENT & APPRECIATION ---
+      if (analysisResult.appreciation) {
+        doc.addPage();
+        currentY = 40;
+
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.rect(20, currentY, pageWidth - 40, 12, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 8, { align: 'center' });
+        currentY += 25;
+
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'italic');
+        
+        const appText = doc.splitTextToSize(analysisResult.appreciation, pageWidth - 60);
+        doc.text(appText, 30, currentY, { lineHeightFactor: 1.6 });
+        
+        currentY += (appText.length * 6) + 30;
+
+        // Final Stamp Placeholder
+        doc.setDrawColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        doc.setLineWidth(0.5);
+        doc.rect(pageWidth - 70, currentY, 50, 25);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        doc.text("AI PLAN EXAMINER", pageWidth - 45, currentY + 10, { align: 'center' });
+        doc.text("NYC HOUSE CODE", pageWidth - 45, currentY + 18, { align: 'center' });
+      }
 
       // --- HEADER & FOOTER SYSTEM ---
       const totalPages = (doc as any).internal.getNumberOfPages();
