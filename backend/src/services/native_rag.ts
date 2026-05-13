@@ -96,7 +96,7 @@ export async function checkComplianceTS(housePlanPath: string) {
       'X-Title': 'NYC Code Compliance Analyzer'
     },
     body: JSON.stringify({
-      model: 'meta-llama/llama-3.2-90b-vision-instruct',
+      model: 'google/gemini-2.0-flash-001',
       messages: [
         {
           role: "system",
