@@ -43,22 +43,44 @@ export async function checkComplianceTS(housePlanPath: string) {
 
   console.log(`[RAG] Data prepared. Text: ${housePlanText.length} chars. Image: ${base64Image ? 'PRESENT' : 'NONE'}`);
 
-  // Generate query embedding for PDF context retrieval
-  const queryVector = await generateQueryEmbedding(
-    "NYC building code compliance residential commercial construction safety regulations " + 
-    housePlanText.substring(0, 500)
-  );
-  
+  // Multi-Query RAG: Search across multiple NYC code domains for maximum coverage
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
   const index = pc.Index(process.env.PINECONE_INDEX as string);
 
-  const queryResponse = await index.query({
-    topK: 20,
-    vector: queryVector,
-    includeMetadata: true,
-  });
+  const searchQueries = [
+    "NYC building code fire safety smoke detectors carbon monoxide alarms sprinkler requirements " + housePlanText.substring(0, 200),
+    "NYC building code means of egress exit doors emergency lighting travel distance corridors",
+    "NYC building code residential room dimensions minimum area ceiling height habitable spaces",
+    "NYC building code doors windows ADA accessibility wheelchair clearance ramp requirements",
+    "NYC building code stairs riser tread handrail guardrail headroom residential",
+    "NYC zoning resolution floor area ratio FAR setbacks architect stamp construction documents"
+  ];
 
-  const contexts = queryResponse.matches
+  console.log(`[RAG] Running ${searchQueries.length} targeted queries across 113 NYC code PDFs...`);
+
+  const allMatches: any[] = [];
+  const seenTexts = new Set<string>();
+
+  for (const query of searchQueries) {
+    const queryVector = await generateQueryEmbedding(query);
+    const queryResponse = await index.query({
+      topK: 10,
+      vector: queryVector,
+      includeMetadata: true,
+    });
+    
+    for (const match of queryResponse.matches) {
+      const text = match.metadata?.text || "";
+      if (!seenTexts.has(text.substring(0, 100))) {
+        seenTexts.add(text.substring(0, 100));
+        allMatches.push(match);
+      }
+    }
+  }
+
+  console.log(`[RAG] Retrieved ${allMatches.length} unique code sections from Pinecone (across ${seenTexts.size} chunks)`);
+
+  const contexts = allMatches
     .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
@@ -68,8 +90,8 @@ export async function checkComplianceTS(housePlanPath: string) {
       type: "text",
       text: `Analyze this NYC architectural plan for code compliance. 
       
-      GROUND TRUTH (NYC Building Code Rules from 113 PDFs):
-      ${contexts.substring(0, 15000)}
+      GROUND TRUTH (NYC Building Code Rules from 113 PDFs — ${allMatches.length} sections retrieved):
+      ${contexts.substring(0, 25000)}
       
       EXTRACTED DATA:
       ${housePlanText.substring(0, 3000)}`
