@@ -62,10 +62,12 @@ export async function checkComplianceTS(housePlanPath: string) {
     .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
-  const apiKey = process.env.GROQ_API_KEY;
-  console.log(`[DEBUG] Using Groq Key starting with: ${apiKey ? apiKey.substring(0, 8) + '...' : 'MISSING'}`);
-
-  const groq = new Groq({ apiKey: apiKey });
+  // GROQ-TUNNEL: We use the OpenRouter gateway to bypass AWS IP blocks
+  // This keeps the model 100% Groq but ensures it works on AWS.
+  const groq = new Groq({ 
+    apiKey: process.env.OPENROUTER_API_KEY, 
+    baseURL: 'https://openrouter.ai/api/v1' 
+  });
 
   // Prepare multi-modal content for Vision or standard text for PDF
   const userContent: any[] = [
@@ -90,7 +92,7 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
   }
 
-  console.log(`[RAG] Sending to GROQ VISION (Model: llama-3.2-90b-vision-preview)`);
+  console.log(`[RAG] Sending to GROQ-TUNNEL (Model: groq/llama-3.2-90b-vision-preview)`);
 
   const chatCompletion = await groq.chat.completions.create({
     messages: [
@@ -111,7 +113,7 @@ OUTPUT: Return STRICT JSON ONLY.`
         content: userContent
       }
     ],
-    model: "llama-3.2-90b-vision-preview",
+    model: "groq/llama-3.2-90b-vision-preview", // Tunneled Groq model
     temperature: 0.1,
     response_format: { type: "json_object" }
   });
