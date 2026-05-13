@@ -229,7 +229,7 @@ A typical residential sketch scores 15-35%. A professional blueprint scores 50-7
 Return valid JSON:
 {
   "percentage": <number>,
-  "summary": "<comprehensive audit summary>",
+  "summary": "<A highly detailed bulleted forensic audit summary. MUST include: 1. Total Issue Count. 2. Categorized bullet points for Critical, Major, and Minor findings with NYC code sections. 3. Final recommendation for DOB filing.>",
   "issues": [{"title":"...","description":"...","severity":"critical|major|minor","code":"NYC code section","recommendation":"..."}],
   "is_valid_plan": <boolean>,
   "document_type": "<type>",
