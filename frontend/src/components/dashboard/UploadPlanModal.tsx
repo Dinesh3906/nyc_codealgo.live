@@ -275,30 +275,41 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         .replace(/### (.*?)\n/g, '$1\n');
       
       const splitSummary = doc.splitTextToSize(cleanSummary, pageWidth - 50);
-      const summaryBoxHeight = (splitSummary.length * 5) + 15;
       
-      // Check if summary fits, if not, move to new page
-      if (currentY + summaryBoxHeight > pageHeight - 35) {
-        doc.addPage();
-        currentY = 30;
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Executive Summary (cont.)", 20, currentY);
-        currentY += 10;
-      }
-
-      doc.setFillColor(248, 250, 252); // Slate 50
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-      doc.roundedRect(20, currentY, pageWidth - 40, summaryBoxHeight, 4, 4, 'FD');
+      // Draw summary line-by-line with page break checks
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       
-      doc.text(splitSummary, 25, currentY + 11, { lineHeightFactor: 1.5 });
-      currentY += summaryBoxHeight + 20;
+      splitSummary.forEach((line: string) => {
+        if (currentY > pageHeight - 35) {
+          doc.addPage();
+          currentY = 30;
+          doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text("Executive Summary (cont.)", 20, currentY);
+          currentY += 12;
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        }
+        
+        // Draw a subtle left-border line for the "card" feel that handles breaks
+        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.2);
+        doc.setLineWidth(0.5);
+        doc.line(22, currentY - 3, 22, currentY + 2);
+        
+        doc.text(line, 27, currentY);
+        currentY += 5.5;
+      });
+      
+      currentY += 15;
 
       // Compliant Features Section
       if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
         // Safe check for footer overlap
-        if (currentY > pageHeight - 45) {
+        if (currentY > pageHeight - 50) {
           doc.addPage();
           currentY = 30;
         }
