@@ -400,6 +400,7 @@ export default function PlanDetailPage() {
         doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 8, { align: 'center' });
         currentY += 25;
 
+        const appText = doc.splitTextToSize(analysisResult.appreciation, pageWidth - 60);
         doc.setFillColor(245, 247, 250); // Light blue-grey background
         doc.roundedRect(25, currentY - 5, pageWidth - 50, (appText.length * 6) + 15, 3, 3, 'F');
         
