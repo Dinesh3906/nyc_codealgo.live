@@ -79,34 +79,35 @@ export default function PlanDetailPage() {
 
       // --- PAGE 1: COVER & EXECUTIVE SUMMARY ---
       
-      // Top Header Block
+      // Top Header Block - Full Page Width
       doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.rect(0, 0, pageWidth, 45, 'F');
+      doc.rect(0, 0, pageWidth, 55, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
+      doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
-      doc.text("FORENSIC COMPLIANCE AUDIT", 20, 28);
+      doc.text("FORENSIC COMPLIANCE AUDIT", 20, 32);
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
-      doc.text(new Date(plan.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - 20, 28, { align: 'right' });
+      doc.text("NYC HOUSE CODE AI COMPLIANCE ENGINE", 20, 42);
+      doc.text(new Date(plan.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - 20, 42, { align: 'right' });
 
       // Project Overview Section
-      let currentY = 60;
+      let currentY = 75;
       
       doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text("Project Overview", 20, currentY);
       
       const score = analysisResult.score || analysisResult.percentage || 0;
       
       // Score Box (Right side)
-      const scoreBoxW = 60;
+      const scoreBoxW = 65;
       const scoreBoxX = pageWidth - 20 - scoreBoxW;
-      doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
+      doc.setFillColor(250, 250, 250);
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
       doc.setLineWidth(0.5);
       doc.roundedRect(scoreBoxX, currentY - 5, scoreBoxW, 45, 4, 4, 'FD');
@@ -123,19 +124,19 @@ export default function PlanDetailPage() {
       }
       
       doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-      doc.setFontSize(28);
+      doc.setFontSize(32);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${score}%`, scoreBoxX + (scoreBoxW / 2), currentY + 15, { align: 'center' });
+      doc.text(`${score}%`, scoreBoxX + (scoreBoxW / 2), currentY + 16, { align: 'center' });
       
       doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text("COMPLIANCE SCORE", scoreBoxX + (scoreBoxW / 2), currentY + 25, { align: 'center' });
+      doc.text("COMPLIANCE SCORE", scoreBoxX + (scoreBoxW / 2), currentY + 26, { align: 'center' });
       
-      doc.setFontSize(7);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-      doc.text(statusText, scoreBoxX + (scoreBoxW / 2), currentY + 31, { align: 'center' });
+      doc.text(statusText, scoreBoxX + (scoreBoxW / 2), currentY + 33, { align: 'center' });
 
       // Metadata (Left side)
       const buildingInfo = analysisResult.building_info || {};
@@ -206,27 +207,37 @@ export default function PlanDetailPage() {
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text("✓ POSITIVE FINDINGS & COMPLIANT FEATURES", 25, currentY + 7);
+        currentY += 18;
+
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         
         analysisResult.compliant_features.forEach((feature: string) => {
-          if (currentY > pageHeight - 20) {
+          if (currentY > pageHeight - 30) {
             doc.addPage();
-            currentY = 20;
+            currentY = 25;
           }
           doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
-          doc.text("✓", 25, currentY);
+          doc.setFont('helvetica', 'bold');
+          doc.text("•", 25, currentY);
+          doc.setFont('helvetica', 'normal');
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           
           const sf = doc.splitTextToSize(feature, pageWidth - 60);
           doc.text(sf, 32, currentY);
-          currentY += (sf.length * 5) + 3;
+          currentY += (sf.length * 5) + 4;
         });
         currentY += 10;
       }
 
       // Systems Verification Table
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        if (currentY > pageHeight - 50) {
+        if (currentY > pageHeight - 60) {
           doc.addPage();
           currentY = 30;
         }
@@ -234,19 +245,19 @@ export default function PlanDetailPage() {
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text("Systems Verification", 20, currentY);
-        currentY += 5;
+        doc.text("Safety Systems Verification", 20, currentY);
+        currentY += 6;
 
         autoTableModule.default(doc, {
           startY: currentY,
-          head: [['System Name', 'Status', 'Assessment Notes']],
-          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
-          theme: 'grid',
+          head: [['System Description', 'Status', 'Assessment Notes']],
+          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "No issues identified"]),
+          theme: 'striped',
           headStyles: { 
-            fillColor: colors.bgLight as [number, number, number], 
+            fillColor: [241, 245, 249],
             textColor: colors.primary as [number, number, number],
             fontStyle: 'bold',
-            lineWidth: 0
+            fontSize: 9
           },
           bodyStyles: {
             textColor: colors.text as [number, number, number]
