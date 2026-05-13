@@ -1,14 +1,11 @@
 import axios from 'axios';
 
 // Default to the production URL from upstream, but allow override via env variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
-  process.env.NODE_ENV === 'development'
-    ? 'http://localhost:5000/api'
-    : 'https://cofuncion.com/nyc-house-code-backend/api'
-);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.codealgo.live/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 300000, // 5 minutes for AI processing
 });
 
 // Attach JWT token from persisted Zustand auth store to every request

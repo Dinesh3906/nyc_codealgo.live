@@ -10,16 +10,27 @@ import leadsRoutes from './routes/leads.routes';
 import feedbackRoutes from './routes/feedback.routes';
 
 const app = express();
-const corsOrigin = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigins = [
+  'https://nyccodes.codealgo.live',
+  'http://localhost:3000',
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL
+].filter(Boolean) as string[];
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: corsOrigin,
-    methods: ['GET', 'POST'],
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true
   },
 });
 
-app.use(cors({ origin: corsOrigin }));
+app.use(cors({ 
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
