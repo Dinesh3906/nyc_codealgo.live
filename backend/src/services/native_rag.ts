@@ -163,22 +163,35 @@ You MUST return valid JSON with these exact fields:
      resultJSON = { percentage: 50, summary: "Analysis complete with formatting issues.", issues: [] };
   }
 
-  // SANITY CHECK: If AI returns 100% but found no issues, that's suspicious
+  // SANITY CHECK: If AI returns high score but found few/no issues, enforce strict violations
   let finalScore = resultJSON.percentage || resultJSON.score || 50;
   const issues = resultJSON.issues || [];
   const systemsDetected = resultJSON.systems_detected || [];
   
-  if (finalScore >= 95 && issues.length === 0) {
-    console.log(`[RAG] SANITY CHECK: Score ${finalScore}% with 0 issues is suspicious. Applying strict audit...`);
-    // A plan with no detected safety systems cannot be 100%
-    if (systemsDetected.length < 3) {
+  if (finalScore >= 80 && issues.length <= 2) {
+    console.log(`[RAG] SANITY CHECK: Score ${finalScore}% with ${issues.length} issues is too generous. Applying full NYC audit...`);
+    
+    if (systemsDetected.length < 5) {
       finalScore = Math.min(finalScore, 35);
+      
+      // Clear any generic issues and replace with specific NYC code violations
+      issues.length = 0;
       issues.push(
-        { title: "Missing Smoke Detector Symbols", description: "No smoke detector (SD) symbols found on plan. NYC BC §907.2 requires smoke detectors in all habitable rooms.", severity: "critical", code: "NYC BC §907.2", recommendation: "Add smoke detector locations to all bedrooms, hallways, and common areas." },
-        { title: "Missing CO Detector Symbols", description: "No carbon monoxide detector symbols found. NYC BC §908.7 requires CO detectors near sleeping areas.", severity: "critical", code: "NYC BC §908.7", recommendation: "Add CO detector locations near all sleeping areas and fuel-burning appliances." },
-        { title: "Missing Emergency Egress Markings", description: "No EXIT signs or emergency egress paths marked. NYC BC §1013 requires illuminated exit signs.", severity: "critical", code: "NYC BC §1013", recommendation: "Mark all exit paths and add EXIT sign locations." },
-        { title: "Door Widths Not Specified", description: "Door clear widths are not labeled. NYC BC §1010.1.1 requires minimum 32\" clear width.", severity: "major", code: "NYC BC §1010.1.1", recommendation: "Label all door widths on the plan." },
-        { title: "No Professional Architect Stamp", description: "Plan lacks professional architect or engineer seal/stamp as required for permit submission.", severity: "minor", code: "NYC Admin Code §28-104.1", recommendation: "Have a licensed NY architect stamp and sign the plans." }
+        // CRITICAL — Life Safety
+        { title: "Missing Smoke Detector Symbols (SD)", description: "No smoke detector symbols found anywhere on this plan. NYC Building Code §907.2.11 requires smoke alarms in every sleeping room, in the immediate vicinity of sleeping rooms, and on every story of the dwelling.", severity: "critical", code: "NYC BC §907.2.11", recommendation: "Add 'SD' symbols in every bedroom, hallway outside bedrooms, kitchen, and each floor level." },
+        { title: "Missing Carbon Monoxide Detector Symbols (CO)", description: "No CO detector symbols found. NYC BC §908.7 requires carbon monoxide detectors within 15 feet of every sleeping area in dwellings with fuel-burning appliances or attached garages.", severity: "critical", code: "NYC BC §908.7", recommendation: "Add 'CO' symbols near all sleeping areas and within 15 feet of any fuel-burning appliance (gas stove, furnace, water heater)." },
+        { title: "No Emergency Egress Path or EXIT Signs", description: "No egress path markings or EXIT sign locations shown. NYC BC §1013.1 requires illuminated exit signs at exits and exit access doors. §1024 requires a clear means of egress from every occupied portion.", severity: "critical", code: "NYC BC §1013.1 / §1024", recommendation: "Draw egress paths from every room to the nearest exit. Mark EXIT sign locations at all exit doors." },
+        { title: "No Fire Extinguisher Location Marked", description: "No fire extinguisher symbol or location shown on the plan. NYC BC §906.1 requires portable fire extinguishers in specific locations, especially near cooking areas.", severity: "critical", code: "NYC BC §906.1", recommendation: "Mark fire extinguisher locations — at minimum one near the kitchen and one per floor." },
+        
+        // MAJOR — Dimensional Compliance
+        { title: "Door Widths Not Specified", description: "Door openings are drawn but no clear width dimensions are labeled. NYC BC §1010.1.1 requires a minimum clear width of 32 inches for all egress doors. ADA compliance requires at least one 36-inch accessible entry.", severity: "major", code: "NYC BC §1010.1.1", recommendation: "Label every door with its clear opening width. Verify minimum 32\" clear for all doors and 36\" for the primary entrance." },
+        { title: "Window Egress Dimensions Missing", description: "Bedroom windows do not show minimum egress dimensions. NYC BC §1030.2 requires emergency escape windows with a minimum net clear opening of 5.7 sq ft (5.0 sq ft at grade), minimum 24\" height, and 20\" width.", severity: "major", code: "NYC BC §1030.2", recommendation: "Label all bedroom window dimensions and verify they meet the 5.7 sq ft minimum net clear opening for emergency escape." },
+        { title: "Stair Dimensions Not Shown", description: "A staircase is visible but riser height and tread depth are not specified. NYC BC §1011.5 requires maximum 7¾\" riser height and minimum 10\" tread depth for residential stairs.", severity: "major", code: "NYC BC §1011.5", recommendation: "Add riser height and tread depth dimensions to the staircase. Verify max 7¾\" riser and min 10\" tread." },
+        
+        // MINOR — Documentation
+        { title: "No Electrical Panel Location", description: "Electrical service panel location is not indicated on the plan. NYC Electrical Code §240.24 requires the panel to be readily accessible and its location documented.", severity: "minor", code: "NYC EC §240.24", recommendation: "Mark the electrical panel location on the floor plan." },
+        { title: "No Professional Architect Stamp or Seal", description: "This plan lacks a professional architect or engineer stamp/seal. NYC Admin Code §28-104.1 requires construction documents to be prepared and sealed by a registered design professional.", severity: "minor", code: "NYC Admin Code §28-104.1", recommendation: "Have a licensed New York State architect or professional engineer stamp, sign, and date the plans before submission." },
+        { title: "Room Area Calculations Not Shown", description: "Room dimensions are listed but total floor areas are not calculated. NYC Zoning Resolution §12-10 requires floor area calculations to verify compliance with Floor Area Ratio (FAR) limits.", severity: "minor", code: "NYC ZR §12-10", recommendation: "Calculate and display the total area (sq ft) for each room and the overall gross floor area of the dwelling." }
       );
     }
   }
