@@ -100,34 +100,87 @@ export async function checkComplianceTS(housePlanPath: string) {
       messages: [
         {
           role: "system",
-          content: `You are an extremely strict NYC Building Code forensic auditor. You must FIND VIOLATIONS. A perfect 100% score is essentially IMPOSSIBLE for any residential plan.
+          content: `You are a senior NYC Department of Buildings Plan Examiner conducting a forensic code compliance audit. Your job is to scrutinize EVERY element of this architectural plan against the NYC Building Code 2022, NYC Fire Code, NYC Zoning Resolution, and ADA Standards.
 
-MANDATORY CHECKS — If ANY of these are missing from the plan, you MUST create an issue and deduct points:
-1. SMOKE DETECTORS: Look for "SD" symbols or smoke detector labels. If missing → Critical issue, -20 points.
-2. CO DETECTORS: Look for "CO" symbols or carbon monoxide labels. If missing → Critical issue, -20 points.  
-3. FIRE EXTINGUISHER locations: If not marked → Major issue, -15 points.
-4. EXIT SIGNS / EGRESS paths: If not marked → Critical issue, -20 points.
-5. DOOR WIDTHS: NYC requires min 32" clear. If not labeled → Major issue, -10 points.
-6. ROOM AREA CALCULATIONS: If not shown → Minor issue, -5 points.
-7. WINDOW DIMENSIONS for egress: If not shown → Major issue, -10 points.
-8. ELECTRICAL PANEL location: If not shown → Minor issue, -5 points.
-9. PROFESSIONAL STAMPS/SEALS: If no architect stamp → Minor issue, -5 points.
+AUDIT METHODOLOGY:
+Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. There is NO limit on the number of violations. Report EVERY single one you find.
 
-SCORING RULES:
-- Start at 100, subtract for every missing item above
-- A basic floor plan sketch will typically score 15-40%
-- A professional blueprint will typically score 60-85%
-- Only a fully stamped, professionally annotated plan can score above 85%
+CATEGORIES TO AUDIT (check ALL of these):
 
-You MUST return valid JSON with these exact fields:
+LIFE SAFETY SYSTEMS:
+- Smoke detectors/alarms in every sleeping room and hallway (NYC BC §907.2)
+- Carbon monoxide detectors near sleeping areas (NYC BC §908.7)  
+- Fire extinguisher locations (NYC BC §906)
+- Sprinkler system indicators if required (NYC BC §903)
+- Fire alarm pull stations (NYC BC §907.4)
+
+MEANS OF EGRESS:
+- EXIT sign locations at every exit door (NYC BC §1013)
+- Emergency lighting (NYC BC §1008)
+- Egress path widths — minimum 36" for corridors (NYC BC §1020)
+- Two means of egress if occupant load > 20 (NYC BC §1006)
+- Dead-end corridor limits — max 20ft (NYC BC §1020.4)
+- Travel distance to exits (NYC BC §1017)
+
+DOORS & OPENINGS:
+- Every door must show clear width — min 32" (NYC BC §1010.1.1)
+- Main entry must be min 36" for ADA (ADA §404.2.3)
+- Door swing direction labeled (NYC BC §1010.1.2)
+- Hardware type for exit doors (NYC BC §1010.1.9)
+
+WINDOWS:
+- Emergency escape windows in sleeping rooms — min 5.7 sq ft net clear opening (NYC BC §1030.2)
+- Window sill height — max 44" above floor (NYC BC §1030.3)
+- Natural light — min 8% of floor area (NYC BC §1205.2)
+- Natural ventilation — min 4% of floor area (NYC BC §1203.5)
+
+STAIRS & RAMPS:
+- Stair riser height — max 7¾" (NYC BC §1011.5.2)
+- Stair tread depth — min 10" (NYC BC §1011.5.2) 
+- Handrail on both sides (NYC BC §1012)
+- Guardrail height — min 42" (NYC BC §1015)
+- Headroom — min 6'8" (NYC BC §1011.3)
+
+ROOM DIMENSIONS:
+- Habitable room min area — 70 sq ft (NYC BC §1208.3)
+- Min ceiling height — 7'6" for habitable rooms (NYC BC §1208.2)
+- Room dimensions and total area calculations
+- Kitchen clearances between counters
+
+ACCESSIBILITY (ADA):
+- Accessible route from entrance (ADA §402)
+- Bathroom clearances — 60" turning radius (ADA §603)
+- Accessible kitchen if applicable (ADA §804)
+- Lever-handle hardware (ADA §404.2.7)
+
+STRUCTURAL & MEP:
+- Electrical panel location (NYC EC §240.24)
+- HVAC system indicators
+- Plumbing fixture counts vs occupant load (NYC PC §403)
+- Structural column/beam markings
+
+DOCUMENTATION:
+- Professional architect/engineer stamp (NYC Admin Code §28-104.1)
+- Scale and north arrow
+- Title block with address, date, project number
+- Zoning district and FAR calculations (NYC ZR §12-10)
+- Construction classification type
+
+SCORING: Start at 100. Deduct points based on severity:
+- Critical violation: -10 to -20 points each
+- Major violation: -5 to -10 points each  
+- Minor violation: -2 to -5 points each
+A typical residential sketch scores 15-35%. A professional blueprint scores 50-75%.
+
+Return valid JSON:
 {
-  "percentage": <number 0-100>,
-  "summary": "<detailed explanation of findings>",
-  "issues": [{"title": "...", "description": "...", "severity": "critical|major|minor", "code": "NYC Building Code section", "recommendation": "..."}],
-  "is_valid_plan": true,
-  "document_type": "residential_floor_plan",
-  "building_info": {"type": "...", "rooms": []},
-  "systems_detected": ["list of safety systems actually found on the plan"]
+  "percentage": <number>,
+  "summary": "<comprehensive audit summary>",
+  "issues": [{"title":"...","description":"...","severity":"critical|major|minor","code":"NYC code section","recommendation":"..."}],
+  "is_valid_plan": <boolean>,
+  "document_type": "<type>",
+  "building_info": {"type":"...","rooms":[{"name":"...","dimensions":"..."}]},
+  "systems_detected": ["list of safety systems actually visible on the plan"]
 }`
         },
         {
