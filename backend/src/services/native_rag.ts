@@ -87,7 +87,7 @@ export async function checkComplianceTS(housePlanPath: string) {
   for (const query of searchQueries) {
     const queryVector = await generateQueryEmbedding(query);
     const queryResponse = await index.query({
-      topK: 10,
+      topK: 40,
       vector: queryVector,
       includeMetadata: true,
     });
@@ -113,11 +113,11 @@ export async function checkComplianceTS(housePlanPath: string) {
       type: "text",
       text: `Analyze this NYC architectural plan for code compliance. 
       
-      GROUND TRUTH (NYC Building Code Rules from 113 PDFs — ${allMatches.length} sections retrieved):
-      ${contexts.substring(0, 25000)}
+      GLOBAL GROUND TRUTH (Massive Retrieval from 113 NYC Building Code PDFs):
+      ${contexts.substring(0, 300000)}
       
       EXTRACTED DATA:
-      ${housePlanText.substring(0, 3000)}`
+      ${housePlanText.substring(0, 5000)}`
     }
   ];
 
