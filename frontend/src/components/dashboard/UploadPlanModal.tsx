@@ -136,164 +136,333 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       
-      const colors: Record<string, [number, number, number]> = {
-        primary: [16, 185, 129],
-        secondary: [15, 23, 42],
-        text: [51, 65, 85],
-        lightText: [148, 163, 184],
-        border: [226, 232, 240],
-        critical: [220, 38, 38],
-        major: [245, 158, 11],
-        minor: [59, 130, 246]
+      // --- COLOR PALETTE ---
+      const colors = {
+        primary: [15, 23, 42], // Slate 900 (Main Branding)
+        secondary: [51, 65, 85], // Slate 700 (Subheaders)
+        text: [71, 85, 105],      // Slate 600 (Body)
+        lightText: [148, 163, 184], // Slate 400
+        border: [226, 232, 240],   // Slate 200
+        bgLight: [248, 250, 252],  // Slate 50
+        critical: [220, 38, 38],   // Red 600
+        criticalBg: [254, 226, 226], // Red 100
+        major: [217, 119, 6],      // Amber 600
+        majorBg: [254, 243, 199],  // Amber 100
+        minor: [37, 99, 235],      // Blue 600
+        minorBg: [219, 234, 254],  // Blue 100
+        compliant: [5, 150, 105],  // Emerald 600
+        compliantBg: [209, 250, 229] // Emerald 100
       };
 
-      // --- COVER PAGE ---
-      doc.setFillColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-      doc.rect(0, 0, pageWidth, 60, 'F');
+      // Helper function to draw rounded badge
+      const drawBadge = (text: string, x: number, y: number, w: number, h: number, bgColor: number[], textColor: number[]) => {
+        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+        doc.roundedRect(x, y, w, h, 3, 3, 'F');
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.text(text, x + (w / 2), y + (h / 2) + 1.2, { align: 'center', baseline: 'middle' });
+      };
+
+      // --- PAGE 1: COVER & EXECUTIVE SUMMARY ---
+      
+      // Top Header Block
+      doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+      doc.rect(0, 0, pageWidth, 45, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.text("NYC CODE COMPLIANCE", 20, 30);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'normal');
-      doc.text("FORENSIC ANALYSIS REPORT", 20, 45);
-
-      const score = analysisResult.score || analysisResult.percentage || 0;
-      doc.setFillColor(248, 250, 252);
-      doc.roundedRect( pageWidth - 80, 20, 60, 60, 10, 10, 'F');
-      
-      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-      doc.setFontSize(30);
-      doc.text(`${score}%`, pageWidth - 50, 52, { align: 'center' });
-      doc.setFontSize(8);
-      doc.text("COMPLIANCE", pageWidth - 50, 62, { align: 'center' });
-      doc.text("SCORE", pageWidth - 50, 67, { align: 'center' });
-
-      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Project Information", 20, 90);
-      doc.line(20, 95, pageWidth - 20, 95);
-
-      const buildingInfo = analysisResult.building_info || {};
-      const projectData = [
-        ["Project Name:", buildingInfo.project_name || file.name],
-        ["Document ID:", activePlanId?.substring(0, 8).toUpperCase() || "N/A"],
-        ["Date Analyzed:", new Date().toLocaleDateString()],
-        ["Occupancy Group:", buildingInfo.occupancy_group || "Unknown / Not Detected"],
-        ["Construction Type:", buildingInfo.construction_type || "Unknown / Not Detected"],
-        ["Floor Count:", buildingInfo.stories || "Unknown"],
-        ["Primary Use:", buildingInfo.primary_use || "N/A"]
-      ];
-
-      autoTable(doc, {
-        startY: 100,
-        body: projectData,
-        theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 2 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } }
-      });
-
-      let finalY = (doc as any).lastAutoTable.finalY + 15;
-
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Executive Summary", 20, finalY);
-      doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
+      doc.text("FORENSIC COMPLIANCE AUDIT", 20, 28);
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      const splitSummary = doc.splitTextToSize(analysisResult.summary || "No summary available", pageWidth - 40);
+      doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
+      doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - 20, 28, { align: 'right' });
+
+      // Project Overview Section
+      let currentY = 60;
       
-      // PAGE BREAK CHECK
-      if (finalY + 20 + (splitSummary.length * 5) > pageHeight - 30) {
-        doc.addPage();
-        finalY = 30;
-      }
-
-      doc.text(splitSummary, 20, finalY + 15);
-      finalY += (splitSummary.length * 5) + 25;
-
-      if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
-        if (finalY > pageHeight - 50) {
-          doc.addPage();
-          finalY = 20;
-        }
-        doc.setFillColor(240, 253, 244); // Light Green Background
-        doc.rect(20, finalY, pageWidth - 40, 8, 'F');
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(21, 128, 61); // Dark Green
-        doc.text("✓ COMPLIANT FEATURES & POSITIVES", 25, finalY + 6);
-        finalY += 12;
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        analysisResult.compliant_features.forEach((feature: string) => {
-          if (finalY > pageHeight - 20) {
-            doc.addPage();
-            finalY = 20;
-          }
-          doc.text(`• ${feature}`, 25, finalY);
-          finalY += 7;
-        });
-        finalY += 10;
-      }
-
-      if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text("SYSTEMS VERIFICATION", 20, finalY);
-        finalY += 5;
-
-        autoTable(doc, {
-          startY: finalY,
-          head: [['System Name', 'Status', 'Assessment Notes']],
-          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
-          headStyles: { fillColor: colors.secondary as [number, number, number] },
-          styles: { fontSize: 9 }
-        });
-        finalY = (doc as any).lastAutoTable.finalY + 15;
-      }
-
-      doc.addPage();
-      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text("Detailed Compliance Findings", 20, 25);
-      doc.line(20, 30, pageWidth - 20, 30);
+      doc.text("Project Overview", 20, currentY);
+      
+      const score = analysisResult.score || analysisResult.percentage || 0;
+      
+      // Score Box (Right side)
+      const scoreBoxW = 60;
+      const scoreBoxX = pageWidth - 20 - scoreBoxW;
+      doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(scoreBoxX, currentY - 5, scoreBoxW, 45, 4, 4, 'FD');
+      
+      let scoreColor = colors.compliant;
+      let statusText = "PASS";
+      if (score < 70) {
+        scoreColor = colors.major;
+        statusText = "REQUIRES REVISION";
+      }
+      if (score < 40) {
+        scoreColor = colors.critical;
+        statusText = "CRITICAL FAIL";
+      }
+      
+      doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+      doc.setFontSize(28);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${score}%`, scoreBoxX + (scoreBoxW / 2), currentY + 15, { align: 'center' });
+      
+      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text("COMPLIANCE SCORE", scoreBoxX + (scoreBoxW / 2), currentY + 25, { align: 'center' });
+      
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
+      doc.text(statusText, scoreBoxX + (scoreBoxW / 2), currentY + 31, { align: 'center' });
+
+      // Metadata (Left side)
+      const buildingInfo = analysisResult.building_info || {};
+      const metadata = [
+        ["Project:", buildingInfo.project_name || file.name],
+        ["Document ID:", activePlanId?.substring(0, 8).toUpperCase() || "N/A"],
+        ["Occupancy Group:", buildingInfo.occupancy_group || "Not Detected"],
+        ["Construction Type:", buildingInfo.construction_type || "Not Detected"],
+        ["Floor Count:", buildingInfo.stories || "Unknown"]
+      ];
+
+      let metaY = currentY + 10;
+      metadata.forEach(([label, value]) => {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        doc.text(label, 20, metaY);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        doc.text(value, 65, metaY);
+        metaY += 7;
+      });
+
+      currentY = 115;
+      
+      // Divider
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+      doc.setLineWidth(0.5);
+      doc.line(20, currentY, pageWidth - 20, currentY);
+      currentY += 15;
+
+      // Executive Summary
+      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Executive Summary", 20, currentY);
+      currentY += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      
+      const splitSummary = doc.splitTextToSize(analysisResult.summary || "No summary available.", pageWidth - 50);
+      const summaryBoxHeight = (splitSummary.length * 5) + 12;
+      
+      doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
+      doc.roundedRect(20, currentY, pageWidth - 40, summaryBoxHeight, 4, 4, 'F');
+      
+      doc.text(splitSummary, 25, currentY + 10, { lineHeightFactor: 1.5 });
+      currentY += summaryBoxHeight + 15;
+
+      // Compliant Features
+      if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
+        if (currentY > pageHeight - 60) {
+          doc.addPage();
+          currentY = 30;
+        }
+        
+        doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
+        doc.roundedRect(20, currentY, pageWidth - 40, 10, 4, 4, 'F');
+        
+        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text("POSITIVE FINDINGS & COMPLIANT FEATURES", 25, currentY + 7);
+        currentY += 18;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        
+        analysisResult.compliant_features.forEach((feature: string) => {
+          if (currentY > pageHeight - 20) {
+            doc.addPage();
+            currentY = 20;
+          }
+          doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
+          doc.text("✓", 25, currentY);
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+          
+          const sf = doc.splitTextToSize(feature, pageWidth - 60);
+          doc.text(sf, 32, currentY);
+          currentY += (sf.length * 5) + 3;
+        });
+        currentY += 10;
+      }
+
+      // Systems Verification Table
+      if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
+        if (currentY > pageHeight - 50) {
+          doc.addPage();
+          currentY = 30;
+        }
+
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Systems Verification", 20, currentY);
+        currentY += 5;
+
+        autoTable(doc, {
+          startY: currentY,
+          head: [['System Name', 'Status', 'Assessment Notes']],
+          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
+          theme: 'grid',
+          headStyles: { 
+            fillColor: colors.bgLight as [number, number, number], 
+            textColor: colors.primary as [number, number, number],
+            fontStyle: 'bold',
+            lineWidth: 0
+          },
+          bodyStyles: {
+            textColor: colors.text as [number, number, number]
+          },
+          alternateRowStyles: { fillColor: [255, 255, 255] },
+          styles: { 
+            fontSize: 9, 
+            cellPadding: 6, 
+            lineColor: colors.border as [number, number, number],
+            lineWidth: 0.1 
+          },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 45 },
+            1: { cellWidth: 35 }
+          },
+          didDrawCell: (data: any) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const status = data.cell.raw;
+              let bgColor = colors.minorBg;
+              let txtColor = colors.minor;
+              
+              if (status === 'PRESENT' || status === 'COMPLIANT') {
+                bgColor = colors.compliantBg;
+                txtColor = colors.compliant;
+              } else if (status === 'MISSING' || status === 'NON-COMPLIANT') {
+                bgColor = colors.criticalBg;
+                txtColor = colors.critical;
+              }
+
+              doc.setFillColor(255, 255, 255);
+              doc.rect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 'F');
+              drawBadge(status, data.cell.x + 3, data.cell.y + ((data.cell.height - 6) / 2), 26, 6, bgColor, txtColor);
+            }
+          }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      // --- DETAILED FINDINGS ---
+      doc.addPage();
+      currentY = 30;
+
+      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Detailed Compliance Findings", 20, currentY);
+      currentY += 10;
 
       const issues = analysisResult.issues || [];
       if (issues.length === 0) {
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.text("✓ No violations or critical safety issues identified.", 20, 45);
+        doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
+        doc.roundedRect(20, currentY, pageWidth - 40, 20, 4, 4, 'F');
+        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text("✓ No critical violations or code issues identified.", 25, currentY + 12);
       } else {
         autoTable(doc, {
-          startY: 40,
-          head: [['#', 'Severity', 'Title', 'Code Section', 'Recommendation']],
-          body: issues.map((issue: any, idx: number) => [
-            idx + 1,
-            issue.severity.toUpperCase(),
+          startY: currentY,
+          head: [['Issue', 'Severity', 'Code Ref.', 'Recommendation']],
+          body: issues.map((issue: any) => [
             issue.title,
+            issue.severity.toUpperCase(),
             issue.rule || issue.code || "N/A",
-            issue.recommendation || issue.suggestion || "-"
+            issue.recommendation || issue.suggestion || issue.description || "-"
           ]),
-          headStyles: { fillColor: colors.secondary as [number, number, number] },
-          columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 40 }, 3: { cellWidth: 30 }, 4: { cellWidth: 70 } },
-          styles: { fontSize: 9 }
+          theme: 'grid',
+          headStyles: { 
+            fillColor: colors.primary as [number, number, number], 
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          styles: { 
+            fontSize: 9, 
+            cellPadding: 6,
+            lineColor: colors.border as [number, number, number],
+            lineWidth: 0.1 
+          },
+          columnStyles: {
+            0: { cellWidth: 50, fontStyle: 'bold', textColor: colors.primary as [number, number, number] },
+            1: { cellWidth: 25 },
+            2: { cellWidth: 30, fontStyle: 'italic' },
+            3: { cellWidth: 'auto', textColor: colors.text as [number, number, number] }
+          },
+          didDrawCell: (data: any) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const severity = data.cell.raw;
+              let bgColor = colors.minorBg;
+              let txtColor = colors.minor;
+              
+              if (severity === 'CRITICAL') {
+                bgColor = colors.criticalBg;
+                txtColor = colors.critical;
+              } else if (severity === 'MAJOR') {
+                bgColor = colors.majorBg;
+                txtColor = colors.major;
+              }
+
+              doc.setFillColor(255, 255, 255);
+              doc.rect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 'F');
+              drawBadge(severity, data.cell.x + 3, data.cell.y + ((data.cell.height - 6) / 2), 19, 6, bgColor, txtColor);
+            }
+          }
         });
       }
 
+      // --- HEADER & FOOTER SYSTEM ---
       const totalPages = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
+        
+        if (i > 1) {
+          doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+          doc.rect(0, 0, pageWidth, 15, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.text("NYC CODE COMPLIANCE AUDIT", 20, 10);
+        }
+
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+        doc.setLineWidth(0.5);
+        doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
+        
         doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
-        doc.text(`NYC House Code AI Report - Page ${i} of ${totalPages}`, pageWidth - 20, pageHeight - 10, { align: 'right' });
+        doc.text("CONFIDENTIAL | Generated by NYC House Code AI Engine", 20, pageHeight - 8);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 20, pageHeight - 8, { align: 'right' });
       }
 
       doc.save(`Forensic_Report_${file.name.split('.')[0]}.pdf`);
