@@ -104,6 +104,7 @@ export async function checkComplianceTS(housePlanPath: string) {
   console.log(`[RAG] Retrieved ${allMatches.length} unique code sections from Pinecone (across ${seenTexts.size} chunks)`);
 
   const contexts = allMatches
+    .sort((a, b) => String(a.metadata?.text || "").localeCompare(String(b.metadata?.text || "")))
     .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
     .join("\n\n---\n\n");
 
