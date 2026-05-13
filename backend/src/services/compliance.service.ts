@@ -147,11 +147,23 @@ export class CompliancePipeline {
         systems_detected: agentResponse.systems_detected || []
       };
 
-      // STEP 7-8: DB Storage & Socket Completion
-      await pool.query(
-        'UPDATE `plan` SET status = ?, analysisResult = ? WHERE id = ?',
-        ['analyzed', JSON.stringify(finalResult), planId]
-      );
+      // STEP 7-8: DB Storage & Socket Completion (with retry for AWS stability)
+      let saved = false;
+      let saveAttempts = 0;
+      while (!saved && saveAttempts < 3) {
+        try {
+          await pool.query(
+            'UPDATE `plan` SET status = ?, analysisResult = ? WHERE id = ?',
+            ['analyzed', JSON.stringify(finalResult), planId]
+          );
+          saved = true;
+        } catch (saveErr) {
+          saveAttempts++;
+          console.error(`[PIPELINE] DB Save attempt ${saveAttempts} failed:`, saveErr);
+          if (saveAttempts >= 3) throw saveErr;
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
 
       io.emit('analysis-status', {
         planId,
