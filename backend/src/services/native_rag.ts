@@ -48,12 +48,35 @@ export async function checkComplianceTS(housePlanPath: string) {
   const index = pc.Index(process.env.PINECONE_INDEX as string);
 
   const searchQueries = [
-    "NYC building code fire safety smoke detectors carbon monoxide alarms sprinkler requirements " + housePlanText.substring(0, 200),
-    "NYC building code means of egress exit doors emergency lighting travel distance corridors",
-    "NYC building code residential room dimensions minimum area ceiling height habitable spaces",
-    "NYC building code doors windows ADA accessibility wheelchair clearance ramp requirements",
-    "NYC building code stairs riser tread handrail guardrail headroom residential",
-    "NYC zoning resolution floor area ratio FAR setbacks architect stamp construction documents"
+    // Fire & Life Safety (Chapters 7, 9)
+    "NYC building code fire safety smoke detectors carbon monoxide alarms sprinkler fire alarm requirements " + housePlanText.substring(0, 200),
+    "NYC fire code fire protection systems automatic sprinklers standpipe fire department access",
+    // Means of Egress (Chapter 10)  
+    "NYC building code means of egress exit doors exit signs emergency lighting travel distance corridors dead end",
+    // Accessibility (Chapter 11)
+    "NYC building code accessibility ADA wheelchair clearance accessible route ramp elevator disabled",
+    // Interior Environment (Chapter 12)
+    "NYC building code room dimensions minimum area ceiling height habitable spaces light ventilation",
+    // Doors, Windows, Openings
+    "NYC building code doors windows minimum width clear opening emergency escape egress window sill height",
+    // Stairs & Vertical (Chapters 10, 30)
+    "NYC building code stairs riser tread depth handrail guardrail headroom landing elevator",
+    // Structural (Chapters 16-18)
+    "NYC building code structural design loads foundations soils bearing capacity seismic wind",
+    // Exterior & Roofing (Chapters 14-15)
+    "NYC building code exterior walls facade roof assemblies waterproofing insulation parapet",
+    // Interior Finishes (Chapter 8)
+    "NYC building code interior finishes flame spread smoke development wall ceiling floor finishes",
+    // MEP - Electrical (Chapter 27)
+    "NYC electrical code panel location wiring circuits outlets GFCI arc fault receptacles",
+    // MEP - Plumbing (Chapter 29)
+    "NYC plumbing code fixtures water supply drainage trap vent bathroom kitchen",
+    // MEP - Mechanical (Chapter 28)
+    "NYC mechanical code HVAC ventilation ductwork exhaust air conditioning heating",
+    // Zoning & Admin
+    "NYC zoning resolution floor area ratio FAR setbacks lot coverage height limits building classification",
+    // Construction Documents
+    "NYC admin code construction documents architect stamp professional engineer seal permit filing"
   ];
 
   console.log(`[RAG] Running ${searchQueries.length} targeted queries across 113 NYC code PDFs...`);
