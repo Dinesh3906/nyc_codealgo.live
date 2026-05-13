@@ -136,7 +136,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       
-      const colors = {
+      const colors: Record<string, [number, number, number]> = {
         primary: [16, 185, 129],
         secondary: [15, 23, 42],
         text: [51, 65, 85],
@@ -192,7 +192,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         body: projectData,
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
-        columnStyles: { 0: { fontStyle: 'bold', width: 50 } }
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } }
       });
 
       let finalY = (doc as any).lastAutoTable.finalY + 15;
@@ -243,7 +243,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             issue.recommendation || issue.suggestion || "-"
           ]),
           headStyles: { fillColor: colors.secondary },
-          columnStyles: { 0: { width: 10 }, 1: { width: 30 }, 2: { width: 40 }, 3: { width: 30 }, 4: { width: 70 } }
+          columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 40 }, 3: { cellWidth: 30 }, 4: { cellWidth: 70 } }
         });
       }
 
