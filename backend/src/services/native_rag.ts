@@ -93,9 +93,9 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
     
     for (const match of queryResponse.matches) {
-      const text = match.metadata?.text || "";
-      if (!seenTexts.has(text.substring(0, 100))) {
-        seenTexts.add(text.substring(0, 100));
+      const text = String(match.metadata?.text || "");
+      if (!seenTexts.has(text.substring(0, 50))) {
+        seenTexts.add(text.substring(0, 50));
         allMatches.push(match);
       }
     }
