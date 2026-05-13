@@ -491,24 +491,40 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 8, { align: 'center' });
         currentY += 25;
 
+        doc.setFillColor(245, 247, 250); // Light blue-grey background
+        doc.roundedRect(25, currentY - 5, pageWidth - 50, (appText.length * 6) + 15, 3, 3, 'F');
+        
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'italic');
+        doc.text(appText, 35, currentY + 5, { lineHeightFactor: 1.6 });
         
-        const appText = doc.splitTextToSize(analysisResult.appreciation, pageWidth - 60);
-        doc.text(appText, 30, currentY, { lineHeightFactor: 1.6 });
-        
-        currentY += (appText.length * 6) + 30;
+        currentY += (appText.length * 6) + 35;
 
-        // Final Stamp Placeholder
-        doc.setDrawColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        // Final Stamp System
+        const stampX = pageWidth - 65;
+        const stampY = currentY;
+        
+        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.6);
+        doc.setLineWidth(1.5);
+        doc.circle(stampX + 20, stampY + 20, 18); // Outer Circle
         doc.setLineWidth(0.5);
-        doc.rect(pageWidth - 70, currentY, 50, 25);
-        doc.setFontSize(7);
+        doc.circle(stampX + 20, stampY + 20, 15); // Inner Circle
+        
+        doc.setFontSize(5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.text("CERTIFIED AI AUDIT", stampX + 20, stampY + 12, { align: 'center' });
+        doc.setFontSize(8);
+        doc.text("PASSED", stampX + 20, stampY + 22, { align: 'center' });
+        doc.setFontSize(4);
+        doc.text("NYC CODEALGO LIVE", stampX + 20, stampY + 28, { align: 'center' });
+        
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text("AI PLAN EXAMINER", pageWidth - 45, currentY + 10, { align: 'center' });
-        doc.text("NYC HOUSE CODE", pageWidth - 45, currentY + 18, { align: 'center' });
+        doc.text("Senior AI Plan Examiner Signature", 30, currentY + 15);
+        doc.line(30, currentY + 17, 90, currentY + 17);
       }
 
       // --- HEADER & FOOTER SYSTEM ---

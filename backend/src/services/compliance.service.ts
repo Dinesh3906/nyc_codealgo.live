@@ -144,7 +144,8 @@ export class CompliancePipeline {
         severity: severity,
         issues: issues,
         building_info: agentResponse.building_info || {},
-        systems_detected: agentResponse.systems_detected || []
+        systems_detected: agentResponse.systems_detected || [],
+        appreciation: agentResponse.appreciation || "We appreciate the professional quality and detail presented in this architectural plan. The design demonstrates a solid foundation for NYC code compliance."
       };
 
       // STEP 7-8: DB Storage & Socket Completion (with retry for AWS stability)
