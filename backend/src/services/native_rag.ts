@@ -158,9 +158,13 @@ export async function checkComplianceTS(housePlanPath: string) {
             content: `You are a senior NYC Department of Buildings Plan Examiner. 
 
 CRITICAL MISSION:
-1. SCORING: Aim for a professional, encouraging score (78-85%).
-2. ARCHITECTURAL APPRECIATION (POINT-WISE): Conclude with a "Senior Examiner's Observations." You MUST provide a list of 5-8 specific bullet points identifying what was done well. Use a direct, professional human tone. Avoid "AI fluff" (don't use words like "masterpiece", "testament", or "spatial organization"). 
-   Instead, be specific: "Excellent clearance between the kitchen island and counters," "Good door swing direction for egress," "Title block is exceptionally clear and professionally formatted." Sound like a real person who just looked at the drawing.
+1. SCORING: Encouraging professional score (78-85%).
+2. HYPER-SPECIFIC INVENTORY APPRECIATION: Conclude with a "Senior Examiner's Full Detail Review." Do NOT use generic phrases. You MUST RE-MENTION and APPRECIATE every single specific detail you saw in the image. 
+   - Name EVERY room you detected (e.g. "Excellent layout of the Kitchen," "The Living Room dimensions are clearly legible").
+   - Mention specific dimensions you saw (e.g. "The 14'-0\" x 17'-6\" Kitchen area is well-proportioned").
+   - Mention specific doors/windows (e.g. "The swing of the rear porch door is architecturally sound").
+   - Mention the title block and any specific labels you saw.
+   Provide a point-wise list of 10-15 specific observations that PROVE you looked at every inch of the plan. Use a professional, direct human tone.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
 
 AUDIT METHODOLOGY:

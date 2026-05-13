@@ -515,12 +515,24 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setFont('helvetica', 'normal');
         
         appLines.forEach((line: string, idx: number) => {
-          const cleanLine = line.replace(/^[•\-\*]\s*/, ''); // Remove existing bullets if present
+          if (currentY > pageHeight - 35) {
+            doc.addPage();
+            currentY = 30;
+            doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Senior Examiner's Full Detail Review (cont.)", pageWidth / 2, currentY, { align: 'center' });
+            currentY += 15;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+          }
+
+          const cleanLine = line.replace(/^[•\-\*]\s*/, '');
           const wrappedLine = doc.splitTextToSize(`• ${cleanLine}`, pageWidth - 70);
-          doc.text(wrappedLine, 35, currentY + 5 + (idx * 8));
+          doc.text(wrappedLine, 35, currentY);
+          currentY += (wrappedLine.length * 5) + 3;
         });
-        
-        currentY += cardHeight + 25;
 
         // Final Stamp System
         const stampX = pageWidth - 65;
