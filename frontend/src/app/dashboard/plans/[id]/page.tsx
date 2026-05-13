@@ -127,43 +127,52 @@ export default function PlanDetailPage() {
       if (finalY + 20 + (splitSummary.length * 5) > pageHeight - 30) {
         doc.addPage();
         finalY = 30;
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text("Executive Summary (Continued)", 20, finalY);
-        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
-        finalY += 15;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       }
 
       doc.text(splitSummary, 20, finalY + 15);
       finalY += (splitSummary.length * 5) + 25;
 
+      if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
+        if (finalY > pageHeight - 50) {
+          doc.addPage();
+          finalY = 20;
+        }
+        doc.setFillColor(240, 253, 244); // Light Green Background
+        doc.rect(20, finalY, pageWidth - 40, 8, 'F');
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(21, 128, 61); // Dark Green
+        doc.text("✓ COMPLIANT FEATURES & POSITIVES", 25, finalY + 6);
+        finalY += 12;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        analysisResult.compliant_features.forEach((feature: string) => {
+          if (finalY > pageHeight - 20) {
+            doc.addPage();
+            finalY = 20;
+          }
+          doc.text(`• ${feature}`, 25, finalY);
+          finalY += 7;
+        });
+        finalY += 10;
+      }
+
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        doc.setFontSize(14);
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text("Systems Verification Status", 20, finalY);
-        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
+        doc.text("SYSTEMS VERIFICATION", 20, finalY);
+        finalY += 5;
 
-        const systemsData = analysisResult.systems_detected.map((s: any) => [
-          s.name, 
-          s.status.toUpperCase(), 
-          s.notes || "Analyzed against NYC Building Code 2022"
-        ]);
-
-        (doc as any).autoTable({
-          startY: finalY + 10,
+        autoTableModule.default(doc, {
+          startY: finalY,
           head: [['System Name', 'Status', 'Assessment Notes']],
-          body: systemsData,
-          headStyles: { fillColor: colors.secondary },
-          columnStyles: {
-            1: { halign: 'center', fontStyle: 'bold' }
-          }
+          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
+          headStyles: { fillColor: colors.secondary as [number, number, number] },
+          styles: { fontSize: 9 }
         });
-        
         finalY = (doc as any).lastAutoTable.finalY + 15;
       }
 
@@ -174,31 +183,29 @@ export default function PlanDetailPage() {
       doc.text("Detailed Compliance Findings", 20, 25);
       doc.line(20, 30, pageWidth - 20, 30);
 
-      const issues = analysisResult.issues || [];
+      const issues = (analysisResult.issues || []).map((issue: any, idx: number) => [
+        idx + 1,
+        issue.severity.toUpperCase(),
+        issue.title,
+        issue.rule || issue.code || "N/A",
+        issue.recommendation || issue.suggestion || "-"
+      ]);
+
       if (issues.length === 0) {
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(12);
         doc.text("✓ No violations or critical safety issues identified.", 20, 45);
       } else {
-        const issuesData = issues.map((issue: any, idx: number) => [
-          idx + 1,
-          issue.severity.toUpperCase(),
-          issue.title,
-          issue.rule || issue.code || "NYC BC",
-          issue.description + "\n\nRecommendation: " + (issue.recommendation || issue.suggestion || "Review with professional")
-        ]);
-
-        (doc as any).autoTable({
+        autoTableModule.default(doc, {
           startY: 40,
           head: [['#', 'Severity', 'Title', 'Code Section', 'Description & Recommendation']],
-          body: issuesData,
-          headStyles: { fillColor: colors.secondary },
+          body: issues,
+          headStyles: { fillColor: colors.secondary as [number, number, number] },
           columnStyles: {
-            0: { width: 10 },
-            1: { width: 25, fontStyle: 'bold' },
-            2: { width: 35, fontStyle: 'bold' },
-            3: { width: 30 },
-            4: { width: 70 }
+            0: { cellWidth: 10 },
+            1: { cellWidth: 25, fontStyle: 'bold' },
+            2: { cellWidth: 35, fontStyle: 'bold' },
+            3: { cellWidth: 30 },
+            4: { cellWidth: 70 }
           },
           didDrawCell: (data: any) => {
             if (data.section === 'body' && data.column.index === 1) {

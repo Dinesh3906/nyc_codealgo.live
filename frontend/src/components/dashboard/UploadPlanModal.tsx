@@ -211,49 +211,53 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       if (finalY + 20 + (splitSummary.length * 5) > pageHeight - 30) {
         doc.addPage();
         finalY = 30;
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text("Executive Summary (Continued)", 20, finalY);
-        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
-        finalY += 15;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       }
 
       doc.text(splitSummary, 20, finalY + 15);
       finalY += (splitSummary.length * 5) + 25;
 
-      if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        autoTable(doc, {
-          startY: finalY,
-          head: [['System Name', 'Status', 'Assessment Notes']],
-          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
-          headStyles: { fillColor: colors.secondary }
-        });
-        finalY = (doc as any).lastAutoTable.finalY + 15;
-      }
-
       if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
-        doc.setFontSize(14);
+        if (finalY > pageHeight - 50) {
+          doc.addPage();
+          finalY = 20;
+        }
+        doc.setFillColor(240, 253, 244); // Light Green Background
+        doc.rect(20, finalY, pageWidth - 40, 8, 'F');
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text("Compliant Features & Positives", 20, finalY);
-        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
-        finalY += 15;
+        doc.setTextColor(21, 128, 61); // Dark Green
+        doc.text("✓ COMPLIANT FEATURES & POSITIVES", 25, finalY + 6);
+        finalY += 12;
 
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         analysisResult.compliant_features.forEach((feature: string) => {
           if (finalY > pageHeight - 20) {
             doc.addPage();
             finalY = 20;
           }
-          doc.text(`✓ ${feature}`, 25, finalY);
+          doc.text(`• ${feature}`, 25, finalY);
           finalY += 7;
         });
         finalY += 10;
+      }
+
+      if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        doc.text("SYSTEMS VERIFICATION", 20, finalY);
+        finalY += 5;
+
+        autoTable(doc, {
+          startY: finalY,
+          head: [['System Name', 'Status', 'Assessment Notes']],
+          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
+          headStyles: { fillColor: colors.secondary as [number, number, number] },
+          styles: { fontSize: 9 }
+        });
+        finalY = (doc as any).lastAutoTable.finalY + 15;
       }
 
       doc.addPage();
@@ -278,8 +282,9 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             issue.rule || issue.code || "N/A",
             issue.recommendation || issue.suggestion || "-"
           ]),
-          headStyles: { fillColor: colors.secondary },
-          columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 40 }, 3: { cellWidth: 30 }, 4: { cellWidth: 70 } }
+          headStyles: { fillColor: colors.secondary as [number, number, number] },
+          columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 40 }, 3: { cellWidth: 30 }, 4: { cellWidth: 70 } },
+          styles: { fontSize: 9 }
         });
       }
 
