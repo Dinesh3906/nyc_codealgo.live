@@ -406,7 +406,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             }
           }
         });
-        currentY = (doc as any).lastAutoTable.finalY + 15;
+        
+        const lastTable = (doc as any).lastAutoTable;
+        if (lastTable && lastTable.finalY) {
+          currentY = lastTable.finalY + 15;
+        } else {
+          currentY += 40;
+        }
       }
 
       // --- DETAILED FINDINGS ---
@@ -475,6 +481,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             }
           }
         });
+        
+        const lastTable = (doc as any).lastAutoTable;
+        if (lastTable && lastTable.finalY) {
+          currentY = lastTable.finalY + 15;
+        } else {
+          currentY += 40;
+        }
       }
       
       // --- CONCLUDING ASSESSMENT & APPRECIATION ---
