@@ -237,7 +237,7 @@ Return valid JSON:
   "document_type": "<type>",
   "building_info": {"type":"...","rooms":[{"name":"...","dimensions":"..."}]},
   "systems_detected": ["list of safety systems actually visible on the plan"]
-}
+} `
           },
           {
             role: "user",
@@ -288,7 +288,7 @@ Return valid JSON:
   const systemsDetected = resultJSON.systems_detected || [];
   
   // No more aggressive score slashing. We trust the AI's 70%+ baseline.
-  console.log(`[RAG] FINAL SCORE: ${finalScore}% | Issues: ${issues.length} | Systems: ${systemsDetected.length}`);G] FINAL SCORE: ${finalScore}% | Issues: ${issues.length} | Systems: ${systemsDetected.length}`);
+  console.log(`[RAG] FINAL SCORE: ${finalScore}% | Issues: ${issues.length} | Systems: ${systemsDetected.length}`);
 
   return {
     percentage: finalScore,
