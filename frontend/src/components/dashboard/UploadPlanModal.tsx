@@ -206,8 +206,23 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       const splitSummary = doc.splitTextToSize(analysisResult.summary || "No summary available", pageWidth - 40);
-      doc.text(splitSummary, 20, finalY + 15);
+      
+      // PAGE BREAK CHECK
+      if (finalY + 20 + (splitSummary.length * 5) > pageHeight - 30) {
+        doc.addPage();
+        finalY = 30;
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
+        doc.text("Executive Summary (Continued)", 20, finalY);
+        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
+        finalY += 15;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      }
 
+      doc.text(splitSummary, 20, finalY + 15);
       finalY += (splitSummary.length * 5) + 25;
 
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
@@ -218,6 +233,27 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           headStyles: { fillColor: colors.secondary }
         });
         finalY = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Compliant Features & Positives", 20, finalY);
+        doc.line(20, finalY + 5, pageWidth - 20, finalY + 5);
+        finalY += 15;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        analysisResult.compliant_features.forEach((feature: string) => {
+          if (finalY > pageHeight - 20) {
+            doc.addPage();
+            finalY = 20;
+          }
+          doc.text(`✓ ${feature}`, 25, finalY);
+          finalY += 7;
+        });
+        finalY += 10;
       }
 
       doc.addPage();
