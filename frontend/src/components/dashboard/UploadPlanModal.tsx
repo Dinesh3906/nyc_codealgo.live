@@ -127,12 +127,11 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
     if (!analysisResult || !file) return;
 
     try {
-      const [jsPDFModule, autoTableModule] = await Promise.all([
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
         import('jspdf'),
         import('jspdf-autotable')
       ]);
       
-      const jsPDF = jsPDFModule.default;
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -188,7 +187,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         ["Primary Use:", buildingInfo.primary_use || "N/A"]
       ];
 
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 100,
         body: projectData,
         theme: 'plain',
@@ -212,7 +211,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       finalY += (splitSummary.length * 5) + 25;
 
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: finalY,
           head: [['System Name', 'Status', 'Assessment Notes']],
           body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "-"]),
@@ -233,7 +232,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.text("✓ No violations or critical safety issues identified.", 20, 45);
       } else {
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: 40,
           head: [['#', 'Severity', 'Title', 'Code Section', 'Recommendation']],
           body: issues.map((issue: any, idx: number) => [
