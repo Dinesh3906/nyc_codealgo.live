@@ -263,7 +263,7 @@ Return valid JSON:
     break;
   }
 
-  const chatCompletion = await response.json();
+  const chatCompletion = await response!.json();
   console.log(`[RAG] GROQ-TUNNEL response received successfully!`);
   const rawOut = chatCompletion.choices?.[0]?.message?.content || "{}";
   
