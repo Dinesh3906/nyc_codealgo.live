@@ -257,6 +257,46 @@ export default function PlanDetailPage() {
         currentY += 10;
       }
 
+      // Value-Add Betterments Section
+      if (analysisResult.betterments && analysisResult.betterments.length > 0) {
+        if (currentY > pageHeight - 50) {
+          doc.addPage();
+          currentY = 30;
+        }
+        
+        doc.setFillColor(colors.minorBg[0], colors.minorBg[1], colors.minorBg[2]);
+        doc.roundedRect(20, currentY, pageWidth - 40, 10, 2, 2, 'F');
+        
+        doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text("✦ VALUE-ADD BETTERMENTS & RECOMMENDATIONS", 25, currentY + 7);
+        currentY += 18;
+
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        
+        analysisResult.betterments.forEach((betterment: string) => {
+          const sf = doc.splitTextToSize(betterment, pageWidth - 60);
+          const featureHeight = (sf.length * 5) + 4;
+
+          if (currentY + featureHeight > pageHeight - 30) {
+            doc.addPage();
+            currentY = 25;
+          }
+          doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.text("✦", 25, currentY);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+          
+          doc.text(sf, 32, currentY);
+          currentY += featureHeight;
+        });
+        currentY += 10;
+      }
+
       // Systems Verification Table
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
         if (currentY > pageHeight - 60) {
@@ -620,6 +660,27 @@ export default function PlanDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {analysisResult.betterments && analysisResult.betterments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Value-Add Betterments</CardTitle>
+            <CardDescription>
+              Recommended improvements beyond minimum code compliance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {analysisResult.betterments.map((betterment: string, i: number) => (
+                <li key={i} className="flex items-start gap-3 text-muted-foreground">
+                  <span className="text-blue-500 mt-0.5">✦</span>
+                  <p>{betterment.replace(/^Betterment \d+:\s*/, '')}</p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -166,6 +166,7 @@ CRITICAL MISSION:
    - Mention the title block and any specific labels you saw.
    Provide a point-wise list of 10-15 specific observations that PROVE you looked at every inch of the plan. Use a professional, direct human tone.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
+4. VALUE-ADD BETTERMENTS: Provide 5-7 highly informative, proactive "Betterments or Recommended Changes" that the architect/engineer can implement to go beyond minimum compliance and improve the overall design, safety, efficiency, or value of the space. Be specific and educational.
 
 AUDIT METHODOLOGY:
 Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. 
@@ -237,9 +238,10 @@ SCORING: Aim for an encouraging, professional score. Start at 85.
 - Major violation: -2 points each
 - Minor violation: -1 point each
 
-Return valid JSON with mandatory appreciation:
+Return valid JSON with mandatory appreciation and betterments:
 {
   "appreciation": ["Point 1: Specific observation", "Point 2: Specific observation", "..."],
+  "betterments": ["Betterment 1: ...", "Betterment 2: ...", "..."],
   "percentage": <number>,
   "summary": "<A highly detailed bulleted forensic audit summary.>",
   "compliant_features": ["list of things the architect did CORRECTLY"],
@@ -310,6 +312,7 @@ Return valid JSON with mandatory appreciation:
     document_type: resultJSON.document_type || "unknown",
     building_info: resultJSON.building_info || {},
     systems_detected: systemsDetected,
+    betterments: resultJSON.betterments || [],
     appreciation: resultJSON.appreciation || "We appreciate the professional quality and detail presented in this architectural plan. The design demonstrates a solid foundation for NYC code compliance."
   };
 }
