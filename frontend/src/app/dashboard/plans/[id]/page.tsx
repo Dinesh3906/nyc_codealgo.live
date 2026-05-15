@@ -270,7 +270,7 @@ export default function PlanDetailPage() {
         doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text("✦ VALUE-ADD BETTERMENTS & RECOMMENDATIONS", 25, currentY + 7);
+        doc.text("> VALUE-ADD BETTERMENTS & RECOMMENDATIONS", 25, currentY + 7);
         currentY += 18;
 
         doc.setFontSize(9.5);
@@ -278,7 +278,7 @@ export default function PlanDetailPage() {
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         
         analysisResult.betterments.forEach((betterment: string) => {
-          const sf = doc.splitTextToSize(betterment, pageWidth - 60);
+          const sf = doc.splitTextToSize(String(betterment), pageWidth - 60);
           const featureHeight = (sf.length * 5) + 4;
 
           if (currentY + featureHeight > pageHeight - 30) {
@@ -287,7 +287,7 @@ export default function PlanDetailPage() {
           }
           doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
           doc.setFont('helvetica', 'bold');
-          doc.text("✦", 25, currentY);
+          doc.text(">", 25, currentY);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           
