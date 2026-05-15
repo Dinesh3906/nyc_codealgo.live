@@ -4,11 +4,11 @@ import pool from '../db';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
-const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
-const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
-const razorpay = razorpayKeyId && razorpayKeySecret 
-  ? new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }) 
-  : null;
+const getRazorpay = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_Sld4SjARAkmKx1';
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'VCXoKOb3aPlPE6IF675AxkHT';
+  return keyId && keySecret ? new Razorpay({ key_id: keyId, key_secret: keySecret }) : null;
+};
 
 const router = Router();
 
@@ -107,6 +107,7 @@ router.post('/create-checkout', protect, async (req: any, res) => {
   const { id: userId, email } = req.user;
   const { plan } = req.body || {};
 
+  const razorpay = getRazorpay();
   if (!razorpay) {
     return res.status(503).json({
       message: 'Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend environment variables.'
@@ -155,6 +156,7 @@ router.post('/create-checkout', protect, async (req: any, res) => {
 
 // POST confirm checkout session after redirect success
 router.post('/confirm-session', protect, async (req: any, res) => {
+  const razorpay = getRazorpay();
   if (!razorpay) {
     return res.status(503).json({ message: 'Razorpay is not configured.' });
   }
