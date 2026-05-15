@@ -595,8 +595,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#131b2e] border-white/[0.06]">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -614,15 +614,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${
-                  isDragActive ? 'border-slate-400 bg-slate-50' : 'border-slate-200 hover:border-slate-300'
+                  isDragActive ? 'border-[#4edea3]/50 bg-[#4edea3]/5' : 'border-white/[0.08] hover:border-white/[0.15]'
                 }`}
               >
                 <input {...getInputProps()} />
-                <Upload className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+                <Upload className="w-12 h-12 mx-auto mb-4 text-[#bbcabf]/30" />
                 {file ? (
                   <div>
-                    <p className="font-medium text-slate-900">{file.name}</p>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="font-medium text-[#dae2fd]">{file.name}</p>
+                    <p className="text-sm text-[#bbcabf]/60 mt-1">
                       {file.size < 1024 * 1024
                         ? `${(file.size / 1024).toFixed(2)} KB`
                         : `${(file.size / 1024 / 1024).toFixed(2)} MB`} • Ready to analyze
@@ -630,15 +630,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   </div>
                 ) : (
                   <div>
-                    <p className="font-medium text-slate-900">Drop your file here or click to browse</p>
-                    <p className="text-sm text-slate-500 mt-1">Supports PDF and image files</p>
+                    <p className="font-medium text-[#dae2fd]">Drop your file here or click to browse</p>
+                    <p className="text-sm text-[#bbcabf]/60 mt-1">Supports PDF and image files</p>
                   </div>
                 )}
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-300/80">
                   AI analysis is for advisory purposes only. Professional review recommended before DOB submission.
                 </p>
               </div>
@@ -671,7 +671,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   <svg className="w-full h-full -rotate-90">
                     <circle
                       cx="64" cy="64" r="58"
-                      className="fill-none stroke-slate-100 dark:stroke-slate-800 stroke-[6]"
+                      className="fill-none stroke-white/[0.06] stroke-[6]"
                     />
                     <motion.circle
                       cx="64" cy="64" r="58"
@@ -692,7 +692,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                     >
                       {progress}%
                     </motion.span>
-                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Progress</span>
+                    <span className="text-[10px] uppercase tracking-widest text-[#bbcabf]/50 font-semibold">Progress</span>
                   </div>
                 </div>
 
@@ -705,10 +705,10 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-xl font-bold text-[#dae2fd]">
                         {status === 'uploading' ? 'Securing Connection...' : statusMessage}
                       </h3>
-                      <p className="text-sm text-slate-500 max-w-[280px] mx-auto mt-1">
+                      <p className="text-sm text-[#bbcabf]/60 max-w-[280px] mx-auto mt-1">
                         {status === 'uploading' 
                           ? 'Encrypting and uploading your architectural data to our secure servers.'
                           : 'Our senior AI plan examiner is verifying your designs against 113 NYC Building Code chapters.'}
@@ -723,7 +723,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                     <motion.div 
                       key={idx}
                       className={`h-1.5 rounded-full flex-1 transition-colors duration-500 ${
-                        progress >= step ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-800'
+                        progress >= step ? 'bg-primary' : 'bg-white/[0.06]'
                       }`}
                       animate={progress >= step ? { scaleY: [1, 1.5, 1] } : {}}
                       transition={{ duration: 0.4 }}
@@ -736,11 +736,11 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
           {status === 'completed' && analysisResult && (
             <div className="space-y-6">
-              <div className="flex items-center gap-4 bg-green-50 border border-green-200 p-6 rounded-lg">
-                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              <div className="flex items-center gap-4 bg-[#4edea3]/10 border border-[#4edea3]/20 p-6 rounded-lg">
+                <CheckCircle2 className="w-8 h-8 text-[#4edea3]" />
                 <div>
-                  <h3 className="font-semibold text-green-900">Analysis Complete</h3>
-                  <p className="text-sm text-green-700">Compliance score: {analysisResult.score}%</p>
+                  <h3 className="font-semibold text-[#dae2fd]">Analysis Complete</h3>
+                  <p className="text-sm text-[#4edea3]">Compliance score: {analysisResult.score}%</p>
                 </div>
               </div>
 
@@ -768,13 +768,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               {(analysisResult.issues || []).length > 0 && (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {analysisResult.issues.slice(0, 3).map((issue: any, idx: number) => (
-                    <div key={idx} className="flex gap-3 p-3 border rounded-lg">
+                    <div key={idx} className="flex gap-3 p-3 border border-white/[0.06] rounded-lg">
                       <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${
-                        issue.severity === 'critical' ? 'text-red-500' : 'text-amber-500'
+                        issue.severity === 'critical' ? 'text-red-400' : 'text-amber-400'
                       }`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{issue.title || issue.description}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Code: {issue.rule || issue.code || 'N/A'}</p>
+                        <p className="text-sm font-medium text-[#dae2fd] truncate">{issue.title || issue.description}</p>
+                        <p className="text-xs text-[#bbcabf]/50 mt-0.5">Code: {issue.rule || issue.code || 'N/A'}</p>
                       </div>
                     </div>
                   ))}
@@ -795,12 +795,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
           {status === 'error' && (
             <div className="text-center py-12 space-y-6">
-              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto">
-                <AlertCircle className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+                <AlertCircle className="w-8 h-8 text-red-400" />
               </div>
               <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-semibold mb-1 leading-tight">{errorMessage || "Something went wrong"}</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-lg font-semibold text-[#dae2fd] mb-1 leading-tight">{errorMessage || "Something went wrong"}</h3>
+                <p className="text-sm text-[#bbcabf]/60">
                   {errorMessage.includes('limit reached') 
                    ? "You can add more scans to your account immediately from the billing page." 
                    : "Please try again or contact support"}

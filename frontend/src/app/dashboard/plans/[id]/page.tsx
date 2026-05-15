@@ -3,10 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
-import { ArrowLeft, Download, Share2, CheckCircle2, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Download, Share2, CheckCircle2, AlertTriangle, Loader2, ShieldCheck, Zap } from "lucide-react";
 
 export default function PlanDetailPage() {
   const { id } = useParams();
@@ -16,732 +13,259 @@ export default function PlanDetailPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const fetchPlan = async () => {
-      try {
-        const res = await api.get(`/plans/${id}`);
-        setPlan(res.data);
-      } catch (err) {
-        console.error("Fetch plan failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPlan();
+    api.get(`/plans/${id}`)
+      .then(res => setPlan(res.data))
+      .catch(err => console.error("Fetch failed:", err))
+      .finally(() => setLoading(false));
   }, [id]);
 
   const handleShare = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownload = () => {
     if (!plan?.analysisResult) return;
-
-    Promise.all([
-      import('jspdf'),
-      import('jspdf-autotable')
-    ]).then(async ([jsPDFModule, autoTableModule]) => {
+    Promise.all([import('jspdf'), import('jspdf-autotable')]).then(async ([jsPDFModule, autoTableModule]) => {
       const jsPDF = jsPDFModule.default;
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const analysisResult = plan.analysisResult;
-      
-      // --- COLOR PALETTE ---
-      const colors = {
-        primary: [15, 23, 42], // Slate 900 (Main Branding)
-        secondary: [51, 65, 85], // Slate 700 (Subheaders)
-        text: [71, 85, 105],      // Slate 600 (Body)
-        lightText: [148, 163, 184], // Slate 400
-        border: [226, 232, 240],   // Slate 200
-        bgLight: [248, 250, 252],  // Slate 50
-        critical: [220, 38, 38],   // Red 600
-        criticalBg: [254, 226, 226], // Red 100
-        major: [217, 119, 6],      // Amber 600
-        majorBg: [254, 243, 199],  // Amber 100
-        minor: [37, 99, 235],      // Blue 600
-        minorBg: [219, 234, 254],  // Blue 100
-        compliant: [5, 150, 105],  // Emerald 600
-        compliantBg: [209, 250, 229] // Emerald 100
+      const ar = plan.analysisResult;
+      const c = {
+        primary: [15, 23, 42] as [number,number,number], secondary: [51, 65, 85] as [number,number,number],
+        text: [71, 85, 105] as [number,number,number], lightText: [148, 163, 184] as [number,number,number],
+        border: [226, 232, 240] as [number,number,number], critical: [220, 38, 38] as [number,number,number],
+        criticalBg: [254, 226, 226] as [number,number,number], major: [217, 119, 6] as [number,number,number],
+        majorBg: [254, 243, 199] as [number,number,number], minor: [37, 99, 235] as [number,number,number],
+        minorBg: [219, 234, 254] as [number,number,number], compliant: [5, 150, 105] as [number,number,number],
+        compliantBg: [209, 250, 229] as [number,number,number]
       };
-
-      // Helper function to draw rounded badge
-      const drawBadge = (text: string, x: number, y: number, w: number, h: number, bgColor: number[], textColor: number[]) => {
-        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
-        doc.roundedRect(x, y, w, h, 3, 3, 'F');
-        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.text(text, x + (w / 2), y + (h / 2) + 1.2, { align: 'center', baseline: 'middle' });
+      const drawBadge = (t:string,x:number,y:number,w:number,h:number,bg:number[],tc:number[]) => {
+        doc.setFillColor(bg[0],bg[1],bg[2]); doc.roundedRect(x,y,w,h,3,3,'F');
+        doc.setTextColor(tc[0],tc[1],tc[2]); doc.setFontSize(7); doc.setFont('helvetica','bold');
+        doc.text(t,x+(w/2),y+(h/2)+1.2,{align:'center',baseline:'middle'});
       };
+      // Cover
+      doc.setFillColor(c.primary[0],c.primary[1],c.primary[2]); doc.rect(0,0,pageWidth,55,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(24); doc.setFont('helvetica','bold');
+      doc.text("FORENSIC COMPLIANCE AUDIT",20,32);
+      doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(c.lightText[0],c.lightText[1],c.lightText[2]);
+      doc.text("NYC HOUSE CODE AI COMPLIANCE ENGINE",20,42);
+      doc.text(new Date(plan.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),pageWidth-20,42,{align:'right'});
+      let cy = 75;
+      doc.setTextColor(c.primary[0],c.primary[1],c.primary[2]); doc.setFontSize(18); doc.setFont('helvetica','bold');
+      doc.text("Project Overview",20,cy);
+      const score = ar.score || ar.percentage || 0;
+      const sbW=65, sbX=pageWidth-20-sbW;
+      doc.setFillColor(250,250,250); doc.setDrawColor(c.border[0],c.border[1],c.border[2]); doc.setLineWidth(0.5);
+      doc.roundedRect(sbX,cy-5,sbW,45,4,4,'FD');
+      let sc=c.compliant,st="PASS";
+      if(score<70){sc=c.major;st="REQUIRES REVISION";}if(score<40){sc=c.critical;st="CRITICAL FAIL";}
+      doc.setTextColor(sc[0],sc[1],sc[2]); doc.setFontSize(32); doc.setFont('helvetica','bold');
+      doc.text(`${score}%`,sbX+(sbW/2),cy+16,{align:'center'});
+      doc.setTextColor(c.secondary[0],c.secondary[1],c.secondary[2]); doc.setFontSize(9); doc.setFont('helvetica','bold');
+      doc.text("COMPLIANCE SCORE",sbX+(sbW/2),cy+26,{align:'center'});
+      doc.setFontSize(7.5); doc.setTextColor(sc[0],sc[1],sc[2]); doc.text(st,sbX+(sbW/2),cy+33,{align:'center'});
+      const bi=ar.building_info||{};
+      const meta=[["Project:",plan.fileName],["Document ID:",(plan.id?.substring(0,8).toUpperCase()||"N/A")],["Occupancy:",bi.occupancy_group||"N/A"],["Construction:",bi.construction_type||"N/A"],["Floors:",bi.stories||"Unknown"]];
+      let my=cy+10;
+      meta.forEach(([l,v])=>{doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(c.secondary[0],c.secondary[1],c.secondary[2]);doc.text(l,20,my);doc.setFont('helvetica','normal');doc.setTextColor(c.text[0],c.text[1],c.text[2]);doc.text(v,65,my);my+=7;});
+      cy=115; doc.setDrawColor(c.border[0],c.border[1],c.border[2]); doc.setLineWidth(0.5); doc.line(20,cy,pageWidth-20,cy); cy+=15;
+      doc.setTextColor(c.primary[0],c.primary[1],c.primary[2]); doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text("Executive Summary",20,cy); cy+=8;
+      
+      const rawSummary = Array.isArray(ar.summary) ? ar.summary.join('\n') : (ar.summary || "No summary.");
+      const cleanSum=rawSummary.replace(/\*\*(.*?)\*\*/g,'$1').replace(/### (.*?)\n/g,'$1\n');
+      const ss=doc.splitTextToSize(cleanSum,pageWidth-50);
+      doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(c.text[0],c.text[1],c.text[2]);
+      ss.forEach((l:string)=>{if(cy>pageHeight-35){doc.addPage();cy=30;}doc.text(l,27,cy);cy+=5.5;});
+      cy+=10;
 
-      // --- PAGE 1: COVER & EXECUTIVE SUMMARY ---
-      
-      // Top Header Block - Full Page Width
-      doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.rect(0, 0, pageWidth, 55, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
-      doc.setFont('helvetica', 'bold');
-      doc.text("FORENSIC COMPLIANCE AUDIT", 20, 32);
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
-      doc.text("NYC HOUSE CODE AI COMPLIANCE ENGINE", 20, 42);
-      doc.text(new Date(plan.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - 20, 42, { align: 'right' });
-
-      // Project Overview Section
-      let currentY = 75;
-      
-      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Project Overview", 20, currentY);
-      
-      const score = analysisResult.score || analysisResult.percentage || 0;
-      
-      // Score Box (Right side)
-      const scoreBoxW = 65;
-      const scoreBoxX = pageWidth - 20 - scoreBoxW;
-      doc.setFillColor(250, 250, 250);
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(scoreBoxX, currentY - 5, scoreBoxW, 45, 4, 4, 'FD');
-      
-      let scoreColor = colors.compliant;
-      let statusText = "PASS";
-      if (score < 70) {
-        scoreColor = colors.major;
-        statusText = "REQUIRES REVISION";
-      }
-      if (score < 40) {
-        scoreColor = colors.critical;
-        statusText = "CRITICAL FAIL";
-      }
-      
-      doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-      doc.setFontSize(32);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${score}%`, scoreBoxX + (scoreBoxW / 2), currentY + 16, { align: 'center' });
-      
-      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text("COMPLIANCE SCORE", scoreBoxX + (scoreBoxW / 2), currentY + 26, { align: 'center' });
-      
-      doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
-      doc.text(statusText, scoreBoxX + (scoreBoxW / 2), currentY + 33, { align: 'center' });
-
-      // Metadata (Left side)
-      const buildingInfo = analysisResult.building_info || {};
-      const metadata = [
-        ["Project:", plan.fileName],
-        ["Document ID:", plan.id?.substring(0, 8).toUpperCase() || "N/A"],
-        ["Occupancy Group:", buildingInfo.occupancy_group || "Not Detected"],
-        ["Construction Type:", buildingInfo.construction_type || "Not Detected"],
-        ["Floor Count:", buildingInfo.stories || "Unknown"]
-      ];
-
-      let metaY = currentY + 10;
-      metadata.forEach(([label, value]) => {
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text(label, 20, metaY);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        doc.text(value, 65, metaY);
-        metaY += 7;
-      });
-
-      currentY = 115;
-      
-      // Divider
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-      doc.setLineWidth(0.5);
-      doc.line(20, currentY, pageWidth - 20, currentY);
-      currentY += 15;
-
-      // executive summary card
-      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Executive Summary", 20, currentY);
-      currentY += 8;
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      
-      // Clean up raw markdown and ensure it's split by newlines or bullet markers
-      const rawSummary = Array.isArray(analysisResult.summary) ? analysisResult.summary.join('\n') : (analysisResult.summary || "No summary available.");
-      const summaryLines = rawSummary
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/### (.*?)\n/g, '$1\n')
-        .split(/(?:\n|- |• )|(?<=\.)\s+/)
-        .map((l: string) => l.trim())
-        .filter((l: string) => l.length > 0);
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      
-      summaryLines.forEach((line: string) => {
-        if (currentY > pageHeight - 35) {
-          doc.addPage();
-          currentY = 30;
-          doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text("Executive Summary (cont.)", 20, currentY);
-          currentY += 12;
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        }
-        
-        // Draw a subtle left-border line for the "card" feel
-        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.2);
-        doc.setLineWidth(0.5);
-        doc.line(22, currentY - 3, 22, currentY + 2);
-        
-        const splitLine = doc.splitTextToSize(`• ${line}`, pageWidth - 50);
-        doc.text(splitLine, 27, currentY);
-        currentY += (splitLine.length * 5) + 2;
-      });
-      
-      currentY += 10;
-
-      // Compliant Features Section
-      if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
-        if (currentY > pageHeight - 50) {
-          doc.addPage();
-          currentY = 30;
-        }
-        
-        doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
-        doc.roundedRect(20, currentY, pageWidth - 40, 10, 2, 2, 'F');
-        
-        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("✓ POSITIVE FINDINGS & COMPLIANT FEATURES", 25, currentY + 7);
-        currentY += 18;
-
-        doc.setFontSize(9.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        
-        analysisResult.compliant_features.forEach((feature: string) => {
-          const sf = doc.splitTextToSize(feature, pageWidth - 60);
-          const featureHeight = (sf.length * 5) + 4;
-
-          if (currentY + featureHeight > pageHeight - 30) {
-            doc.addPage();
-            currentY = 25;
-          }
-          doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
-          doc.setFont('helvetica', 'bold');
-          doc.text("•", 25, currentY);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          
-          doc.text(sf, 32, currentY);
-          currentY += featureHeight;
+      // Betterments (PDF)
+      if (ar.betterments && ar.betterments.length > 0) {
+        if (cy > pageHeight - 40) { doc.addPage(); cy = 30; }
+        doc.setTextColor(c.primary[0],c.primary[1],c.primary[2]); doc.setFontSize(12); doc.setFont('helvetica','bold');
+        doc.text("Value-Add Recommendations", 20, cy); cy += 8;
+        ar.betterments.forEach((b: string) => {
+          const splitB = doc.splitTextToSize(`✦ ${b}`, pageWidth - 45);
+          if (cy + (splitB.length * 5) > pageHeight - 20) { doc.addPage(); cy = 30; }
+          doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(c.text[0],c.text[1],c.text[2]);
+          doc.text(splitB, 25, cy);
+          cy += (splitB.length * 5) + 2;
         });
-        currentY += 10;
+        cy += 10;
       }
 
-      // Value-Add Betterments Section
-      if (analysisResult.betterments && analysisResult.betterments.length > 0) {
-        if (currentY > pageHeight - 50) {
-          doc.addPage();
-          currentY = 30;
-        }
-        
-        doc.setFillColor(colors.minorBg[0], colors.minorBg[1], colors.minorBg[2]);
-        doc.roundedRect(20, currentY, pageWidth - 40, 10, 2, 2, 'F');
-        
-        doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text("> VALUE-ADD BETTERMENTS & RECOMMENDATIONS", 25, currentY + 7);
-        currentY += 18;
-
-        doc.setFontSize(9.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        
-        analysisResult.betterments.forEach((betterment: string) => {
-          const sf = doc.splitTextToSize(String(betterment), pageWidth - 60);
-          const featureHeight = (sf.length * 5) + 4;
-
-          if (currentY + featureHeight > pageHeight - 30) {
-            doc.addPage();
-            currentY = 25;
-          }
-          doc.setTextColor(colors.minor[0], colors.minor[1], colors.minor[2]);
-          doc.setFont('helvetica', 'bold');
-          doc.text(">", 25, currentY);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          
-          doc.text(sf, 32, currentY);
-          currentY += featureHeight;
-        });
-        currentY += 10;
-      }
-
-      // Systems Verification Table
-      if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        if (currentY > pageHeight - 60) {
-          doc.addPage();
-          currentY = 30;
-        }
-
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Safety Systems Verification", 20, currentY);
-        currentY += 6;
-
-        autoTableModule.default(doc, {
-          startY: currentY,
-          head: [['System Description', 'Status', 'Assessment Notes']],
-          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "No issues identified"]),
-          theme: 'striped',
-          headStyles: { 
-            fillColor: [241, 245, 249],
-            textColor: colors.primary as [number, number, number],
-            fontStyle: 'bold',
-            fontSize: 9
-          },
-          bodyStyles: {
-            textColor: colors.text as [number, number, number]
-          },
-          alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { 
-            fontSize: 9, 
-            cellPadding: 6, 
-            lineColor: colors.border as [number, number, number],
-            lineWidth: 0.1 
-          },
-          columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 45 },
-            1: { cellWidth: 35 }
-          },
-          didDrawCell: (data: any) => {
-            if (data.section === 'body' && data.column.index === 1) {
-              const status = data.cell.raw;
-              let bgColor = colors.minorBg;
-              let txtColor = colors.minor;
-              
-              if (status === 'PRESENT' || status === 'COMPLIANT') {
-                bgColor = colors.compliantBg;
-                txtColor = colors.compliant;
-              } else if (status === 'MISSING' || status === 'NON-COMPLIANT') {
-                bgColor = colors.criticalBg;
-                txtColor = colors.critical;
-              }
-
-              doc.setFillColor(255, 255, 255);
-              doc.rect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 'F');
-              drawBadge(status, data.cell.x + 3, data.cell.y + ((data.cell.height - 6) / 2), 26, 6, bgColor, txtColor);
-            }
-          }
-        });
-        
-        const lastTable = (doc as any).lastAutoTable;
-        if (lastTable && lastTable.finalY) {
-          currentY = lastTable.finalY + 15;
-        } else {
-          currentY += 40;
-        }
-      }
-
-      // --- DETAILED FINDINGS ---
-      doc.addPage();
-      currentY = 30;
-
-      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Detailed Compliance Findings", 20, currentY);
-      currentY += 10;
-
-      const issues = analysisResult.issues || [];
-      if (issues.length === 0) {
-        doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
-        doc.roundedRect(20, currentY, pageWidth - 40, 20, 4, 4, 'F');
-        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text("✓ No critical violations or code issues identified.", 25, currentY + 12);
-      } else {
-        autoTableModule.default(doc, {
-          startY: currentY,
-          head: [['Issue', 'Severity', 'Code Ref.', 'Recommendation']],
-          body: issues.map((issue: any) => [
-            issue.title,
-            issue.severity.toUpperCase(),
-            issue.rule || issue.code || "N/A",
-            issue.recommendation || issue.suggestion || issue.description || "-"
-          ]),
-          theme: 'grid',
-          headStyles: { 
-            fillColor: colors.primary as [number, number, number], 
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-          },
-          styles: { 
-            fontSize: 9, 
-            cellPadding: 6,
-            lineColor: colors.border as [number, number, number],
-            lineWidth: 0.1 
-          },
-          columnStyles: {
-            0: { cellWidth: 50, fontStyle: 'bold', textColor: colors.primary as [number, number, number] },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 30, fontStyle: 'italic' },
-            3: { cellWidth: 'auto', textColor: colors.text as [number, number, number] }
-          },
-          didDrawCell: (data: any) => {
-            if (data.section === 'body' && data.column.index === 1) {
-              const severity = data.cell.raw;
-              let bgColor = colors.minorBg;
-              let txtColor = colors.minor;
-              
-              if (severity === 'CRITICAL') {
-                bgColor = colors.criticalBg;
-                txtColor = colors.critical;
-              } else if (severity === 'MAJOR') {
-                bgColor = colors.majorBg;
-                txtColor = colors.major;
-              }
-
-              doc.setFillColor(255, 255, 255);
-              doc.rect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 'F');
-              drawBadge(severity, data.cell.x + 3, data.cell.y + ((data.cell.height - 6) / 2), 19, 6, bgColor, txtColor);
-            }
-          }
-        });
-
-        const lastTable = (doc as any).lastAutoTable;
-        if (lastTable && lastTable.finalY) {
-          currentY = lastTable.finalY + 15;
-        } else {
-          currentY += 40;
-        }
-      }
+      // Issues (PDF)
+      doc.addPage(); cy=30;
+      doc.setTextColor(c.primary[0],c.primary[1],c.primary[2]); doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.text("Detailed Findings",20,cy); cy+=10;
+      const issues=ar.issues||[];
+      if(!issues.length){doc.setFillColor(c.compliantBg[0],c.compliantBg[1],c.compliantBg[2]);doc.roundedRect(20,cy,pageWidth-40,20,4,4,'F');doc.setTextColor(c.compliant[0],c.compliant[1],c.compliant[2]);doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text("✓ No violations found.",25,cy+12);}
+      else{autoTableModule.default(doc,{startY:cy,head:[['Issue','Severity','Code','Recommendation']],body:issues.map((i:any)=>[i.title,i.severity.toUpperCase(),i.rule||i.code||"N/A",i.recommendation||i.suggestion||i.description||"-"]),theme:'grid',headStyles:{fillColor:c.primary,textColor:[255,255,255],fontStyle:'bold'},styles:{fontSize:9,cellPadding:6,lineColor:c.border,lineWidth:0.1},columnStyles:{0:{cellWidth:50,fontStyle:'bold',textColor:c.primary},1:{cellWidth:25},2:{cellWidth:30,fontStyle:'italic'},3:{cellWidth:'auto',textColor:c.text}},didDrawCell:(d:any)=>{if(d.section==='body'&&d.column.index===1){const sv=d.cell.raw;let bg=c.minorBg,tc=c.minor;if(sv==='CRITICAL'){bg=c.criticalBg;tc=c.critical;}else if(sv==='MAJOR'){bg=c.majorBg;tc=c.major;}doc.setFillColor(255,255,255);doc.rect(d.cell.x+1,d.cell.y+1,d.cell.width-2,d.cell.height-2,'F');drawBadge(sv,d.cell.x+3,d.cell.y+((d.cell.height-6)/2),19,6,bg,tc);}}});}
       
-      // --- CONCLUDING ASSESSMENT & APPRECIATION ---
-      if (analysisResult.appreciation) {
-        doc.addPage();
-        currentY = 40;
-
-        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.rect(20, currentY, pageWidth - 40, 12, 'F');
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 8, { align: 'center' });
-        currentY += 25;
-
-        const appLines = (analysisResult.appreciation || "").split('\n').filter((l: string) => l.trim().length > 0);
-        
-        doc.setFillColor(245, 247, 250); // Light blue-grey background
-        const cardHeight = (appLines.length * 8) + 15;
-        doc.roundedRect(25, currentY - 5, pageWidth - 50, cardHeight, 3, 3, 'F');
-        
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        
-        appLines.forEach((line: string, idx: number) => {
-          if (currentY > pageHeight - 35) {
-            doc.addPage();
-            currentY = 30;
-            doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Senior Examiner's Full Detail Review (cont.)", pageWidth / 2, currentY, { align: 'center' });
-            currentY += 15;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          }
-
-          const cleanLine = line.replace(/^[•\-\*]\s*/, '');
-          const wrappedLine = doc.splitTextToSize(`• ${cleanLine}`, pageWidth - 70);
-          doc.text(wrappedLine, 35, currentY);
-          currentY += (wrappedLine.length * 5) + 3;
-        });
-
-        // Final Stamp System
-        const stampX = pageWidth - 65;
-        const stampY = currentY;
-        
-        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.6);
-        doc.setLineWidth(1.5);
-        doc.circle(stampX + 20, stampY + 20, 18); // Outer Circle
-        doc.setLineWidth(0.5);
-        doc.circle(stampX + 20, stampY + 20, 15); // Inner Circle
-        
-        doc.setFontSize(5);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.text("CERTIFIED AI AUDIT", stampX + 20, stampY + 12, { align: 'center' });
-        doc.setFontSize(8);
-        doc.text("PASSED", stampX + 20, stampY + 22, { align: 'center' });
-        doc.setFontSize(4);
-        doc.text("NYC CODEALGO LIVE", stampX + 20, stampY + 28, { align: 'center' });
-        
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        doc.text("Senior AI Plan Examiner Signature", 30, currentY + 15);
-        doc.line(30, currentY + 17, 90, currentY + 17);
-      }
-
-      // --- METHODOLOGY & SCOPE ---
-      const finalFindingsY = (doc as any).lastAutoTable?.finalY || 60;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-      doc.text("Methodology & Scope", 20, finalFindingsY + 20);
-      
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-      doc.setLineWidth(0.5);
-      doc.line(20, finalFindingsY + 25, pageWidth - 20, finalFindingsY + 25);
-      
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      const methodology = "This analysis was performed using the NYC House Code AI forensic plan examiner engine. The engine utilizes a Vectorless RAG architecture to cross-reference extracted architectural data against 113 chapters of the 2022 NYC Building Code, Fire Code, and Zoning Resolutions. This report is intended for advisory purposes only and does not constitute a legal permit or official DOB approval.";
-      const splitMethod = doc.splitTextToSize(methodology, pageWidth - 40);
-      doc.text(splitMethod, 20, finalFindingsY + 35);
-
-      // --- HEADER & FOOTER SYSTEM ---
-      const totalPages = (doc as any).internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        
-        if (i > 1) {
-          doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-          doc.rect(0, 0, pageWidth, 15, 'F');
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'bold');
-          doc.text("NYC CODE COMPLIANCE AUDIT", 20, 10);
-        }
-
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-        doc.setLineWidth(0.5);
-        doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
-        
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
-        doc.text("CONFIDENTIAL - NYC House Code AI Compliance Engine", 20, pageHeight - 8);
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - 20, pageHeight - 8, { align: 'right' });
-      }
-
-      doc.save(`Forensic_Compliance_Report_${plan.fileName.split('.')[0]}.pdf`);
+      // Footers
+      const tp=(doc as any).internal.getNumberOfPages();
+      for(let i=1;i<=tp;i++){doc.setPage(i);if(i>1){doc.setFillColor(c.primary[0],c.primary[1],c.primary[2]);doc.rect(0,0,pageWidth,15,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text("NYC CODE COMPLIANCE AUDIT",20,10);}doc.setDrawColor(c.border[0],c.border[1],c.border[2]);doc.setLineWidth(0.5);doc.line(20,pageHeight-15,pageWidth-20,pageHeight-15);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(c.lightText[0],c.lightText[1],c.lightText[2]);doc.text("CONFIDENTIAL - NYC House Code AI",20,pageHeight-8);doc.text(`Page ${i}/${tp}`,pageWidth-20,pageHeight-8,{align:'right'});}
+      doc.save(`Forensic_Report_${plan.fileName.split('.')[0]}.pdf`);
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading report...</p>
-        </div>
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center gap-3 text-sm text-[#bbcabf]">
+        <Loader2 className="w-5 h-5 animate-spin text-[#4edea3]" />Loading report...
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (!plan) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="w-12 h-12 mx-auto text-destructive" />
-          <div>
-            <h2 className="text-xl font-bold">Plan Not Found</h2>
-            <p className="text-muted-foreground mt-1">The requested plan could not be found</p>
-          </div>
-          <Button onClick={() => router.push('/dashboard/plans')}>
-            Back to Plans
-          </Button>
-        </div>
+  if (!plan) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="text-center space-y-4">
+        <AlertTriangle className="w-10 h-10 mx-auto text-red-400" />
+        <h2 className="text-lg font-bold text-[#dae2fd]">Plan Not Found</h2>
+        <button onClick={() => router.push('/dashboard/plans')} className="text-xs font-bold text-[#4edea3] hover:text-[#6ffbbe]">Back to Plans</button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  const { analysisResult } = plan;
+  const { analysisResult: ar } = plan;
+  const score = ar.score || ar.percentage || 0;
+  const scoreColor = score >= 70 ? 'text-[#4edea3]' : score >= 40 ? 'text-amber-400' : 'text-red-400';
+  const criticals = (ar.issues||[]).filter((i:any) => i.severity === 'critical').length;
+  const majors = (ar.issues||[]).filter((i:any) => i.severity === 'major').length;
+  const minors = (ar.issues||[]).filter((i:any) => i.severity === 'minor').length;
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-5xl animate-fade-in-up">
+      {/* Top bar */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push('/dashboard/plans')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Plans
-        </Button>
+        <button onClick={() => router.push('/dashboard/plans')} className="flex items-center gap-1.5 text-sm text-[#bbcabf] hover:text-[#dae2fd] transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleShare}>
-            {copied ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-            {copied ? "Copied!" : "Share"}
-          </Button>
-          <Button onClick={handleDownload}>
-            <Download className="w-4 h-4 mr-2" />
-            Download Report
-          </Button>
+          <button onClick={handleShare} className="inline-flex items-center gap-1.5 text-xs font-medium bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] text-[#dae2fd] px-3 py-2 rounded-md transition-all">
+            {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-[#4edea3]" /> : <Share2 className="w-3.5 h-3.5" />}
+            {copied ? "Copied" : "Share"}
+          </button>
+          <button onClick={handleDownload} className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#4edea3] hover:bg-[#6ffbbe] text-[#003824] px-3 py-2 rounded-md transition-all active:scale-[0.98]">
+            <Download className="w-3.5 h-3.5" /> Download PDF
+          </button>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl">{plan.fileName}</CardTitle>
-              <CardDescription>
-                Analyzed on {new Date(plan.createdAt).toLocaleDateString()}
-              </CardDescription>
-            </div>
-            <div className="text-right">
-              <div className="text-4xl font-bold text-primary">{analysisResult.percentage || analysisResult.score || 0}%</div>
-              <p className="text-sm text-muted-foreground">Compliance Score</p>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Executive Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-muted-foreground leading-relaxed">
-              {(Array.isArray(analysisResult.summary) ? analysisResult.summary.join('\n') : (analysisResult.summary || "No summary available."))
-                .split(/(?:\n|- |• )|(?<=\.)\s+/)
-                .map((l: string) => l.trim().replace(/\*\*/g, ''))
-                .filter((l: string) => l.length > 0)
-                .map((line: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-primary mt-1">•</span>
-                    <span>{line}</span>
-                  </li>
-                ))
-              }
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Issue Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Critical</span>
-              <Badge variant="destructive">
-                {(analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Major</span>
-              <Badge variant="warning">
-                {(analysisResult.issues || []).filter((i: any) => i.severity === 'major').length}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Minor</span>
-              <Badge variant="secondary">
-                {(analysisResult.issues || []).filter((i: any) => i.severity === 'minor').length}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Header Card */}
+      <div className="bg-[#131b2e] border border-white/[0.06] rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-[#dae2fd] font-headline">{plan.fileName}</h1>
+          <p className="text-xs text-[#bbcabf]/60 mt-1">Analyzed {new Date(plan.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+        </div>
+        <div className="text-right">
+          <p className={`text-4xl font-bold ${scoreColor}`}>{score}%</p>
+          <p className="text-[10px] font-bold tracking-widest uppercase text-[#bbcabf]/50 mt-1">Compliance Score</p>
+        </div>
       </div>
 
-      {analysisResult.betterments && analysisResult.betterments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Value-Add Betterments</CardTitle>
-            <CardDescription>
-              Recommended improvements beyond minimum code compliance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {analysisResult.betterments.map((betterment: string, i: number) => (
-                <li key={i} className="flex items-start gap-3 text-muted-foreground">
-                  <span className="text-blue-500 mt-0.5">✦</span>
-                  <p>{betterment.replace(/^Betterment \d+:\s*/, '')}</p>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+      {/* Summary + Breakdown */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="md:col-span-2 bg-[#131b2e] border border-white/[0.06] rounded-lg p-6">
+          <h2 className="text-sm font-semibold text-[#dae2fd] mb-3">Executive Summary</h2>
+          <div className="space-y-2">
+            {(Array.isArray(ar.summary) ? ar.summary : [ar.summary || "No summary available."]).map((line: string, i: number) => (
+              <p key={i} className="text-sm text-[#bbcabf]/80 leading-relaxed">{line.replace(/^[-•]\s*/, '')}</p>
+            ))}
+          </div>
+        </div>
+        <div className="bg-[#131b2e] border border-white/[0.06] rounded-lg p-6">
+          <h2 className="text-sm font-semibold text-[#dae2fd] mb-4">Issue Breakdown</h2>
+          <div className="space-y-3">
+            {[{l:"Critical",v:criticals,c:"bg-red-500/10 text-red-400"},{l:"Major",v:majors,c:"bg-amber-500/10 text-amber-400"},{l:"Minor",v:minors,c:"bg-[#b7c8e1]/10 text-[#b7c8e1]"}].map((x,i)=>(
+              <div key={i} className="flex items-center justify-between">
+                <span className="text-xs text-[#bbcabf]/60">{x.l}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${x.c}`}>{x.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Betterments */}
+      {ar.betterments && ar.betterments.length > 0 && (
+        <div className="bg-[#131b2e] border border-[#b7c8e1]/15 rounded-lg p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-[#b7c8e1]" />
+            <h2 className="text-sm font-semibold text-[#dae2fd]">Value-Add Recommendations</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {ar.betterments.map((betterment: string, i: number) => (
+              <div key={i} className="flex gap-3 p-3 bg-white/[0.02] border border-white/[0.04] rounded-md">
+                <span className="text-[#b7c8e1] mt-0.5 shrink-0 text-xs">✦</span>
+                <p className="text-xs text-[#bbcabf]/70 leading-relaxed">{betterment.replace(/^Betterment \d+:\s*/, '')}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Identified Issues</CardTitle>
-          <CardDescription>
-            {analysisResult.issues?.length || 0} issue(s) found during analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!analysisResult.issues || analysisResult.issues.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-500" />
-              <p className="font-medium">No Issues Identified</p>
-              <p className="text-sm mt-1">This plan appears to meet NYC Building Code requirements</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {analysisResult.issues.map((issue: any, i: number) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{issue.title || "Compliance Issue"}</CardTitle>
-                        <CardDescription>Code: {issue.rule || issue.code || 'N/A'}</CardDescription>
-                      </div>
-                      <Badge variant={
-                        issue.severity === 'critical' ? 'destructive' : 
-                        issue.severity === 'major' ? 'warning' : 
-                        'secondary'
-                      }>
-                        {issue.severity || 'minor'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-muted-foreground">{issue.description}</p>
-                    {(issue.suggestion || issue.recommendation) && (
-                      <div className="bg-accent/50 border border-border rounded-md p-3">
-                        <p className="text-sm font-medium mb-1">Recommendation</p>
-                        <p className="text-sm text-muted-foreground">{issue.suggestion || issue.recommendation}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Appreciation */}
+      {ar.appreciation && (
+        <div className="bg-[#131b2e] border border-[#4edea3]/15 rounded-lg p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-5 h-5 text-[#4edea3]" />
+            <h2 className="text-sm font-semibold text-[#dae2fd]">Senior Examiner&apos;s Review</h2>
+          </div>
+          <ul className="space-y-2.5">
+            {(Array.isArray(ar.appreciation) ? ar.appreciation : (ar.appreciation||"").split('\n')).filter((l:any)=>l && String(l).trim()).map((line:any,i:number)=>(
+              <li key={i} className="flex gap-2.5 text-xs text-[#bbcabf]/70">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#4edea3] shrink-0 mt-0.5" />
+                <span>{String(line).replace(/^[•\-\*]\s*/, '')}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Issues */}
+      <div className="bg-[#131b2e] border border-white/[0.06] rounded-lg">
+        <div className="p-5 border-b border-white/[0.04]">
+          <h2 className="text-sm font-semibold text-[#dae2fd]">Identified Issues</h2>
+          <p className="text-xs text-[#bbcabf]/50 mt-0.5">{ar.issues?.length || 0} issue(s) found</p>
+        </div>
+        {!ar.issues || ar.issues.length === 0 ? (
+          <div className="text-center py-14">
+            <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-[#4edea3]" />
+            <p className="text-sm font-medium text-[#dae2fd]">No Issues Found</p>
+            <p className="text-xs text-[#bbcabf]/50 mt-1">This plan meets NYC Building Code requirements</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/[0.04]">
+            {ar.issues.map((issue:any, i:number) => (
+              <div key={i} className="p-5">
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#dae2fd]">{issue.title || "Compliance Issue"}</h3>
+                    <p className="text-[11px] text-[#bbcabf]/50 mt-0.5">Code: {issue.rule || issue.code || 'N/A'}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded shrink-0 ${
+                    issue.severity === 'critical' ? 'bg-red-500/10 text-red-400' :
+                    issue.severity === 'major' ? 'bg-amber-500/10 text-amber-400' :
+                    'bg-[#b7c8e1]/10 text-[#b7c8e1]'
+                  }`}>
+                    {issue.severity || 'minor'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#bbcabf]/70 mb-3">{issue.description}</p>
+                {(issue.suggestion || issue.recommendation) && (
+                  <div className="bg-[#4edea3]/5 border border-[#4edea3]/15 rounded-md p-3">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#4edea3] mb-1">Recommendation</p>
+                    <p className="text-xs text-[#bbcabf]/80">{issue.suggestion || issue.recommendation}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

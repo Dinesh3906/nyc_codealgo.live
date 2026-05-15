@@ -22,7 +22,7 @@ async function generateQueryEmbedding(text: string): Promise<number[]> {
   return Array.from(output.data);
 }
 
-export async function checkComplianceTS(housePlanPath: string) {
+export async function checkComplianceTS(housePlanPath: string, onProgress?: (status: string, progress: number) => void) {
   const fileExt = path.extname(housePlanPath).toLowerCase();
   let housePlanText = "";
   let base64Image = "";
@@ -101,6 +101,8 @@ export async function checkComplianceTS(housePlanPath: string) {
     }
   }
 
+  if (onProgress) onProgress('RETRIEVING_RULES', 50);
+
   console.log(`[RAG] Retrieved ${allMatches.length} unique code sections from Pinecone (across ${seenTexts.size} chunks)`);
 
   const contexts = allMatches
@@ -131,7 +133,7 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
   }
 
-  console.log(`[RAG] === VERSION 4.1 STABLE === Sending ${contexts.substring(0, 150000).length} chars of PDF data...`);
+  console.log(`[RAG] === VERSION 5.0 HUMAN-CENTRIC === Sending ${contexts.substring(0, 150000).length} chars of PDF data...`);
 
   let response;
   let retryCount = 0;
@@ -141,6 +143,8 @@ export async function checkComplianceTS(housePlanPath: string) {
   while (retryCount <= maxRetries) {
     const currentModel = models[retryCount % models.length];
     console.log(`[RAG] Attempt ${retryCount + 1} using ${currentModel}...`);
+    
+    if (onProgress) onProgress('AI_ANALYZING', 70 + (retryCount * 5));
 
     response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -155,113 +159,70 @@ export async function checkComplianceTS(housePlanPath: string) {
         messages: [
           {
             role: "system",
-            content: `You are a senior NYC Department of Buildings Plan Examiner. 
+            content: `SYSTEM ROLE:
+You are a senior NYC Department of Buildings (DOB) compliance officer and forensic plan examiner with strict adherence to the 2022 NYC Construction Codes and related regulations. Your evaluation must be conservative, evidence-based, and non-speculative.
 
 CRITICAL MISSION:
-1. SCORING: Encouraging professional score (78-85%).
+1. SCORING: Aim for an encouraging, professional score (78-85%).
 2. HUMAN-LIKE ARCHITECTURAL APPRECIATION: Start by proving you are an experienced, thoughtful Senior Plan Examiner. 
-   - DO NOT state the obvious (e.g., "The dimensions are clearly labeled", "The doors swing practically", or "The kitchen is efficient"). That is robotic and useless.
-   - INSTEAD, provide deep, novel architectural insights that the user might not immediately realize.
-   - Comment intelligently on the spatial flow, how natural light interacts with the specific geometry, the structural intelligence of the layout, or how programmatic zones (public vs private) are cleverly separated.
-   - Provide exactly 9-11 highly profound, humanoid, narrative bullet points that show deep architectural understanding and praise.
+   - Provide deep, novel architectural insights that the user might not immediately realize.
+   - Comment intelligently on the spatial flow, how natural light interacts with geometry, or how programmatic zones are cleverly separated.
+   - Provide exactly 9-11 highly profound, humanoid, narrative bullet points.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
-4. ARCHITECTURAL BETTERMENTS: Based strictly on the specific layout and rooms detected in THIS uploaded plan, provide 5-7 advanced architectural value-add recommendations. 
-   - DO NOT give generic advice. DO NOT use predefined templates.
-   - Reference the exact rooms, dimensions, or geometries you actually see in the provided image/text.
-   - Suggest spatial optimizations, workflow efficiency, natural daylighting improvements, or modern functionality upgrades tailored specifically to the layout provided.
-   - Do NOT suggest basic safety code compliance (no smoke detectors, no exit signs).
-   Be highly informative and sound like an experienced Senior Architect giving design critique.
+4. ARCHITECTURAL BETTERMENTS: Based strictly on the layout detected, provide 5-7 advanced architectural value-add recommendations. 
 
-AUDIT METHODOLOGY:
-Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. 
+--------------------------------------------------
+PHASE 1: DOCUMENT CLASSIFICATION
+--------------------------------------------------
+Check if valid architectural document. Floor plans, sections, etc. 
+If invalid -> is_valid_plan: false.
 
-CATEGORIES TO AUDIT (check ALL of these):
+--------------------------------------------------
+PHASE 2: CODE EVALUATION (STRICT)
+--------------------------------------------------
+Evaluate ONLY using these NYC codes: NYC BC (2022), FC, NYCECC, EC, MC, PC, FGC, ZR, ADA.
 
-LIFE SAFETY SYSTEMS:
-- Smoke detectors/alarms in every sleeping room and hallway (NYC BC §907.2)
-- Carbon monoxide detectors near sleeping areas (NYC BC §908.7)  
-- Fire extinguisher locations (NYC BC §906)
-- Sprinkler system indicators if required (NYC BC §903)
-- Fire alarm pull stations (NYC BC §907.4)
-
-MEANS OF EGRESS:
-- EXIT sign locations at every exit door (NYC BC §1013)
-- Emergency lighting (NYC BC §1008)
-- Egress path widths — minimum 36" for corridors (NYC BC §1020)
-- Two means of egress if occupant load > 20 (NYC BC §1006)
-- Dead-end corridor limits — max 20ft (NYC BC §1020.4)
-- Travel distance to exits (NYC BC §1017)
-
-DOORS & OPENINGS:
-- Every door must show clear width — min 32" (NYC BC §1010.1.1)
-- Main entry must be min 36" for ADA (ADA §404.2.3)
-- Door swing direction labeled (NYC BC §1010.1.2)
-- Hardware type for exit doors (NYC BC §1010.1.9)
-
-WINDOWS:
-- Emergency escape windows in sleeping rooms — min 5.7 sq ft net clear opening (NYC BC §1030.2)
-- Window sill height — max 44" above floor (NYC BC §1030.3)
-- Natural light — min 8% of floor area (NYC BC §1205.2)
-- Natural ventilation — min 4% of floor area (NYC BC §1203.5)
-
-STAIRS & RAMPS:
-- Stair riser height — max 7¾" (NYC BC §1011.5.2)
-- Stair tread depth — min 10" (NYC BC §1011.5.2) 
-- Handrail on both sides (NYC BC §1012)
-- Guardrail height — min 42" (NYC BC §1015)
-- Headroom — min 6'8" (NYC BC §1011.3)
-
-ROOM DIMENSIONS:
-- Habitable room min area — 70 sq ft (NYC BC §1208.3)
-- Min ceiling height — 7'6" for habitable rooms (NYC BC §1208.2)
-- Room dimensions and total area calculations
-- Kitchen clearances between counters
-
-ACCESSIBILITY (ADA):
-- Accessible route from entrance (ADA §402)
-- Bathroom clearances — 60" turning radius (ADA §603)
-- Accessible kitchen if applicable (ADA §804)
-- Lever-handle hardware (ADA §404.2.7)
-
-STRUCTURAL & MEP:
-- Electrical panel location (NYC EC §240.24)
-- HVAC system indicators
-- Plumbing fixture counts vs occupant load (NYC PC §403)
-- Structural column/beam markings
-
-DOCUMENTATION:
-- Professional architect/engineer stamp (NYC Admin Code §28-104.1)
-- Scale and north arrow
-- Title block with address, date, project number
-- Zoning district and FAR calculations (NYC ZR §12-10)
-
-SCORING: Aim for an encouraging, professional score. Start at 85. 
-- A plan with minor documentation issues should score between 70-75%.
-- Only deduct heavily if fundamental life safety (Smoke/CO) is missing.
-- Critical violation: -5 points each
-- Major violation: -2 points each
-- Minor violation: -1 point each
-
-Return valid JSON with mandatory appreciation and betterments:
+--------------------------------------------------
+PHASE 3: OUTPUT FORMAT (STRICT JSON ONLY)
+--------------------------------------------------
+Return valid JSON:
 {
-  "appreciation": ["Point 1: Specific observation", "Point 2: Specific observation", "..."],
-  "betterments": ["Betterment 1: ...", "Betterment 2: ...", "..."],
-  "percentage": <number>,
-  "summary": "<A highly detailed forensic audit summary using explicit newlines and bullet points (- ) for EVERY point. Do NOT write a paragraph.>",
-  "compliant_features": ["list of things the architect did CORRECTLY"],
-  "issues": [{"title":"...","description":"...","severity":"critical|major|minor","code":"NYC code section","recommendation":"..."}],
-  "is_valid_plan": <boolean>,
-  "document_type": "<type>",
-  "building_info": {"type":"...","rooms":[{"name":"...","dimensions":"..."}]},
-  "systems_detected": ["list of safety systems actually visible on the plan"]
-} `
+  "is_valid_plan": boolean,
+  "document_type": "architectural_plan | unknown",
+  "percentage": number,
+  "summary": ["Point 1", "Point 2", ...],
+  "building_info": {
+    "type": "...",
+    "floors": "...",
+    "occupancy": "...",
+    "rooms": [{"name": "...", "dimensions": "..."}]
+  },
+  "systems_detected": ["stairs", "fire", "hvac", ...],
+  "compliant_features": ["..."],
+  "issues": [
+    {
+      "code": "BC | FC | ...",
+      "severity": "critical | major | minor | info",
+      "title": "...",
+      "description": "...",
+      "recommendation": "..."
+    }
+  ],
+  "betterments": ["..."],
+  "appreciation": ["..."]
+}
+
+STRICT RULES:
+- Return summary as an ARRAY of strings.
+- Return appreciation as an ARRAY of strings (exactly 9-11 points).
+- DO NOT hallucinate. NYC DOB standards are strict.`
           },
           {
             role: "user",
             content: userContent
           }
         ],
-        temperature: 0.0,
+        temperature: 0.1,
         max_tokens: 8192,
         response_format: { type: "json_object" }
       })
@@ -283,40 +244,31 @@ Return valid JSON with mandatory appreciation and betterments:
     break;
   }
 
+  if (onProgress) onProgress('GENERATING_REPORT', 90);
+
   const chatCompletion = await response!.json();
-  console.log(`[RAG] GROQ-TUNNEL response received successfully!`);
   const rawOut = chatCompletion.choices?.[0]?.message?.content || "{}";
-  
-  // DEBUG: Log the raw AI response so we can see exactly what it returned
-  console.log(`[RAG] === RAW AI RESPONSE ===`);
-  console.log(rawOut.substring(0, 2000));
-  console.log(`[RAG] === END RAW RESPONSE ===`);
   
   let resultJSON;
   try {
      resultJSON = JSON.parse(rawOut.trim());
   } catch(e) {
      console.error("[RAG] Vision JSON parse error:", e);
-     resultJSON = { percentage: 72, summary: "Analysis complete.", issues: [] };
+     resultJSON = { percentage: 72, summary: ["Analysis complete."], issues: [] };
   }
 
-  // Encouraging Score Logic
-  let finalScore = resultJSON.percentage || resultJSON.score || 72;
-  const issues = resultJSON.issues || [];
-  const systemsDetected = resultJSON.systems_detected || [];
+  let finalScore = resultJSON.percentage ?? resultJSON.score ?? 0;
   
-  // No more aggressive score slashing. We trust the AI's 70%+ baseline.
-  console.log(`[RAG] FINAL SCORE: ${finalScore}% | Issues: ${issues.length} | Systems: ${systemsDetected.length}`);
-
   return {
     percentage: finalScore,
-    summary: resultJSON.summary || "Forensic vision audit complete.",
-    issues: issues,
+    summary: resultJSON.summary || ["Forensic compliance audit complete."],
+    issues: resultJSON.issues || [],
     is_valid_plan: resultJSON.is_valid_plan !== false,
     document_type: resultJSON.document_type || "unknown",
     building_info: resultJSON.building_info || {},
-    systems_detected: systemsDetected,
+    systems_detected: resultJSON.systems_detected || [],
+    compliant_features: resultJSON.compliant_features || [],
     betterments: resultJSON.betterments || [],
-    appreciation: resultJSON.appreciation || "We appreciate the professional quality and detail presented in this architectural plan. The design demonstrates a solid foundation for NYC code compliance."
+    appreciation: resultJSON.appreciation || ["We appreciate the professional quality and detail presented in this architectural plan."]
   };
 }

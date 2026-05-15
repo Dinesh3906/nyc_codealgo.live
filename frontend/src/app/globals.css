@@ -4,57 +4,58 @@
 
 @layer base {
   :root {
-    --background: 150 20% 98%;
-    --foreground: 160 30% 8%;
-    --card: 150 15% 96%;
-    --card-foreground: 160 30% 8%;
-    --popover: 150 20% 98%;
-    --popover-foreground: 160 30% 8%;
-    --primary: 162 72% 38%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 160 30% 8%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 150 10% 92%;
-    --muted-foreground: 160 10% 40%;
-    --accent: 45 93% 58%;
-    --accent-foreground: 160 30% 8%;
+    /* ── Unified Dark Palette (matches landing page) ── */
+    --background: 222 47% 10%;
+    --foreground: 226 54% 93%;
+    --card: 222 35% 12%;
+    --card-foreground: 226 54% 88%;
+    --popover: 222 35% 10%;
+    --popover-foreground: 226 54% 93%;
+    --primary: 160 69% 58%;
+    --primary-foreground: 160 100% 10%;
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 226 54% 88%;
+    --muted: 222 20% 16%;
+    --muted-foreground: 220 15% 55%;
+    --accent: 45 85% 50%;
+    --accent-foreground: 45 100% 10%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 150 15% 88%;
-    --input: 150 10% 95%;
-    --ring: 162 72% 38%;
-    --radius: 0.625rem;
-    --chart-1: 162 72% 38%;
-    --chart-2: 45 93% 58%;
-    --chart-3: 200 70% 50%;
-    --chart-4: 280 60% 55%;
-    --chart-5: 0 72% 51%;
+    --border: 222 15% 18%;
+    --input: 222 20% 15%;
+    --ring: 160 69% 58%;
+    --radius: 0.5rem;
+    --chart-1: 160 69% 58%;
+    --chart-2: 45 85% 50%;
+    --chart-3: 200 70% 55%;
+    --chart-4: 12 80% 65%;
+    --chart-5: 0 72% 55%;
   }
 
   .dark {
-    --background: 160 15% 5%;
-    --foreground: 150 10% 92%;
-    --card: 160 15% 8%;
-    --card-foreground: 150 10% 88%;
-    --popover: 160 15% 5%;
-    --popover-foreground: 150 10% 92%;
-    --primary: 162 72% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 150 10% 92%;
-    --secondary-foreground: 160 30% 8%;
-    --muted: 160 10% 12%;
-    --muted-foreground: 150 8% 52%;
+    --background: 222 47% 10%;
+    --foreground: 226 54% 93%;
+    --card: 222 35% 12%;
+    --card-foreground: 226 54% 88%;
+    --popover: 222 35% 10%;
+    --popover-foreground: 226 54% 93%;
+    --primary: 160 69% 58%;
+    --primary-foreground: 160 100% 10%;
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 226 54% 88%;
+    --muted: 222 20% 16%;
+    --muted-foreground: 220 15% 55%;
     --accent: 45 85% 50%;
-    --accent-foreground: 160 30% 8%;
+    --accent-foreground: 45 100% 10%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 160 10% 16%;
-    --input: 160 12% 14%;
-    --ring: 162 72% 45%;
-    --chart-1: 162 72% 45%;
+    --border: 222 15% 18%;
+    --input: 222 20% 15%;
+    --ring: 160 69% 58%;
+    --chart-1: 160 69% 58%;
     --chart-2: 45 85% 50%;
     --chart-3: 200 70% 55%;
-    --chart-4: 280 60% 60%;
+    --chart-4: 12 80% 65%;
     --chart-5: 0 72% 55%;
   }
 }
@@ -63,9 +64,23 @@
   * {
     @apply border-border;
   }
+
+  html {
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(78, 222, 163, 0.25);
+    color: #dae2fd;
   }
 }
 
@@ -73,7 +88,295 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
   }
-  .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50;
+}
+
+/* ===== App Shell Styles ===== */
+
+/* Subtle grid background for dashboard pages */
+.app-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Warm ambient glow — used behind cards for focus */
+.glow-mint {
+  box-shadow: 0 0 40px rgba(78, 222, 163, 0.06), 0 0 80px rgba(78, 222, 163, 0.03);
+}
+
+/* Soft top-border accent for active nav items */
+.nav-active-bar {
+  position: relative;
+}
+
+.nav-active-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: hsl(160 69% 58%);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(222 47% 10%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(222 15% 22%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(222 15% 28%);
+}
+
+/* Score ring animation */
+@keyframes score-fill {
+  from {
+    stroke-dashoffset: 283;
   }
+}
+
+.score-ring {
+  animation: score-fill 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Fade-in for page content */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger children */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ===== Landing Page Styles (preserved) ===== */
+
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.glass-panel {
+  background: rgba(19, 27, 46, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(218, 226, 253, 0.05);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel:hover {
+  border-color: rgba(218, 226, 253, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glow-subtle {
+  background: radial-gradient(circle at center,
+      rgba(78, 222, 163, 0.15) 0%,
+      transparent 70%);
+}
+
+.shape-blob {
+  position: absolute;
+  background: linear-gradient(180deg,
+      rgba(78, 222, 163, 0.2) 0%,
+      rgba(16, 185, 129, 0) 100%);
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  filter: blur(80px);
+  animation: morph 15s ease-in-out infinite alternate;
+}
+
+@keyframes morph {
+  0% {
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    transform: rotate(0deg) scale(1);
+  }
+
+  100% {
+    border-radius: 60% 40% 30% 70% / 60% 50% 40% 50%;
+    transform: rotate(45deg) scale(1.1);
+  }
+}
+
+/* Scroll reveal */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.reveal-up.revealed {
+  animation: revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes revealUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.progress-shimmer {
+  background: linear-gradient(90deg,
+      #4edea3 0%,
+      #6ffbbe 50%,
+      #4edea3 100%);
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Scrollbar styling for landing */
+.landing-page::-webkit-scrollbar {
+  width: 6px;
+}
+
+.landing-page::-webkit-scrollbar-track {
+  background: #050810;
+}
+
+.landing-page::-webkit-scrollbar-thumb {
+  background: #2d3449;
+  border-radius: 3px;
+}
+
+.landing-page::-webkit-scrollbar-thumb:hover {
+  background: #3c4a42;
+}
+
+/* Custom CSS from new design */
+.cyber-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.glow-text-ld-primary {
+  text-shadow: 0 0 20px rgba(78, 222, 163, 0.3);
+}
+
+.glow-text-ld-secondary {
+  text-shadow: 0 0 20px rgba(255, 179, 173, 0.3);
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card-glow {
+  box-shadow: 0 0 20px rgba(78, 222, 163, 0.1);
+}
+
+.glass-card-glow-active {
+  box-shadow: 0 0 30px rgba(78, 222, 163, 0.3);
+  border-color: rgba(78, 222, 163, 0.3);
+}
+
+.corner-brackets::before,
+.corner-brackets::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: rgba(255, 255, 255, 0.2);
+  border-style: solid;
+}
+
+.corner-brackets::before {
+  top: 0;
+  left: 0;
+  border-width: 1px 0 0 1px;
+}
+
+.corner-brackets::after {
+  bottom: 0;
+  right: 0;
+  border-width: 0 1px 1px 0;
+}
+
+.btn-cyber {
+  position: relative;
+}
+
+.btn-cyber::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: -4px;
+  bottom: -4px;
+  border: 1px solid rgba(78, 222, 163, 0.3);
+  z-index: -1;
+  transition: all 0.2s ease;
+}
+
+.btn-cyber:hover::after {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
 }

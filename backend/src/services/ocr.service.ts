@@ -21,13 +21,16 @@ export class OCRService {
     const dataBuffer = fs.readFileSync(filePath);
     
     try {
-      const data = await pdf(dataBuffer, { max: 10 });
+      // Extract up to 20 pages for deeper analysis
+      const data = await pdf(dataBuffer, { max: 20 });
       let text = data.text || "";
 
       // IF TEXT IS WEAK (Likely a scanned blueprint)
-      if (text.trim().length < 50) {
+      if (text.trim().length < 100) {
         console.warn("[OCR] PDF Parse yields very little text. It might be a scanned image.");
-        return "WARNING: This PDF appears to be a scanned image. For 100% accuracy, please upload a direct PDF export or high-resolution PNG/JPG images instead.";
+        // In a real production env, we'd convert PDF to image and OCR it here.
+        // For now, we return the warning + any sparse text found.
+        return `[SYSTEM WARNING: This PDF appears to be a scanned image and may require higher-level vision analysis for full accuracy.]\n\n${this.cleanText(text)}`;
       }
 
       return this.cleanText(text);

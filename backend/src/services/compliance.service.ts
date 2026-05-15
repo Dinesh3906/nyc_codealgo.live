@@ -72,20 +72,19 @@ export class CompliancePipeline {
         message: 'Senior Plan Examiner is verifying compliance against NYC mandates...'
       });
 
-      // Add a mid-analysis progress update to keep the bar moving
-      const progressTimer = setInterval(() => {
+      // STEP 5: Execute Full TS RAG Loop
+      const agentResponse = await checkComplianceTS(absoluteFilePath, (status, progress) => {
         io.emit('analysis-status', {
           planId,
-          status: 'CHECKING_COMPLIANCE',
-          progress: Math.min(85, Math.floor(Math.random() * 10) + 70),
-          message: 'Performing cross-document safety verification...'
+          status: status,
+          progress: progress,
+          message: status === 'RETRIEVING_RULES' 
+            ? 'Cross-referencing 113 NYC Building Code chapters...' 
+            : status === 'AI_ANALYZING'
+              ? 'Senior Plan Examiner is verifying compliance mandates...'
+              : 'Compiling final forensic report...'
         });
-      }, 5000);
-
-      // STEP 5: Execute Full TS RAG Loop
-      const agentResponse = await checkComplianceTS(absoluteFilePath) as any;
-
-      clearInterval(progressTimer);
+      }) as any;
 
       // PHASE 1: Document Classification Check (Logging only, no override)
       if (agentResponse.is_valid_plan === false) {
