@@ -159,12 +159,11 @@ export async function checkComplianceTS(housePlanPath: string) {
 
 CRITICAL MISSION:
 1. SCORING: Encouraging professional score (78-85%).
-2. HYPER-SPECIFIC INVENTORY APPRECIATION: Conclude with a "Senior Examiner's Full Detail Review." Do NOT use generic phrases. You MUST RE-MENTION and APPRECIATE every single specific detail you saw in the image. 
-   - Name EVERY room you detected (e.g. "Excellent layout of the Kitchen," "The Living Room dimensions are clearly legible").
-   - Mention specific dimensions you saw (e.g. "The 14'-0\" x 17'-6\" Kitchen area is well-proportioned").
-   - Mention specific doors/windows (e.g. "The swing of the rear porch door is architecturally sound").
-   - Mention the title block and any specific labels you saw.
-   Provide a point-wise list of 10-15 specific observations that PROVE you looked at every inch of the plan. Use a professional, direct human tone.
+2. HUMAN-LIKE ARCHITECTURAL APPRECIATION: Start by proving you are an experienced, thoughtful Senior Plan Examiner. 
+   - DO NOT state the obvious (e.g., "The dimensions are clearly labeled", "The doors swing practically", or "The kitchen is efficient"). That is robotic and useless.
+   - INSTEAD, provide deep, novel architectural insights that the user might not immediately realize.
+   - Comment intelligently on the spatial flow, how natural light interacts with the specific geometry, the structural intelligence of the layout, or how programmatic zones (public vs private) are cleverly separated.
+   - Provide exactly 4-6 highly profound, humanoid, narrative bullet points that show deep architectural understanding and praise.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
 4. ARCHITECTURAL BETTERMENTS: Based strictly on the specific layout and rooms detected in THIS uploaded plan, provide 5-7 advanced architectural value-add recommendations. 
    - DO NOT give generic advice. DO NOT use predefined templates.
@@ -248,7 +247,7 @@ Return valid JSON with mandatory appreciation and betterments:
   "appreciation": ["Point 1: Specific observation", "Point 2: Specific observation", "..."],
   "betterments": ["Betterment 1: ...", "Betterment 2: ...", "..."],
   "percentage": <number>,
-  "summary": "<A highly detailed bulleted forensic audit summary.>",
+  "summary": "<A highly detailed forensic audit summary using explicit newlines and bullet points (- ) for EVERY point. Do NOT write a paragraph.>",
   "compliant_features": ["list of things the architect did CORRECTLY"],
   "issues": [{"title":"...","description":"...","severity":"critical|major|minor","code":"NYC code section","recommendation":"..."}],
   "is_valid_plan": <boolean>,

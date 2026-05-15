@@ -180,19 +180,20 @@ export default function PlanDetailPage() {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       
-      // Clean up raw markdown
-      const cleanSummary = (analysisResult.summary || "No summary available.")
+      // Clean up raw markdown and ensure it's split by newlines or bullet markers
+      const rawSummary = analysisResult.summary || "No summary available.";
+      const summaryLines = rawSummary
         .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/### (.*?)\n/g, '$1\n');
+        .replace(/### (.*?)\n/g, '$1\n')
+        .split(/(?:\n|- |• )/)
+        .map((l: string) => l.trim())
+        .filter((l: string) => l.length > 0);
       
-      const splitSummary = doc.splitTextToSize(cleanSummary, pageWidth - 50);
-      
-      // Draw summary line-by-line with page break checks
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       
-      splitSummary.forEach((line: string) => {
+      summaryLines.forEach((line: string) => {
         if (currentY > pageHeight - 35) {
           doc.addPage();
           currentY = 30;
@@ -211,11 +212,12 @@ export default function PlanDetailPage() {
         doc.setLineWidth(0.5);
         doc.line(22, currentY - 3, 22, currentY + 2);
         
-        doc.text(line, 27, currentY);
-        currentY += 5.5;
+        const splitLine = doc.splitTextToSize(`• ${line}`, pageWidth - 50);
+        doc.text(splitLine, 27, currentY);
+        currentY += (splitLine.length * 5) + 2;
       });
       
-      currentY += 15;
+      currentY += 10;
 
       // Compliant Features Section
       if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
@@ -628,9 +630,19 @@ export default function PlanDetailPage() {
             <CardTitle>Executive Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground leading-relaxed">
-              {analysisResult.summary || "No summary available."}
-            </p>
+            <ul className="space-y-2 text-muted-foreground leading-relaxed">
+              {(analysisResult.summary || "No summary available.")
+                .split(/(?:\n|- |• )/)
+                .map(l => l.trim().replace(/\*\*/g, ''))
+                .filter(l => l.length > 0)
+                .map((line: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    <span>{line}</span>
+                  </li>
+                ))
+              }
+            </ul>
           </CardContent>
         </Card>
 
