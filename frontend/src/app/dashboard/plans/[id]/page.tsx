@@ -185,7 +185,7 @@ export default function PlanDetailPage() {
       const summaryLines = rawSummary
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/### (.*?)\n/g, '$1\n')
-        .split(/(?:\n|- |• )/)
+        .split(/(?:\n|- |• )|(?<=\.)\s+/)
         .map((l: string) => l.trim())
         .filter((l: string) => l.length > 0);
       
@@ -632,9 +632,9 @@ export default function PlanDetailPage() {
           <CardContent>
             <ul className="space-y-2 text-muted-foreground leading-relaxed">
               {(analysisResult.summary || "No summary available.")
-                .split(/(?:\n|- |• )/)
-                .map(l => l.trim().replace(/\*\*/g, ''))
-                .filter(l => l.length > 0)
+                .split(/(?:\n|- |• )|(?<=\.)\s+/)
+                .map((l: string) => l.trim().replace(/\*\*/g, ''))
+                .filter((l: string) => l.length > 0)
                 .map((line: string, i: number) => (
                   <li key={i} className="flex items-start gap-2">
                     <span className="text-primary mt-1">•</span>

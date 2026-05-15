@@ -98,7 +98,14 @@ router.get('/', protect, async (req: any, res) => {
     "SELECT id, fileName, status, analysisResult, createdAt FROM `plan` WHERE userId = ? AND COALESCE(fileUrl, '') <> '' ORDER BY createdAt DESC",
     [req.user.id]
   );
-  res.json(plans);
+  const parsedPlans = plans.map((p: any) => {
+    let result = p.analysisResult;
+    if (typeof result === 'string') {
+      try { result = JSON.parse(result); } catch(e) {}
+    }
+    return { ...p, analysisResult: result };
+  });
+  res.json(parsedPlans);
 });
 
 // GET single plan by ID
@@ -113,6 +120,12 @@ router.get('/:id', protect, async (req: any, res) => {
     if (!plan || plan.userId !== req.user.id) {
        return res.status(404).json({ message: 'Plan not found' });
     }
+
+    let result = plan.analysisResult;
+    if (typeof result === 'string') {
+      try { result = JSON.parse(result); } catch(e) {}
+    }
+    plan.analysisResult = result;
 
     res.json(plan);
   } catch (error) {
