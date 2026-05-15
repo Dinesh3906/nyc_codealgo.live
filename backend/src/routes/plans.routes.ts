@@ -100,9 +100,12 @@ router.get('/', protect, async (req: any, res) => {
   );
   const parsedPlans = plans.map((p: any) => {
     let result = p.analysisResult;
-    if (typeof result === 'string') {
-      try { result = JSON.parse(result); } catch(e) {}
+    let depth = 0;
+    while (typeof result === 'string' && depth < 3) {
+      try { result = JSON.parse(result); } catch(e) { break; }
+      depth++;
     }
+    if (typeof result !== 'object' || result === null) result = {};
     return { ...p, analysisResult: result };
   });
   res.json(parsedPlans);
@@ -122,9 +125,12 @@ router.get('/:id', protect, async (req: any, res) => {
     }
 
     let result = plan.analysisResult;
-    if (typeof result === 'string') {
-      try { result = JSON.parse(result); } catch(e) {}
+    let depth = 0;
+    while (typeof result === 'string' && depth < 3) {
+      try { result = JSON.parse(result); } catch(e) { break; }
+      depth++;
     }
+    if (typeof result !== 'object' || result === null) result = {};
     plan.analysisResult = result;
 
     res.json(plan);
