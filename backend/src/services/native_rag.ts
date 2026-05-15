@@ -163,7 +163,7 @@ CRITICAL MISSION:
    - DO NOT state the obvious (e.g., "The dimensions are clearly labeled", "The doors swing practically", or "The kitchen is efficient"). That is robotic and useless.
    - INSTEAD, provide deep, novel architectural insights that the user might not immediately realize.
    - Comment intelligently on the spatial flow, how natural light interacts with the specific geometry, the structural intelligence of the layout, or how programmatic zones (public vs private) are cleverly separated.
-   - Provide exactly 4-6 highly profound, humanoid, narrative bullet points that show deep architectural understanding and praise.
+   - Provide exactly 9-11 highly profound, humanoid, narrative bullet points that show deep architectural understanding and praise.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
 4. ARCHITECTURAL BETTERMENTS: Based strictly on the specific layout and rooms detected in THIS uploaded plan, provide 5-7 advanced architectural value-add recommendations. 
    - DO NOT give generic advice. DO NOT use predefined templates.
