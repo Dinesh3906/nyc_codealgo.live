@@ -166,7 +166,12 @@ CRITICAL MISSION:
    - Mention the title block and any specific labels you saw.
    Provide a point-wise list of 10-15 specific observations that PROVE you looked at every inch of the plan. Use a professional, direct human tone.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
-4. VALUE-ADD BETTERMENTS: Provide 5-7 highly informative, proactive "Betterments or Recommended Changes" that the architect/engineer can implement to go beyond minimum compliance and improve the overall design, safety, efficiency, or value of the space. Be specific and educational.
+4. ARCHITECTURAL BETTERMENTS: Provide 5-7 highly advanced, value-add architectural "Betterments" to improve the actual design, spatial efficiency, aesthetics, or modern functionality. Do NOT suggest basic code compliance like "smoke detectors" or "exit signs". Instead, suggest things like:
+   - "Optimize the kitchen workflow by shifting the island 2 feet east to create a better work triangle."
+   - "Consider replacing the swing door with a pocket door in the half-bath to maximize usable floor area."
+   - "Expand the living room fenestration (windows) to increase natural daylighting beyond the minimum 8%."
+   - "Upgrade the hallway layout to eliminate dead space and improve circulation."
+   Be highly informative and sound like an experienced Senior Architect giving design critique.
 
 AUDIT METHODOLOGY:
 Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. 
