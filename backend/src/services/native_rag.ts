@@ -256,6 +256,7 @@ Return valid JSON with mandatory appreciation:
           }
         ],
         temperature: 0.0,
+        max_tokens: 8192,
         response_format: { type: "json_object" }
       })
     });
