@@ -617,7 +617,7 @@ export default function PlanDetailPage() {
               </CardDescription>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-primary">{analysisResult.score}%</div>
+              <div className="text-4xl font-bold text-primary">{analysisResult.percentage || analysisResult.score || 0}%</div>
               <p className="text-sm text-muted-foreground">Compliance Score</p>
             </div>
           </div>

@@ -84,7 +84,7 @@ export default function PlansHub() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {plan.analysisResult?.score || 0}%
+                      {plan.analysisResult?.percentage || plan.analysisResult?.score || 0}%
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
