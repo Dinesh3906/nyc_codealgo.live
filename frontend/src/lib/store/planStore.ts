@@ -29,7 +29,18 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     set({ loading: true });
     try {
       const res = await api.get('/plans');
-      set({ plans: res.data, loading: false });
+      // Deep-parse analysisResult to handle any serialization format
+      const plans = (res.data || []).map((p: any) => {
+        let result = p.analysisResult;
+        let depth = 0;
+        while (typeof result === 'string' && depth < 5) {
+          try { result = JSON.parse(result); } catch { break; }
+          depth++;
+        }
+        if (typeof result !== 'object' || result === null) result = {};
+        return { ...p, analysisResult: result };
+      });
+      set({ plans, loading: false });
     } catch (err) {
       console.error(err);
       set({ loading: false });
