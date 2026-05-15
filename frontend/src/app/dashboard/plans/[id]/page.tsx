@@ -181,7 +181,7 @@ export default function PlanDetailPage() {
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       
       // Clean up raw markdown and ensure it's split by newlines or bullet markers
-      const rawSummary = analysisResult.summary || "No summary available.";
+      const rawSummary = Array.isArray(analysisResult.summary) ? analysisResult.summary.join('\n') : (analysisResult.summary || "No summary available.");
       const summaryLines = rawSummary
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/### (.*?)\n/g, '$1\n')
@@ -631,7 +631,7 @@ export default function PlanDetailPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-muted-foreground leading-relaxed">
-              {(analysisResult.summary || "No summary available.")
+              {(Array.isArray(analysisResult.summary) ? analysisResult.summary.join('\n') : (analysisResult.summary || "No summary available."))
                 .split(/(?:\n|- |• )|(?<=\.)\s+/)
                 .map((l: string) => l.trim().replace(/\*\*/g, ''))
                 .filter((l: string) => l.length > 0)
