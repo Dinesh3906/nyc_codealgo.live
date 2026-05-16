@@ -19,7 +19,21 @@ export default function PlanDetailPage() {
     const fetchPlan = async () => {
       try {
         const res = await api.get(`/plans/${id}`);
-        setPlan(res.data);
+        let planData = res.data;
+        
+        // Deep-parse analysisResult to handle any serialization format
+        if (planData && planData.analysisResult) {
+          let result = planData.analysisResult;
+          let depth = 0;
+          while (typeof result === 'string' && depth < 5) {
+            try { result = JSON.parse(result); } catch { break; }
+            depth++;
+          }
+          if (typeof result !== 'object' || result === null) result = {};
+          planData.analysisResult = result;
+        }
+        
+        setPlan(planData);
       } catch (err) {
         console.error("Fetch plan failed:", err);
       } finally {

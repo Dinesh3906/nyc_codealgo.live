@@ -101,7 +101,7 @@ router.get('/', protect, async (req: any, res) => {
   const parsedPlans = plans.map((p: any) => {
     let result = p.analysisResult;
     let depth = 0;
-    while (typeof result === 'string' && depth < 3) {
+    while (typeof result === 'string' && depth < 5) {
       try { result = JSON.parse(result); } catch(e) { break; }
       depth++;
     }
@@ -126,7 +126,7 @@ router.get('/:id', protect, async (req: any, res) => {
 
     let result = plan.analysisResult;
     let depth = 0;
-    while (typeof result === 'string' && depth < 3) {
+    while (typeof result === 'string' && depth < 5) {
       try { result = JSON.parse(result); } catch(e) { break; }
       depth++;
     }
