@@ -172,7 +172,7 @@ Return valid JSON with mandatory appreciation and betterments:
     console.log(`[RAG] Attempt ${retryCount + 1} | Model: ${currentModel}`);
 
     const parts: any[] = [
-      { text: `Analyze this architectural plan. Extracted Text Data: ${planData.substring(0, 50000)}` }
+      { text: `Analyze this architectural plan. Here is the OCR text data from the file: ${housePlanText.substring(0, 50000)}` }
     ];
 
     if (base64Image) {
