@@ -377,27 +377,27 @@ export default function PlanDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 p-6 lg:p-12 space-y-8">
+      <div className="min-h-screen bg-background p-6 lg:p-12 space-y-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="flex justify-between items-start">
             <div className="space-y-4">
-              <Skeleton className="h-12 w-64 bg-slate-800" />
-              <Skeleton className="h-4 w-96 bg-slate-800" />
+              <Skeleton className="h-12 w-64" />
+              <Skeleton className="h-4 w-96" />
             </div>
-            <Skeleton className="h-10 w-32 bg-slate-800" />
+            <Skeleton className="h-10 w-32" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Skeleton className="h-32 w-full bg-slate-800" />
-            <Skeleton className="h-32 w-full bg-slate-800" />
-            <Skeleton className="h-32 w-full bg-slate-800" />
-            <Skeleton className="h-32 w-full bg-slate-800" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-              <Skeleton className="h-[600px] w-full bg-slate-800" />
+              <Skeleton className="h-[600px] w-full" />
             </div>
             <div className="space-y-6">
-              <Skeleton className="h-96 w-full bg-slate-800" />
+              <Skeleton className="h-96 w-full" />
             </div>
           </div>
         </div>
@@ -407,9 +407,9 @@ export default function PlanDetailPage() {
 
   if (!plan) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] bg-slate-900 text-white">
+      <div className="flex items-center justify-center min-h-[60vh] bg-background text-foreground">
         <div className="text-center space-y-4">
-          <AlertTriangle className="w-16 h-16 mx-auto text-yellow-500" />
+          <AlertTriangle className="w-16 h-16 mx-auto text-amber-500" />
           <h2 className="text-2xl font-bold">Audit Not Found</h2>
           <Button onClick={() => router.push('/dashboard/plans')} variant="outline">Back to Dashboard</Button>
         </div>
@@ -420,20 +420,20 @@ export default function PlanDetailPage() {
   const analysisResult = plan.analysisResult || {};
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 pb-20">
+    <div className="min-h-screen bg-background text-foreground pb-20">
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Navigation & Actions */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => router.push('/dashboard/plans')}>
+          <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => router.push('/dashboard/plans')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
           <div className="flex gap-3">
-            <Button variant="outline" className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700" onClick={handleShare}>
-              {copied ? <CheckCircle2 className="w-4 h-4 mr-2 text-green-400" /> : <Share2 className="w-4 h-4 mr-2" />}
+            <Button variant="outline" className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700" onClick={handleShare}>
+              {copied ? <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> : <Share2 className="w-4 h-4 mr-2" />}
               {copied ? "Link Copied" : "Share"}
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-500 text-white" onClick={handleDownload}>
+            <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20" onClick={handleDownload}>
               <Download className="w-4 h-4 mr-2" />
               Generate PDF Audit
             </Button>
@@ -442,15 +442,15 @@ export default function PlanDetailPage() {
 
         {/* Header Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <Card className="lg:col-span-3 bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+          <Card className="lg:col-span-3 bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
-                    <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-3 py-1">PRO AUDIT</Badge>
-                    <CardTitle className="text-3xl font-bold text-white">{plan.fileName}</CardTitle>
+                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-3 py-1">PRO AUDIT</Badge>
+                    <CardTitle className="text-3xl font-bold text-slate-900 dark:text-white">{plan.fileName}</CardTitle>
                   </div>
-                  <CardDescription className="text-slate-400 flex items-center gap-2 mt-2">
+                  <CardDescription className="text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-2">
                     <Activity className="w-4 h-4" />
                     Forensic AI analysis completed on {new Date(plan.createdAt).toLocaleDateString()}
                   </CardDescription>
@@ -458,24 +458,24 @@ export default function PlanDetailPage() {
               </div>
             </CardHeader>
           </Card>
-          <Card className="bg-slate-800/40 backdrop-blur-md border-slate-700/50 flex flex-col items-center justify-center p-6 text-center shadow-xl">
-            <div className="text-5xl font-black text-blue-400 mb-1">{analysisResult.percentage || analysisResult.score || 0}%</div>
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-bold">Compliance Score</p>
+          <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center p-6 text-center shadow-sm">
+            <div className="text-5xl font-black text-emerald-600 dark:text-emerald-500 mb-1">{analysisResult.percentage || analysisResult.score || 0}%</div>
+            <p className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">Compliance Score</p>
           </Card>
         </div>
 
         {/* Human Touch Appreciation */}
         {analysisResult.appreciation && (
-          <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-blue-500/20 shadow-2xl overflow-hidden relative">
-            <div className="absolute top-2 right-2 opacity-10 pointer-events-none">
-              <ShieldCheck className="w-24 h-24 text-blue-400" />
+          <Card className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-emerald-500/20 shadow-xl overflow-hidden relative">
+            <div className="absolute top-2 right-2 opacity-5 dark:opacity-10 pointer-events-none">
+              <ShieldCheck className="w-24 h-24 text-emerald-500" />
             </div>
             <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-2 text-white">
-                <Zap className="w-5 h-5 text-yellow-400" />
+              <CardTitle className="text-xl flex items-center gap-2 text-slate-900 dark:text-white">
+                <Zap className="w-5 h-5 text-amber-500" />
                 Senior Examiner's Appreciation
               </CardTitle>
-              <CardDescription className="text-slate-400">Professional architectural review and highlights</CardDescription>
+              <CardDescription className="text-slate-500 dark:text-slate-400">Professional architectural review and highlights</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -498,9 +498,9 @@ export default function PlanDetailPage() {
                   if (cleanPoints.length === 0) return null;
                   
                   return cleanPoints.map((point: string, i: number) => (
-                    <li key={i} className="flex items-start gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
+                    <li key={i} className="flex items-start gap-3 bg-white dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
-                      <p className="text-sm text-slate-300 leading-relaxed">{point}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{point}</p>
                     </li>
                   ));
                 })()}
@@ -513,22 +513,22 @@ export default function PlanDetailPage() {
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
             {/* Forensic Summary */}
-            <Card className="bg-slate-800/30 backdrop-blur-lg border-slate-700/50 shadow-2xl">
+            <Card className="bg-white dark:bg-slate-800/30 backdrop-blur-lg border-slate-200 dark:border-slate-700/50 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-white">
-                  <FileText className="w-5 h-5 text-blue-400" />
+                <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-white">
+                  <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
                   Forensic Compliance Summary
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-invert max-w-none">
+                <div className="prose dark:prose-invert max-w-none">
                   <ul className="space-y-4">
                     {(Array.isArray(analysisResult.summary) ? analysisResult.summary.join('\n') : (analysisResult.summary || "No summary available."))
                       .split('\n')
                       .filter(l => l.trim())
                       .map((line, i) => (
-                        <li key={i} className="flex items-start gap-3 text-slate-300">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                        <li key={i} className="flex items-start gap-3 text-slate-600 dark:text-slate-300">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
                           <p>{line.replace(/^[-•]\s*/, '').replace(/\*\*/g, '')}</p>
                         </li>
                       ))
@@ -540,9 +540,9 @@ export default function PlanDetailPage() {
 
             {/* Compliant Features Section */}
             {analysisResult.compliant_features && analysisResult.compliant_features.length > 0 && (
-              <Card className="bg-emerald-500/5 border-emerald-500/20">
+              <Card className="bg-emerald-500/5 border-emerald-500/20 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2 text-emerald-400">
+                  <CardTitle className="text-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                     <ShieldCheck className="w-5 h-5" />
                     Compliant Features & Positive Findings
                   </CardTitle>
@@ -550,7 +550,7 @@ export default function PlanDetailPage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(analysisResult.compliant_features || []).map((feature: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2 text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-emerald-500/10">
+                      <div key={i} className="flex items-center gap-2 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900/50 p-3 rounded-lg border border-slate-200 dark:border-emerald-500/10 shadow-sm">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                         <span className="text-sm">{feature}</span>
                       </div>
@@ -561,29 +561,29 @@ export default function PlanDetailPage() {
             )}
 
             {/* Identified Issues */}
-            <Card className="bg-slate-800/40 backdrop-blur-md border-slate-700/50">
+            <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-slate-200 dark:border-slate-700/50 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-white">
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-white">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
                   Code Compliance Findings
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {!analysisResult.issues || analysisResult.issues.length === 0 ? (
-                  <div className="text-center py-16 bg-slate-900/50 rounded-2xl border border-dashed border-slate-700">
+                  <div className="text-center py-16 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                     <ShieldCheck className="w-16 h-16 mx-auto mb-4 text-emerald-500/50" />
-                    <p className="text-lg font-bold text-white">Zero Violations Detected</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">Zero Violations Detected</p>
                     <p className="text-slate-500 text-sm mt-1">This plan fully adheres to the 2022 NYC Building Code</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {analysisResult.issues.map((issue: any, i: number) => (
-                      <Card key={i} className="bg-slate-900/60 border-slate-700 border-l-4 border-l-red-500 transition-all hover:bg-slate-900">
+                      <Card key={i} className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 border-l-4 border-l-red-500 transition-all hover:shadow-md">
                         <CardHeader className="py-4">
                           <div className="flex items-start justify-between">
                             <div className="space-y-1">
-                              <CardTitle className="text-white text-base">{issue.title}</CardTitle>
-                              <Badge className="bg-slate-800 text-slate-400 font-mono text-[10px] py-0 border-slate-700">{issue.rule || issue.code || 'CODE: N/A'}</Badge>
+                              <CardTitle className="text-slate-900 dark:text-white text-base">{issue.title}</CardTitle>
+                              <Badge variant="outline" className="text-slate-500 dark:text-slate-400 font-mono text-[10px] py-0 border-slate-200 dark:border-slate-700">{issue.rule || issue.code || 'CODE: N/A'}</Badge>
                             </div>
                             <Badge variant={issue.severity === 'critical' ? 'destructive' : 'secondary'} className="uppercase text-[10px] tracking-widest">
                               {issue.severity}
@@ -591,11 +591,11 @@ export default function PlanDetailPage() {
                           </div>
                         </CardHeader>
                         <CardContent className="pb-4">
-                          <p className="text-slate-400 text-sm leading-relaxed mb-4">{issue.description}</p>
+                          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-4">{issue.description}</p>
                           {(issue.suggestion || issue.recommendation) && (
-                            <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3">
-                              <p className="text-[10px] uppercase font-bold text-blue-400 mb-1">Required Correction</p>
-                              <p className="text-slate-300 text-sm">{issue.suggestion || issue.recommendation}</p>
+                            <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3">
+                              <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 mb-1">Required Correction</p>
+                              <p className="text-slate-600 dark:text-slate-300 text-sm">{issue.suggestion || issue.recommendation}</p>
                             </div>
                           )}
                         </CardContent>
@@ -610,14 +610,14 @@ export default function PlanDetailPage() {
           <div className="space-y-8">
             {/* Building Info / Rooms */}
             {analysisResult.building_info?.rooms && analysisResult.building_info.rooms.length > 0 && (
-              <Card className="bg-slate-800/50 border-slate-700">
+              <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-white text-base">Detected Habitable Spaces</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {analysisResult.building_info.rooms.map((room: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-2 rounded bg-slate-900/40 border border-slate-700/50">
+                      <div key={i} className="flex justify-between items-center p-2 rounded bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
                         <span className="text-sm text-slate-300 font-medium">{room.name}</span>
                         <Badge variant="outline" className="text-[10px] border-slate-600 text-slate-400">{room.dimensions || 'Dimensions Detected'}</Badge>
                       </div>
@@ -628,36 +628,36 @@ export default function PlanDetailPage() {
             )}
 
             {/* Issue Breakdown */}
-            <Card className="bg-slate-800/50 border-slate-700 shadow-xl">
-              <CardHeader><CardTitle className="text-white text-base">Issue Distribution</CardTitle></CardHeader>
+            <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
+              <CardHeader><CardTitle className="text-slate-900 dark:text-white text-base">Issue Distribution</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                  <span className="text-sm text-slate-400">Critical Hazards</span>
-                  <Badge className="bg-red-500/20 text-red-400 border-red-500/20">{(analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length}</Badge>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Critical Hazards</span>
+                  <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">{ (analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length }</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                  <span className="text-sm text-slate-400">Major Violations</span>
-                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/20">{(analysisResult.issues || []).filter((i: any) => i.severity === 'major').length}</Badge>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Major Violations</span>
+                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{ (analysisResult.issues || []).filter((i: any) => i.severity === 'major').length }</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                  <span className="text-sm text-slate-400">Minor Adherences</span>
-                  <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/20">{(analysisResult.issues || []).filter((i: any) => i.severity === 'minor').length}</Badge>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Minor Adherences</span>
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">{ (analysisResult.issues || []).filter((i: any) => i.severity === 'minor').length }</Badge>
                 </div>
               </CardContent>
             </Card>
 
             {/* Value Betterments */}
             {analysisResult.betterments && analysisResult.betterments.length > 0 && (
-              <Card className="bg-slate-800 border-emerald-500/20">
+              <Card className="bg-white dark:bg-slate-800 border-emerald-500/20 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-white text-base flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-emerald-400" />
+                  <CardTitle className="text-slate-900 dark:text-white text-base flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-emerald-500" />
                     Betterments
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {(analysisResult.betterments || []).map((b: string, i: number) => (
-                    <div key={i} className="text-xs text-slate-400 leading-relaxed border-b border-slate-700 pb-3 last:border-0 last:pb-0">
+                    <div key={i} className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-b border-slate-100 dark:border-slate-700 pb-3 last:border-0 last:pb-0">
                       <span className="text-emerald-500 font-bold mr-2">✦</span>
                       {b.replace(/^Betterment \d+:\s*/, '')}
                     </div>
@@ -668,7 +668,7 @@ export default function PlanDetailPage() {
 
             {/* Safety Systems Verified */}
             {analysisResult.systems_detected && analysisResult.systems_detected.length > 0 && (
-              <Card className="bg-slate-900 border-slate-700">
+              <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                 <CardHeader><CardTitle className="text-slate-300 text-xs uppercase tracking-widest">Systems Verified</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
                   {analysisResult.systems_detected.map((s: string, i: number) => (
