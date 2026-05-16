@@ -559,12 +559,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           }
         }
 
-        // Sanitizer: Remove weird AI artifacts like "'&" or symbols at the start
+        // Sanitizer: Remove weird AI artifacts and leading garbage
         const cleanPoints = appLines.map((p: string) => 
           p.trim()
-           .replace(/^['"&✦•\-\*\s]+/, '') // Remove leading garbage
-           .replace(/\s+/g, ' ')           // Clean up extra spaces
-        ).filter((p: string) => p.length > 0);
+           .replace(/^[^a-zA-Z0-9✦•\-\*]+/, '') // Remove all non-alphanumeric garbage at start
+           .replace(/\s+/g, ' ')                // Clean up extra spaces
+        ).filter((p: string) => p.length > 5);
 
         autoTable(doc, {
           startY: currentY,
@@ -572,16 +572,20 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           body: cleanPoints.map(p => [`✦ ${p}`]),
           theme: 'plain',
           styles: { 
-            fontSize: 10, 
+            fontSize: 9.5, 
             cellPadding: 6,
-            textColor: colors.secondary as [number, number, number],
-            fontStyle: 'normal'
+            textColor: [44, 62, 80],
+            font: 'helvetica',
+            fontStyle: 'normal',
+            lineColor: [245, 247, 250],
+            lineWidth: 0
           },
           bodyStyles: {
             fillColor: [245, 247, 250],
+            overflow: 'linebreak' // Ensure wrapping
           },
-          columnStyles: { 0: { cellWidth: pageWidth - 40 } },
-          margin: { left: 20, right: 20, top: 30, bottom: 40 }
+          columnStyles: { 0: { cellWidth: pageWidth - 50 } }, // Slightly narrower to be safe
+          margin: { left: 25, right: 25, top: 30, bottom: 40 }
         });
 
         const lastAppTable = (doc as any).lastAutoTable;
