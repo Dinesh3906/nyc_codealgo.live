@@ -21,14 +21,14 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
           </Badge>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-6 leading-[1.1]">
-            AI-Powered DOB Compliance
+            NYC Home Quote Verification
             <br />
-            <span className="text-gradient">Before You Submit</span>
+            <span className="text-gradient">& House Plan Validation</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-            Upload your plans and get instant compliance checks against NYC Department of Buildings codes. 
-            Reduce rejections. Save weeks.
+            The most trusted platform for New York construction quotes, building estimates, 
+            and architectural house plan validation. Verify with precision.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

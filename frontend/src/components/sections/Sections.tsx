@@ -19,7 +19,7 @@ export function ProblemSection() {
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <Badge variant="outline" className="mb-4 text-destructive border-destructive/30">The Problem</Badge>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-6">DOB Rejections Cost <span className="text-destructive">Time & Money</span></h2>
+          <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-6">Errors in <span className="text-destructive">New York construction quotes</span> Cost Time & Money</h2>
           <p className="text-lg text-muted-foreground">Submitting plans to the NYC DOB can be slow, complex, and frustrating. Small compliance issues lead to rejections, delays, and costly revisions.</p>
         </div>
 
@@ -56,8 +56,8 @@ export function SolutionSection() {
         <div className="flex flex-col lg:flex-row items-center gap-16">
           <div className="flex-1 max-w-2xl">
             <Badge className="mb-4">The Solution</Badge>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-6">Your <span className="text-gradient">AI Compliance Assistant</span></h2>
-            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">NYC House Code analyzes your architectural plans in seconds and flags potential DOB compliance issues before submission.</p>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-6">Verify <span className="text-gradient">House Plans</span> with AI Accuracy</h2>
+            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">CodeAlgo's Construction Estimate Validation analyzes your New York house plans in seconds and flags potential DOB compliance issues before submission.</p>
             
             <ul className="space-y-4 mb-8">
               {features.map((f, i) => (
