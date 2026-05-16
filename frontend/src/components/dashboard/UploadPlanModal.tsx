@@ -364,7 +364,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           startY: currentY,
           margin: { bottom: 30 },
           head: [['System Description', 'Status', 'Assessment Notes']],
-          body: analysisResult.systems_detected.map((s: any) => [s.name, s.status.toUpperCase(), s.notes || "No issues identified"]),
+          body: analysisResult.systems_detected.map((s: any) => [s.name || 'System', (s.status || 'unknown').toUpperCase(), s.notes || "No issues identified"]),
           theme: 'striped',
           headStyles: { 
             fillColor: [241, 245, 249], // Slate 100
@@ -439,8 +439,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           margin: { top: 30 }, // Add safe margin for headers
           head: [['Issue', 'Severity', 'Code Ref.', 'Recommendation']],
           body: issues.map((issue: any) => [
-            issue.title,
-            issue.severity.toUpperCase(),
+            issue.title || 'Compliance Issue',
+            (issue.severity || 'minor').toUpperCase(),
             issue.rule || issue.code || "N/A",
             issue.recommendation || issue.suggestion || issue.description || "-"
           ]),
@@ -504,9 +504,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 10, { align: 'center' });
         currentY += 15;
 
-        const appLines = (analysisResult.appreciation || "").split('\n').filter((l: string) => l.trim().length > 0);
+        // Handle appreciation as either string or array
+        let rawAppreciation = analysisResult.appreciation || "";
+        if (Array.isArray(rawAppreciation)) rawAppreciation = rawAppreciation.join('\n');
+        const appLines = String(rawAppreciation).split('\n').filter((l: string) => l.trim().length > 0);
         // Sanitizer: Remove weird AI artifacts like "'&" or symbols at the start
-        const cleanPoints = appLines.map((p: string) => p.trim().replace(/^['"&✦•\-\*\s]+/, '').trim());
+        const cleanPoints = appLines.map((p: string) => p.trim().replace(/^['"&✦•\-\*\s]+/, '').trim()).filter((p: string) => p.length > 0);
 
         autoTable(doc, {
           startY: currentY,
@@ -525,7 +528,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           columnStyles: { 0: { cellWidth: pageWidth - 40 } },
           margin: { left: 20, right: 20, top: 30 },
           didDrawPage: (data: any) => {
-            currentY = data.cursor.y;
+            currentY = data.cursor?.y || currentY;
           }
         });
 
