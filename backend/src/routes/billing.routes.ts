@@ -100,6 +100,7 @@ router.get('/usage', protect, async (req: any, res) => {
     console.error('Failed to fetch billing usage:', error);
     res.status(500).json({ message: 'Failed to load billing usage.' });
   }
+});
 // POST validate coupon
 router.post('/validate-coupon', protect, async (req: any, res) => {
   const { code, planId } = req.body;
