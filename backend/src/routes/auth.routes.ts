@@ -1,3 +1,4 @@
+import { Router } from 'express';
 import { login, register, getMe, forgotPassword, resetPassword } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 
