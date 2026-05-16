@@ -235,7 +235,7 @@ export default function LoginPage() {
                     required
                     maxLength={6}
                     placeholder="000000"
-                    className="w-40 text-center text-2xl font-mono tracking-[0.5em] h-14 border-2 border-emerald-500/30"
+                    className="w-full max-w-[260px] text-center text-3xl font-mono tracking-[0.4em] h-16 border-2 border-emerald-500/30 bg-slate-50/5 dark:bg-slate-900/50 rounded-xl"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   />
