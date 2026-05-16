@@ -94,7 +94,9 @@ router.get('/usage', protect, async (req: any, res) => {
     res.json({
       status: subStatus,
       limit: Number(scanLimit) || 0,
-      used
+      used,
+      email: req.user.email,
+      name: req.user.name
     });
   } catch (error) {
     console.error('Failed to fetch billing usage:', error);
