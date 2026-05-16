@@ -62,9 +62,10 @@ export default function BillingPage() {
             setUsage(usageRes.data);
             alert("Payment successful! Scan pack added.");
             setStep('plans');
-          } catch (err) {
+          } catch (err: any) {
             console.error(err);
-            alert("Payment verification failed.");
+            const msg = err.response?.data?.message || "Payment verification failed.";
+            alert(`Verification Error: ${msg}`);
           } finally {
             setLoading(false);
           }

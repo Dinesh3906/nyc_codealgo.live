@@ -4,9 +4,14 @@ import pool from '../db';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
-const getRazorpay = () => {
+const getRazorpayConfig = () => {
   const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_Sld4SjARAkmKx1';
   const keySecret = process.env.RAZORPAY_KEY_SECRET || 'VCXoKOb3aPlPE6IF675AxkHT';
+  return { keyId, keySecret };
+};
+
+const getRazorpay = () => {
+  const { keyId, keySecret } = getRazorpayConfig();
   return keyId && keySecret ? new Razorpay({ key_id: keyId, key_secret: keySecret }) : null;
 };
 
@@ -195,18 +200,23 @@ router.post('/confirm-session', protect, async (req: any, res) => {
   }
 
   try {
-    const secret = process.env.RAZORPAY_KEY_SECRET || '';
+    const { keySecret } = getRazorpayConfig();
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac('sha256', secret)
+      .createHmac('sha256', keySecret)
       .update(body.toString())
       .digest('hex');
 
+    console.log(`[RAZORPAY] Verifying signature for Order: ${razorpay_order_id}`);
+    console.log(`[RAZORPAY] Expected: ${expectedSignature.slice(0, 5)}..., Received: ${razorpay_signature.slice(0, 5)}...`);
+
     if (expectedSignature !== razorpay_signature) {
+      console.error(`[RAZORPAY] Signature mismatch for Order: ${razorpay_order_id}`);
       return res.status(400).json({ message: 'Invalid payment signature.' });
     }
 
     const order = await razorpay.orders.fetch(razorpay_order_id);
+    console.log(`[RAZORPAY] Order fetched successfully: ${order.id}. Status: ${order.status}`);
 
     const sessionUserId = order.notes?.userId;
     if (!sessionUserId || sessionUserId !== req.user.id) {
