@@ -93,6 +93,7 @@ export default function BillingPage() {
       id: 'pack-1',
       name: "Single Scan",
       description: "Perfect for a quick check",
+      originalPrice: "$3",
       price: "$2",
       period: "pack",
       features: [
@@ -101,12 +102,13 @@ export default function BillingPage() {
         "Detailed Report PDF",
         "Immediate Analysis"
       ],
-      badge: null
+      badge: "Anniversary Offer"
     },
     {
       id: 'pack-12',
       name: "Pro Pack",
       description: "Best for smaller projects",
+      originalPrice: "$30",
       price: "$20",
       period: "pack",
       features: [
@@ -115,12 +117,13 @@ export default function BillingPage() {
         "Expert Code Mapping",
         "Full Compliance Check"
       ],
-      badge: "Best Value"
+      badge: "Anniversary Offer"
     },
     {
       id: 'pack-65',
       name: "Enterprise Pack",
       description: "Bulk compliance checking",
+      originalPrice: "$130",
       price: "$100",
       period: "pack",
       features: [
@@ -129,7 +132,7 @@ export default function BillingPage() {
         "Priority Support",
         "Bulk Processing"
       ],
-      badge: null
+      badge: "Anniversary Offer"
     }
   ];
 
@@ -195,12 +198,27 @@ export default function BillingPage() {
               <CardHeader>
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
-                  {plan.badge && <Badge className="bg-accent text-accent-foreground">{plan.badge}</Badge>}
+                  {plan.badge && (
+                    <Badge 
+                      className={
+                        plan.badge === "Anniversary Offer" 
+                          ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-none shadow-sm" 
+                          : "bg-accent text-accent-foreground"
+                      }
+                    >
+                      {plan.badge}
+                    </Badge>
+                  )}
                 </div>
                 <CardDescription>{plan.description}</CardDescription>
-                <div className="mt-4">
+                <div className="mt-4 flex items-baseline gap-2">
+                  {(plan as any).originalPrice && (
+                    <span className="text-lg text-muted-foreground line-through decoration-red-500/50">
+                      {(plan as any).originalPrice}
+                    </span>
+                  )}
                   <span className="text-4xl font-extrabold">{plan.price}</span>
-                  <span className="text-muted-foreground ml-2">/ {plan.period}</span>
+                  <span className="text-muted-foreground text-sm">/ {plan.period}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
