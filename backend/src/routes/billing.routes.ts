@@ -217,9 +217,11 @@ router.post('/confirm-session', protect, async (req: any, res) => {
 
     const order = await razorpay.orders.fetch(razorpay_order_id);
     console.log(`[RAZORPAY] Order fetched successfully: ${order.id}. Status: ${order.status}`);
+    console.log(`[RAZORPAY] Order Notes:`, order.notes);
 
     const sessionUserId = order.notes?.userId;
-    if (!sessionUserId || sessionUserId !== req.user.id) {
+    if (!sessionUserId || String(sessionUserId) !== String(req.user.id)) {
+      console.error(`[RAZORPAY] User mismatch. Expected: ${req.user.id}, Got: ${sessionUserId}`);
       return res.status(403).json({ message: 'Order does not belong to this user.' });
     }
 
