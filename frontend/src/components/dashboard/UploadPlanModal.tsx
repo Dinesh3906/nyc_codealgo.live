@@ -610,15 +610,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${
-                  isDragActive ? 'border-slate-400 bg-slate-50' : 'border-slate-200 hover:border-slate-300'
+                  isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                 }`}
               >
                 <input {...getInputProps()} />
-                <Upload className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 {file ? (
                   <div>
-                    <p className="font-medium text-slate-900">{file.name}</p>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="font-medium text-foreground">{file.name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
                       {file.size < 1024 * 1024
                         ? `${(file.size / 1024).toFixed(2)} KB`
                         : `${(file.size / 1024 / 1024).toFixed(2)} MB`} • Ready to analyze
@@ -626,8 +626,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   </div>
                 ) : (
                   <div>
-                    <p className="font-medium text-slate-900">Drop your file here or click to browse</p>
-                    <p className="text-sm text-slate-500 mt-1">Supports PDF and image files</p>
+                    <p className="font-medium text-foreground">Drop your file here or click to browse</p>
+                    <p className="text-sm text-muted-foreground mt-1">Supports PDF and image files</p>
                   </div>
                 )}
               </div>
