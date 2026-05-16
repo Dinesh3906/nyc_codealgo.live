@@ -26,7 +26,6 @@ export default function PlanDetailPage() {
         const res = await api.get(`/plans/${id}`);
         let planData = res.data;
         
-        // Deep-parse analysisResult to handle any serialization format
         if (planData && planData.analysisResult) {
           let result = planData.analysisResult;
           let depth = 0;
@@ -180,41 +179,63 @@ export default function PlanDetailPage() {
         currentY += (splitLine.length * 5) + 3;
       });
 
-      // PAGE 2: HUMAN TOUCH (Appreciation)
-      if (analysisResult.appreciation) {
+      // PAGE 2: POSITIVE FINDINGS
+      if (analysisResult.compliant_features && analysisResult.compliant_features.length > 0) {
         doc.addPage();
-        currentY = 30;
-        doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
-        doc.rect(0, 0, pageWidth, 50, 'F');
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(18);
+        currentY = 25;
+        doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
+        doc.roundedRect(20, currentY, pageWidth - 40, 12, 3, 3, 'F');
+        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text("Senior Examiner's Appreciation", 20, 25);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'italic');
-        doc.text("Professional Review & Architectural Highlights", 20, 32);
+        doc.text("✓ POSITIVE FINDINGS & COMPLIANT FEATURES", 25, currentY + 8);
+        currentY += 20;
+
+        analysisResult.compliant_features.forEach((f: string) => {
+          const sf = doc.splitTextToSize(`✓ ${f}`, pageWidth - 50);
+          if (currentY + (sf.length * 5) > pageHeight - 30) { doc.addPage(); currentY = 25; }
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.text(sf, 25, currentY);
+          currentY += (sf.length * 5) + 5;
+        });
+        currentY += 10;
+      }
+
+      // PAGE 3: HUMAN TOUCH (Appreciation)
+      if (analysisResult.appreciation) {
+        if (currentY > pageHeight - 100) { doc.addPage(); currentY = 30; }
+        doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
+        doc.rect(0, currentY, pageWidth, 40, 'F');
+        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Senior Examiner's Appreciation", 20, currentY + 15);
+        currentY += 30;
         
-        currentY = 60;
         const appPoints = Array.isArray(analysisResult.appreciation) ? analysisResult.appreciation : [analysisResult.appreciation];
         appPoints.forEach((point) => {
           const splitPoint = doc.splitTextToSize(`✦ ${point}`, pageWidth - 50);
           if (currentY + (splitPoint.length * 5) > pageHeight - 30) { doc.addPage(); currentY = 25; }
           doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
           doc.text(splitPoint, 25, currentY);
-          currentY += (splitPoint.length * 5) + 5;
+          currentY += (splitPoint.length * 5) + 6;
         });
+        currentY += 10;
       }
 
       // DETAILED FINDINGS TABLE
       if (analysisResult.issues && analysisResult.issues.length > 0) {
-        if (currentY > pageHeight - 60) { doc.addPage(); currentY = 30; }
+        doc.addPage();
+        currentY = 20;
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text("Code Compliance Violations", 20, currentY + 15);
+        doc.text("Code Compliance Violations", 20, currentY + 10);
         
         autoTableModule.default(doc, {
-          startY: currentY + 25,
+          startY: currentY + 20,
           head: [['Issue', 'Severity', 'NYC Code Ref.', 'Action Required']],
           body: analysisResult.issues.map((i: any) => [i.title, i.severity.toUpperCase(), i.rule || i.code || 'N/A', i.recommendation || i.description]),
           theme: 'grid',
@@ -239,7 +260,7 @@ export default function PlanDetailPage() {
 
       // BETTERMENTS
       if (analysisResult.betterments && analysisResult.betterments.length > 0) {
-        if (currentY > pageHeight - 60) { doc.addPage(); currentY = 30; }
+        if (currentY > pageHeight - 60) { doc.addPage(); currentY = 25; }
         doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
         doc.roundedRect(20, currentY, pageWidth - 40, 10, 2, 2, 'F');
         doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
@@ -253,30 +274,29 @@ export default function PlanDetailPage() {
           if (currentY + (splitB.length * 5) > pageHeight - 30) { doc.addPage(); currentY = 25; }
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
           doc.text(splitB, 25, currentY);
-          currentY += (splitB.length * 5) + 4;
+          currentY += (splitB.length * 5) + 5;
         });
       }
 
       // SAFETY SYSTEMS VERIFICATION
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        if (currentY > pageHeight - 40) { doc.addPage(); currentY = 30; }
+        if (currentY > pageHeight - 60) { doc.addPage(); currentY = 25; }
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text("Life Safety Systems Verified", 20, currentY + 10);
+        doc.text("Verified Life Safety Systems", 20, currentY + 10);
         
-        const systems = analysisResult.systems_detected.map((s: string) => [s, "VERIFIED PRESENT"]);
         autoTableModule.default(doc, {
           startY: currentY + 15,
-          head: [['System Description', 'Verification Status']],
-          body: systems,
+          head: [['System Description', 'Status']],
+          body: analysisResult.systems_detected.map((s: string) => [s, "VERIFIED PRESENT"]),
           theme: 'striped',
           styles: { fontSize: 8 },
           headStyles: { fillColor: [240, 240, 240], textColor: colors.primary as [number, number, number] }
         });
       }
 
-      doc.save(`Forensic_Compliance_Audit_${plan.fileName.split('.')[0]}.pdf`);
+      doc.save(`Forensic_Audit_${plan.fileName.split('.')[0]}.pdf`);
     });
   };
 
@@ -424,6 +444,28 @@ export default function PlanDetailPage() {
               </CardContent>
             </Card>
 
+            {/* Compliant Features Section */}
+            {analysisResult.compliant_features && analysisResult.compliant_features.length > 0 && (
+              <Card className="bg-emerald-500/5 border-emerald-500/20">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2 text-emerald-400">
+                    <ShieldCheck className="w-5 h-5" />
+                    Compliant Features & Positive Findings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {analysisResult.compliant_features.map((feature: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-emerald-500/10">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Identified Issues */}
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
@@ -472,6 +514,25 @@ export default function PlanDetailPage() {
           </div>
 
           <div className="space-y-8">
+            {/* Building Info / Rooms */}
+            {analysisResult.building_info?.rooms && analysisResult.building_info.rooms.length > 0 && (
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white text-base">Detected Habitable Spaces</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analysisResult.building_info.rooms.map((room: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center p-2 rounded bg-slate-900/40 border border-slate-700/50">
+                        <span className="text-sm text-slate-300 font-medium">{room.name}</span>
+                        <Badge variant="outline" className="text-[10px] border-slate-600 text-slate-400">{room.dimensions || 'Dimensions Detected'}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Issue Breakdown */}
             <Card className="bg-slate-800/50 border-slate-700 shadow-xl">
               <CardHeader><CardTitle className="text-white text-base">Issue Distribution</CardTitle></CardHeader>
