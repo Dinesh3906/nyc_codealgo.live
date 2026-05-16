@@ -473,13 +473,19 @@ export default function PlanDetailPage() {
                   if (Array.isArray(raw)) {
                     points = raw;
                   } else if (typeof raw === 'string') {
-                    // Split by double newlines or single newlines that look like points
-                    points = raw.split(/\n+/).map(p => p.trim()).filter(p => p.length > 5);
+                    // Robust splitting: split by bullets, numbers, or sentences
+                    points = raw.split(/(?:^|\n)(?:[•\-\*\d\.]+\s*|✦\s*)/).filter(l => l.trim().length > 5);
+                    if (points.length <= 1) {
+                      points = raw.split(/[.!?]+\s+/).filter(l => l.trim().length > 10);
+                    }
                   }
                   
-                  if (points.length === 0) return null;
+                  // Final clean up of each point
+                  const cleanPoints = points.map(p => p.trim().replace(/^['"&✦•\-\*\s]+/, '')).filter(p => p.length > 0);
                   
-                  return points.map((point: string, i: number) => (
+                  if (cleanPoints.length === 0) return null;
+                  
+                  return cleanPoints.map((point: string, i: number) => (
                     <li key={i} className="flex items-start gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
                       <p className="text-sm text-slate-300 leading-relaxed">{point}</p>
