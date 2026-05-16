@@ -36,7 +36,11 @@ export async function checkComplianceTS(housePlanPath: string) {
     // For images, we prepare for VISION
     console.log(`[RAG] Image detected, preparing for Llama 90B Vision...`);
     const imageBuffer = fs.readFileSync(housePlanPath);
-    base64Image = imageBuffer.toString('base64');
+    let mime = 'image/jpeg';
+    if (fileExt === '.png') mime = 'image/png';
+    else if (fileExt === '.webp') mime = 'image/webp';
+    else if (fileExt === '.heic') mime = 'image/heic';
+    base64Image = `data:${mime};base64,${imageBuffer.toString('base64')}`;
     // Still do OCR as a fallback/supplement
     housePlanText = await OCRService.extractText(housePlanPath, "image");
   }
