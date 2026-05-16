@@ -7,6 +7,7 @@ import { CreditCard, CheckCircle2, Loader2, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function BillingPage() {
@@ -78,10 +79,22 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading billing details...</p>
+      <div className="space-y-8">
+        <div>
+          <Skeleton className="h-10 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid gap-6 md:grid-cols-3">
+            <Skeleton className="h-[400px] w-full" />
+            <Skeleton className="h-[400px] w-full" />
+            <Skeleton className="h-[400px] w-full" />
+          </div>
         </div>
       </div>
     );

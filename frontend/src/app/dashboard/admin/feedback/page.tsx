@@ -30,6 +30,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { toast } from "react-hot-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Feedback {
   id: string;
@@ -78,8 +79,25 @@ export default function AdminFeedbackPage() {
 
   if (!hasHydrated || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background p-6 lg:p-12">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-10" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+          <div className="border rounded-lg p-4 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
