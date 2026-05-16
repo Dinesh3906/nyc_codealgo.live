@@ -34,15 +34,7 @@ const io = new Server(httpServer, {
 });
 
 app.use(cors({ 
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Blocked request from origin: ${origin}`);
-      callback(null, true);
-    }
-  },
+  origin: true, // Allow all origins to resolve production CORS issues permanently
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
