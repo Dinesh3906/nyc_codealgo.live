@@ -74,7 +74,7 @@ export default function BillingPage() {
           email: usage?.email || ""
         },
         theme: {
-          color: "#3b82f6"
+          color: "#10b981" // Emerald primary
         }
       };
 
@@ -199,7 +199,7 @@ export default function BillingPage() {
             <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
-                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                  <TrendingUp className="w-5 h-5 text-emerald-400" />
                   Scan Credits
                 </CardTitle>
                 <CardDescription className="text-slate-400">
@@ -209,13 +209,13 @@ export default function BillingPage() {
               <CardContent className="space-y-4">
                 <div className="h-2.5 w-full bg-slate-900 border border-slate-700 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-700 ${progressPercent > 80 ? 'bg-red-500' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]'}`}
+                    className={`h-full transition-all duration-700 ${progressPercent > 80 ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-400 font-medium">Credits Remaining</span>
-                  <Badge variant={usage.limit - usage.used > 0 ? "default" : "destructive"} className={usage.limit - usage.used > 0 ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : ""}>
+                  <Badge variant={usage.limit - usage.used > 0 ? "default" : "destructive"} className={usage.limit - usage.used > 0 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : ""}>
                     {Math.max(0, usage.limit - usage.used)} Scans
                   </Badge>
                 </div>
@@ -228,15 +228,15 @@ export default function BillingPage() {
               </CardHeader>
               <CardContent className="text-sm text-slate-400 space-y-3">
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                   <p>Credits never expire and stay on your account until used.</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                   <p>Each plan upload and forensic analysis consumes 1 credit.</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                   <p>Purchase packs at any time to add credits instantly to your balance.</p>
                 </div>
               </CardContent>
@@ -252,11 +252,11 @@ export default function BillingPage() {
                   <Card
                     key={index}
                     onClick={() => setSelectedPlan(index)}
-                    className={`relative cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 group ${isSelected ? 'border-2 border-blue-500 shadow-lg shadow-blue-500/20 bg-slate-800/60' : 'bg-slate-800/40 border-slate-700/50'}`}
+                    className={`relative cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 group ${isSelected ? 'border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 bg-slate-800/60' : 'bg-slate-800/40 border-slate-700/50'}`}
                   >
                     {plan.badge === "Anniversary Offer" && (
                       <div className="absolute top-4 right-4 z-20">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] px-3 py-1 rounded-full shadow-lg border border-white/20 font-bold uppercase tracking-wider animate-pulse">
+                        <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[10px] px-3 py-1 rounded-full shadow-lg border border-white/20 font-bold uppercase tracking-wider">
                           Anniversary Offer
                         </div>
                       </div>
@@ -278,14 +278,14 @@ export default function BillingPage() {
                       <ul className="space-y-3">
                         {plan.features.map((feature, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                            <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
                       <Button
                         variant={isSelected ? 'default' : 'outline'}
-                        className={`w-full py-6 font-bold uppercase tracking-widest ${isSelected ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 border-none' : 'border-slate-700 text-slate-300 hover:bg-slate-700/50'}`}
+                        className={`w-full py-6 font-bold uppercase tracking-widest ${isSelected ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 border-none' : 'border-slate-700 text-slate-300 hover:bg-slate-700/50'}`}
                         onClick={(e) => { e.stopPropagation(); startCheckout(plan); }}
                       >
                         Select Pack
@@ -337,8 +337,8 @@ export default function BillingPage() {
                     <div className="flex gap-2">
                       <input 
                         type="text" 
-                        placeholder="Enter code (e.g. ANNIVERSARY)" 
-                        className="flex-1 bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="Enter code" 
+                        className="flex-1 bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       />
@@ -350,18 +350,17 @@ export default function BillingPage() {
                         {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
                       </Button>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-medium">Anniversary special: Try ANNIVERSARY for extra savings!</p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-500/5 border-blue-500/20">
+              <Card className="bg-emerald-500/5 border-emerald-500/20">
                 <CardContent className="py-4 flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 rounded-full">
-                    <CreditCard className="w-5 h-5 text-blue-400" />
+                  <div className="p-2 bg-emerald-500/10 rounded-full">
+                    <CreditCard className="w-5 h-5 text-emerald-400" />
                   </div>
                   <p className="text-sm text-slate-300">
-                    Your purchase is secured by <span className="text-blue-400 font-bold uppercase tracking-tight italic">Razorpay</span>. Taxes and processing fees are included in the final price.
+                    Your purchase is secured by <span className="text-emerald-400 font-bold uppercase tracking-tight italic">Razorpay</span>. Taxes and processing fees are included in the final price.
                   </p>
                 </CardContent>
               </Card>
@@ -390,14 +389,14 @@ export default function BillingPage() {
                     </div>
                     <div className="pt-4 border-t border-slate-700 flex justify-between items-baseline">
                       <span className="text-lg font-bold text-white">Total Bill</span>
-                      <span className="text-3xl font-black text-blue-400 font-mono">
+                      <span className="text-3xl font-black text-emerald-400 font-mono">
                         ${Math.max(0, parseInt(checkoutPlan?.price.replace('$', '')) - discount)}.00
                       </span>
                     </div>
                   </div>
 
                   <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-8 text-lg font-black uppercase tracking-widest shadow-lg shadow-blue-600/30"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-8 text-lg font-black uppercase tracking-widest shadow-lg shadow-emerald-600/30"
                     disabled={loading}
                     onClick={() => handleUpgrade(checkoutPlan.id)}
                   >
