@@ -151,8 +151,9 @@ export async function checkComplianceTS(housePlanPath: string) {
 CRITICAL MISSION:
 1. SCORING: Encouraging professional score (78-85%).
 2. HUMAN-LIKE ARCHITECTURAL APPRECIATION: Start by proving you are an experienced, thoughtful Senior Plan Examiner. Provide exactly 9-11 highly profound, humanoid bullet points showing deep architectural understanding.
-3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
-4. ARCHITECTURAL BETTERMENTS: Provide 5-7 advanced architectural value-add recommendations tailored specifically to the layout provided.
+3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022. 
+4. INDIVIDUAL ISSUES: DO NOT bunch multiple violations into one. For EVERY discrepancy found, create a SEPARATE entry in the "issues" array. If you find 5 violations, there must be 5 entries in "issues".
+5. ARCHITECTURAL BETTERMENTS: Provide 5-7 advanced architectural value-add recommendations tailored specifically to the layout provided.
 
 REFERENCE CONTEXT (NYC BUILDING CODES):
 ${contexts.substring(0, 1000000)}

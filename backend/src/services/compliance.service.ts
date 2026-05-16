@@ -122,19 +122,46 @@ export class CompliancePipeline {
           else severity.minor++;
         });
       } else if (agentResponse.percentage < 100) {
-        // If no structured issues but score is not perfect, create a generic one
-        const summaryText = agentResponse.summary || "Review required";
-        issues.push({
-          title: "General Compliance Review",
-          description: summaryText,
-          severity: agentResponse.percentage < 70 ? 'critical' : agentResponse.percentage < 85 ? 'major' : 'minor',
-          rule: "NYC Building Code 2022",
-          suggestion: "Consult with a licensed architect or engineer for detailed review"
-        });
+        // --- SMART ISSUE UNPACKER ---
+        // If no structured issues but summary has bullets (AI bunched them up), unpack them!
+        const summaryText = agentResponse.summary || "";
+        const bulletPattern = /(?:\n|^)\s*-\s*\*\*([^*]+)\*\*:\s*([^*]+(?:\n\s*[^-*].*)*)/g;
+        let match;
+        let unpackedCount = 0;
 
-        if (agentResponse.percentage < 70) severity.critical = 1;
-        else if (agentResponse.percentage < 85) severity.major = 1;
-        else severity.minor = 1;
+        while ((match = bulletPattern.exec(summaryText)) !== null) {
+          const title = match[1].trim();
+          const description = match[2].trim();
+          
+          issues.push({
+            title: title,
+            description: description,
+            severity: agentResponse.percentage < 70 ? 'critical' : agentResponse.percentage < 85 ? 'major' : 'minor',
+            rule: "NYC Building Code 2022",
+            suggestion: "Refer to the specific NYC Code section mentioned above for correction requirements."
+          });
+
+          if (agentResponse.percentage < 70) severity.critical++;
+          else if (agentResponse.percentage < 85) severity.major++;
+          else severity.minor++;
+          
+          unpackedCount++;
+        }
+
+        // Fallback: If no bullets found to unpack, create one generic issue as before
+        if (unpackedCount === 0) {
+          issues.push({
+            title: "General Compliance Review",
+            description: summaryText || "A comprehensive review of the plan is required to address several minor inconsistencies found during the forensic audit.",
+            severity: agentResponse.percentage < 70 ? 'critical' : agentResponse.percentage < 85 ? 'major' : 'minor',
+            rule: "NYC Building Code 2022",
+            suggestion: "Consult with a licensed architect or engineer for detailed review"
+          });
+
+          if (agentResponse.percentage < 70) severity.critical = 1;
+          else if (agentResponse.percentage < 85) severity.major = 1;
+          else severity.minor = 1;
+        }
       }
 
       const finalResult: ComplianceResult = {
