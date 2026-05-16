@@ -197,7 +197,7 @@ export default function BillingPage() {
             >
               {plan.badge === "Anniversary Offer" && (
                 <div className="absolute top-0 right-0 w-32 h-32 overflow-hidden pointer-events-none z-10">
-                  <div className="absolute top-5 -right-11 w-44 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[9px] font-black text-center uppercase tracking-widest rotate-45 shadow-md border-y border-white/20">
+                  <div className="absolute top-6 -right-16 w-56 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[8px] font-black text-center uppercase tracking-widest rotate-45 shadow-md border-y border-white/20">
                     Anniversary Offer
                   </div>
                 </div>
