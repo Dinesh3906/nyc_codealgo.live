@@ -136,7 +136,7 @@ export async function checkComplianceTS(housePlanPath: string) {
   let response;
   let retryCount = 0;
   const maxRetries = 3;
-  const models = ['google/gemini-2.0-flash-001', 'openai/gpt-4o-mini', 'google/gemini-pro-1.5'];
+  const models = ['google/gemini-2.0-flash-001', 'openai/gpt-4o-mini', 'google/gemini-flash-1.5', 'google/gemini-1.5-pro'];
   
   // Dynamic Context Scaling: Start at 60k (Ultra-Safe), scale down if 402 occurs
   let currentContextLimit = 60000; 

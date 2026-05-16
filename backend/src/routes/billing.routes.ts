@@ -86,7 +86,7 @@ router.get('/usage', protect, async (req: any, res) => {
 
   try {
     const [rows]: any = await pool.query(
-      'SELECT COUNT(*) as count FROM `plan` WHERE userId = ?',
+      "SELECT COUNT(*) as count FROM `plan` WHERE userId = ? AND status IN ('analyzed', 'processing')",
       [userId]
     );
     const used = Number(rows[0]?.count || 0);

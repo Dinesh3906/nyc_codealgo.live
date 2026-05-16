@@ -205,37 +205,64 @@ export default function PlanDetailPage() {
 
       // PAGE 3: HUMAN TOUCH (Appreciation)
       if (analysisResult.appreciation) {
-        if (currentY > pageHeight - 100) { doc.addPage(); currentY = 30; }
-        doc.setFillColor(colors.bgLight[0], colors.bgLight[1], colors.bgLight[2]);
-        doc.rect(0, currentY, pageWidth, 40, 'F');
-        doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Senior Examiner's Appreciation", 20, currentY + 15);
-        currentY += 30;
+        doc.addPage();
+        currentY = 30;
         
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.rect(20, currentY, pageWidth - 40, 15, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 10, { align: 'center' });
+        currentY += 15;
+
         const appPoints = Array.isArray(analysisResult.appreciation) ? analysisResult.appreciation : [analysisResult.appreciation];
-        appPoints.forEach((point) => {
-          const splitPoint = doc.splitTextToSize(`✦ ${point}`, pageWidth - 50);
-          if (currentY + (splitPoint.length * 5) > pageHeight - 30) { doc.addPage(); currentY = 25; }
-          doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-          doc.text(splitPoint, 25, currentY);
-          currentY += (splitPoint.length * 5) + 6;
+        const cleanPoints = appPoints.map(p => p.trim().replace(/^['"&✦•\-\*]+/, '').trim());
+
+        autoTableModule.default(doc, {
+          startY: currentY,
+          head: [],
+          body: cleanPoints.map(p => [`✦ ${p}`]),
+          theme: 'plain',
+          styles: { 
+            fontSize: 10, 
+            cellPadding: 6,
+            textColor: colors.secondary as [number, number, number],
+            fontStyle: 'normal'
+          },
+          bodyStyles: {
+            fillColor: [245, 247, 250], // Light professional background
+          },
+          columnStyles: { 0: { cellWidth: pageWidth - 40 } },
+          margin: { left: 20, right: 20, top: 30 },
+          didDrawPage: (data: any) => {
+            currentY = data.cursor.y;
+          }
         });
+        
+        currentY += 15;
+        // Digital Signature Look
+        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.3);
+        doc.line(20, currentY, 80, currentY);
+        doc.setFontSize(8);
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
+        doc.text("Senior AI Plan Examiner #8842", 20, currentY + 5);
         currentY += 10;
       }
 
       // DETAILED FINDINGS TABLE
       if (analysisResult.issues && analysisResult.issues.length > 0) {
         doc.addPage();
-        currentY = 20;
+        currentY = 30; // Move down to avoid header
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text("Code Compliance Violations", 20, currentY + 10);
+        doc.text("Code Compliance Violations", 20, currentY);
+        currentY += 10;
         
         autoTableModule.default(doc, {
-          startY: currentY + 20,
+          startY: currentY + 10,
+          margin: { top: 30 }, // Safe margin for multi-page tables
           head: [['Issue', 'Severity', 'NYC Code Ref.', 'Action Required']],
           body: analysisResult.issues.map((i: any) => [i.title, i.severity.toUpperCase(), i.rule || i.code || 'N/A', i.recommendation || i.description]),
           theme: 'grid',
@@ -280,15 +307,17 @@ export default function PlanDetailPage() {
 
       // SAFETY SYSTEMS VERIFICATION
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
-        if (currentY > pageHeight - 60) { doc.addPage(); currentY = 25; }
+        if (currentY > pageHeight - 60) { doc.addPage(); currentY = 30; }
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(12);
+        doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text("Verified Life Safety Systems", 20, currentY + 10);
+        doc.text("Structural & Mechanical Rooms Detected", 20, currentY);
+        currentY += 10;
         
         autoTableModule.default(doc, {
-          startY: currentY + 15,
-          head: [['System Description', 'Status']],
+          startY: currentY + 10,
+          margin: { top: 30 },
+          head: [['Room Name', 'Dimensions / Label', 'Code Classification']],
           body: analysisResult.systems_detected.map((s: string) => [s, "VERIFIED PRESENT"]),
           theme: 'striped',
           styles: { fontSize: 8 },

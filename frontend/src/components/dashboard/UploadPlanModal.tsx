@@ -436,6 +436,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       } else {
         autoTable(doc, {
           startY: currentY,
+          margin: { top: 30 }, // Add safe margin for headers
           head: [['Issue', 'Severity', 'Code Ref.', 'Recommendation']],
           body: issues.map((issue: any) => [
             issue.title,
@@ -493,56 +494,51 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       // --- CONCLUDING ASSESSMENT & APPRECIATION ---
       if (analysisResult.appreciation) {
         doc.addPage();
-        currentY = 40;
-
-        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.rect(20, currentY, pageWidth - 40, 12, 'F');
+        currentY = 30;
         
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+        doc.rect(20, currentY, pageWidth - 40, 15, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
+        doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 8, { align: 'center' });
-        currentY += 25;
+        doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 10, { align: 'center' });
+        currentY += 15;
 
         const appLines = (analysisResult.appreciation || "").split('\n').filter((l: string) => l.trim().length > 0);
-        
-        doc.setFillColor(245, 247, 250); // Light blue-grey background
-        const cardHeight = (appLines.length * 8) + 15;
-        doc.roundedRect(25, currentY - 5, pageWidth - 50, cardHeight, 3, 3, 'F');
-        
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        
-        appLines.forEach((line: string, idx: number) => {
-          if (currentY > pageHeight - 35) {
-            doc.addPage();
-            currentY = 30;
-            doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Senior Examiner's Full Detail Review (cont.)", pageWidth / 2, currentY, { align: 'center' });
-            currentY += 15;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          }
+        // Sanitizer: Remove weird AI artifacts like "'&" or symbols at the start
+        const cleanPoints = appLines.map(p => p.trim().replace(/^['"&✦•\-\*]+/, '').trim());
 
-          const cleanLine = line.replace(/^[•\-\*]\s*/, '');
-          const wrappedLine = doc.splitTextToSize(`• ${cleanLine}`, pageWidth - 70);
-          doc.text(wrappedLine, 35, currentY);
-          currentY += (wrappedLine.length * 5) + 3;
+        autoTable(doc, {
+          startY: currentY,
+          head: [],
+          body: cleanPoints.map(p => [`✦ ${p}`]),
+          theme: 'plain',
+          styles: { 
+            fontSize: 10, 
+            cellPadding: 6,
+            textColor: colors.secondary as [number, number, number],
+            fontStyle: 'normal'
+          },
+          bodyStyles: {
+            fillColor: [245, 247, 250],
+          },
+          columnStyles: { 0: { cellWidth: pageWidth - 40 } },
+          margin: { left: 20, right: 20, top: 30 },
+          didDrawPage: (data: any) => {
+            currentY = data.cursor.y;
+          }
         });
 
+        currentY += 15;
         // Final Stamp System
         const stampX = pageWidth - 65;
         const stampY = currentY;
         
         doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.6);
         doc.setLineWidth(1.5);
-        doc.circle(stampX + 20, stampY + 20, 18); // Outer Circle
+        doc.circle(stampX + 20, stampY + 20, 18);
         doc.setLineWidth(0.5);
-        doc.circle(stampX + 20, stampY + 20, 15); // Inner Circle
+        doc.circle(stampX + 20, stampY + 20, 15);
         
         doc.setFontSize(5);
         doc.setFont('helvetica', 'bold');
