@@ -5,8 +5,7 @@ const PORT = process.env.PORT || 5000;
 
 // PRODUCTION HARDENING: Required Env Vars
 const REQUIRED_ENV_VARS = [
-  'GROQ_API_KEY',
-  'OPENROUTER_API_KEY',
+  'GOOGLE_AI_STUDIO_KEY',
   'PINECONE_API_KEY',
   'DB_HOST',
   'DB_USER',
