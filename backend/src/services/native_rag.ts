@@ -179,10 +179,21 @@ Return valid JSON with mandatory appreciation and betterments:
     ];
 
     if (base64Image) {
+      let mimeType = "image/jpeg";
+      let data = base64Image;
+      
+      if (base64Image.startsWith("data:")) {
+        const matches = base64Image.match(/^data:(.+);base64,(.*)$/);
+        if (matches && matches.length === 3) {
+          mimeType = matches[1];
+          data = matches[2];
+        }
+      }
+
       parts.push({
         inlineData: {
-          mimeType: "image/jpeg",
-          data: base64Image
+          mimeType: mimeType,
+          data: data
         }
       });
     }
