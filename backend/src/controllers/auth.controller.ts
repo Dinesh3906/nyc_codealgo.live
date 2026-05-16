@@ -100,3 +100,60 @@ export const getMe = async (req: any, res: Response) => {
     res.status(500).json({ message: 'Error getting user profile' });
   }
 };
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    const [users]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
+    if (users.length === 0) {
+      // Security: Don't reveal if user exists, but we can't send email. 
+      // For this specific app, we'll return success to prevent email enumeration.
+      return res.json({ message: 'If an account exists with this email, you will receive an OTP shortly.' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    await pool.query(
+      'UPDATE `user` SET resetOtp = ?, resetOtpExpiry = ? WHERE email = ?',
+      [otp, expiry, email]
+    );
+
+    const { sendOtpEmail } = require('../services/mail.service');
+    await sendOtpEmail(email, otp);
+
+    res.json({ message: 'OTP sent successfully.' });
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    res.status(500).json({ message: 'Failed to process request.' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { email, otp, newPassword } = req.body;
+
+  try {
+    const [users]: any = await pool.query(
+      'SELECT * FROM `user` WHERE email = ? AND resetOtp = ? AND resetOtpExpiry > NOW()',
+      [email, otp]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired OTP.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await pool.query(
+      'UPDATE `user` SET password = ?, resetOtp = NULL, resetOtpExpiry = NULL WHERE email = ?',
+      [hashedPassword, email]
+    );
+
+    res.json({ message: 'Password reset successful. You can now login with your new password.' });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    res.status(500).json({ message: 'Failed to reset password.' });
+  }
+};

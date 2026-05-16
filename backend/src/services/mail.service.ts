@@ -62,3 +62,41 @@ export const sendFeedbackEmail = async (data: {
 
   return transporter.sendMail(mailOptions);
 };
+
+export const sendOtpEmail = async (email: string, otp: string) => {
+  // Fallback if SMTP not configured
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
+    console.warn(`⚠️ SMTP not configured. OTP for ${email}: ${otp}`);
+    return { messageId: 'mock-id-dev-mode' };
+  }
+
+  const mailOptions = {
+    from: `"NYC House Code Support" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Your Verification Code: ${otp}`,
+    html: `
+      <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #0f172a; padding: 30px; text-align: center;">
+          <h1 style="color: #10b981; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">NYC House Code</h1>
+        </div>
+        <div style="padding: 40px 30px; text-align: center;">
+          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">Password Reset</h2>
+          <p style="color: #64748b; font-size: 15px; line-height: 24px; margin-bottom: 30px;">
+            You requested to reset your password. Use the verification code below to continue. This code expires in 15 minutes.
+          </p>
+          <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1; display: inline-block;">
+            <span style="font-family: monospace; font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #10b981;">${otp}</span>
+          </div>
+          <p style="color: #94a3b8; font-size: 13px; margin-top: 30px;">
+            If you didn't request this, you can safely ignore this email.
+          </p>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} NYC House Code. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
