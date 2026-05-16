@@ -199,11 +199,10 @@ export default function BillingPage() {
               className={`relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isSelected ? 'border-2 border-primary shadow-lg shadow-primary/10 bg-gradient-to-b from-primary/5 to-transparent' : 'border-border/60'}`}
             >
               {plan.badge === "Anniversary Offer" && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                  <div className={`${partyFont.className} bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-white text-[11px] px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1.5 whitespace-nowrap animate-bounce`}>
+                <div className="absolute top-4 right-4 z-20">
+                  <div className={`${partyFont.className} bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[11px] px-3 py-1 rounded-full shadow-md border border-white/30 flex items-center gap-1.5 whitespace-nowrap`}>
                     <Sparkles className="w-3 h-3" />
                     Anniversary Offer
-                    <Sparkles className="w-3 h-3" />
                   </div>
                 </div>
               )}
