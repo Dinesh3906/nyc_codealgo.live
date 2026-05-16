@@ -197,37 +197,37 @@ export default function BillingPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md">
+            <Card className="bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <TrendingUp className="w-5 h-5 text-emerald-400" />
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                  <TrendingUp className="w-5 h-5 text-emerald-500" />
                   Scan Credits
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-500 dark:text-slate-400">
                   {usage.used} of {usage.limit} lifetime scans used
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="h-2.5 w-full bg-slate-900 border border-slate-700 rounded-full overflow-hidden">
+                <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all duration-700 ${progressPercent > 80 ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400 font-medium">Credits Remaining</span>
-                  <Badge variant={usage.limit - usage.used > 0 ? "default" : "destructive"} className={usage.limit - usage.used > 0 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : ""}>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Credits Remaining</span>
+                  <Badge variant={usage.limit - usage.used > 0 ? "default" : "destructive"} className={usage.limit - usage.used > 0 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/30" : ""}>
                     {Math.max(0, usage.limit - usage.used)} Scans
                   </Badge>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/20 border-slate-700/50 border-dashed backdrop-blur-sm">
+            <Card className="bg-slate-50 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700/50 border-dashed backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-sm font-semibold text-slate-300 uppercase tracking-wider">How it works</CardTitle>
+                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">How it works</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-slate-400 space-y-3">
+              <CardContent className="text-sm text-slate-500 dark:text-slate-400 space-y-3">
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                   <p>Credits never expire and stay on your account until used.</p>
@@ -245,7 +245,7 @@ export default function BillingPage() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-white">Purchase Scan Packs</h2>
+            <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Purchase Scan Packs</h2>
             <div className="grid gap-6 md:grid-cols-3">
               {plans.map((plan, index) => {
                 const isSelected = selectedPlan === index;
@@ -253,7 +253,7 @@ export default function BillingPage() {
                   <Card
                     key={index}
                     onClick={() => setSelectedPlan(index)}
-                    className={`relative cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 group ${isSelected ? 'border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 bg-slate-800/60' : 'bg-slate-800/40 border-slate-700/50'}`}
+                    className={`relative cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 group ${isSelected ? 'border-2 border-emerald-500 shadow-lg shadow-emerald-500/10 dark:shadow-emerald-500/20 bg-emerald-50/10 dark:bg-slate-800/60' : 'bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50'}`}
                   >
                     {plan.badge === "Anniversary Offer" && (
                       <div className="absolute top-4 right-4 z-20">
@@ -263,22 +263,22 @@ export default function BillingPage() {
                       </div>
                     )}
                     <CardHeader>
-                      <CardTitle className="text-xl font-bold text-white">{plan.name}</CardTitle>
-                      <CardDescription className="text-slate-400">{plan.description}</CardDescription>
+                      <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">{plan.name}</CardTitle>
+                      <CardDescription className="text-slate-500 dark:text-slate-400">{plan.description}</CardDescription>
                       <div className="mt-4 flex items-baseline gap-2">
                         {plan.originalPrice && (
-                          <span className="text-lg text-slate-500 line-through decoration-red-500/50 font-medium">
+                          <span className="text-lg text-slate-400 dark:text-slate-500 line-through decoration-red-500/50 font-medium">
                             {plan.originalPrice}
                           </span>
                         )}
-                        <span className="text-4xl font-black text-white">{plan.price}</span>
+                        <span className="text-4xl font-black text-slate-900 dark:text-white">{plan.price}</span>
                         <span className="text-slate-500 text-sm font-medium">/ {plan.period}</span>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <ul className="space-y-3">
                         {plan.features.map((feature, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                          <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                             <span>{feature}</span>
                           </li>
@@ -286,7 +286,7 @@ export default function BillingPage() {
                       </ul>
                       <Button
                         variant={isSelected ? 'default' : 'outline'}
-                        className={`w-full py-6 font-bold uppercase tracking-widest ${isSelected ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 border-none' : 'border-slate-700 text-slate-300 hover:bg-slate-700/50'}`}
+                        className={`w-full py-6 font-bold uppercase tracking-widest ${isSelected ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 border-none' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'}`}
                         onClick={(e) => { e.stopPropagation(); startCheckout(plan); }}
                       >
                         Select Pack
@@ -313,40 +313,32 @@ export default function BillingPage() {
 
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
-              <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md">
+              <Card className="bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-lg text-white">Billing Details</CardTitle>
+                  <CardTitle className="text-slate-900 dark:text-white">Billing Details</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Account Email</label>
-                      <div className="p-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-300 font-mono text-sm">
-                        {usage?.email || "user@example.com"}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase">Selected Item</label>
-                      <div className="p-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-bold text-sm">
-                        {checkoutPlan?.name}
-                      </div>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Account Email</label>
+                    <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-700 dark:text-slate-300 font-mono text-sm">
+                      {usage?.email || "user@example.com"}
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase">Apply Coupon Code</label>
                     <div className="flex gap-2">
                       <input 
                         type="text" 
                         placeholder="Enter code" 
-                        className="flex-1 bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                        className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       />
                       <Button 
                         disabled={couponLoading || !couponCode} 
                         onClick={applyCoupon}
-                        className="bg-slate-700 hover:bg-slate-600 text-white"
+                        className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white"
                       >
                         {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
                       </Button>
@@ -358,39 +350,39 @@ export default function BillingPage() {
               <Card className="bg-emerald-500/5 border-emerald-500/20">
                 <CardContent className="py-4 flex items-center gap-3">
                   <div className="p-2 bg-emerald-500/10 rounded-full">
-                    <CreditCard className="w-5 h-5 text-emerald-400" />
+                    <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <p className="text-sm text-slate-300">
-                    Your purchase is secured by <span className="text-emerald-400 font-bold uppercase tracking-tight italic">Razorpay</span>. Taxes and processing fees are included in the final price.
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Your purchase is secured by <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-tight italic">Razorpay</span>. Taxes and processing fees are included in the final price.
                   </p>
                 </CardContent>
               </Card>
             </div>
 
             <div className="space-y-6">
-              <Card className="bg-slate-800/60 border-slate-700/50 shadow-2xl sticky top-24">
+              <Card className="bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 shadow-2xl sticky top-24">
                 <CardHeader>
-                  <CardTitle className="text-white">Payment Summary</CardTitle>
+                  <CardTitle className="text-slate-900 dark:text-white">Payment Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
                       <span>Subtotal</span>
-                      <span className="text-white font-mono">{checkoutPlan?.price}</span>
+                      <span className="text-slate-900 dark:text-white font-mono">{checkoutPlan?.price}</span>
                     </div>
                     {discount > 0 && (
-                      <div className="flex justify-between text-emerald-400 font-medium">
+                      <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
                         <span>Discount</span>
                         <span>-${discount}.00</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
                       <span>Tax (included)</span>
                       <span>$0.00</span>
                     </div>
-                    <div className="pt-4 border-t border-slate-700 flex justify-between items-baseline">
-                      <span className="text-lg font-bold text-white">Total Bill</span>
-                      <span className="text-3xl font-black text-emerald-400 font-mono">
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-baseline">
+                      <span className="text-lg font-bold text-slate-900 dark:text-white">Total Bill</span>
+                      <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
                         ${Math.max(0, parseInt(checkoutPlan?.price.replace('$', '')) - discount)}.00
                       </span>
                     </div>
