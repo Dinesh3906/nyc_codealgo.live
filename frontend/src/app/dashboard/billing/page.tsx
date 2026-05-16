@@ -303,10 +303,10 @@ export default function BillingPage() {
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-white">Order Summary</h1>
-              <p className="text-slate-400 mt-1">Review your scan pack selection and complete purchase</p>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Order Summary</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">Review your scan pack selection and complete purchase</p>
             </div>
-            <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => setStep('plans')}>
+            <Button variant="ghost" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" onClick={() => setStep('plans')}>
               Back to Plans
             </Button>
           </div>
@@ -396,9 +396,9 @@ export default function BillingPage() {
                     {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : `Pay Now`}
                   </Button>
                   
-                  <div className="flex flex-col items-center gap-2 text-[10px] text-slate-500 text-center">
+                  <div className="flex flex-col items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 text-center">
                     <p>By clicking "Pay Now", you agree to our Terms of Service.</p>
-                    <p className="font-bold text-slate-400">✔ All Taxes Included</p>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-500">✔ All Taxes Included</p>
                   </div>
                 </CardContent>
               </Card>
