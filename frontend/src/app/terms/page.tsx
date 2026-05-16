@@ -5,7 +5,7 @@ import { Footer } from "@/components/sections/Sections";
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background lg:ml-56 mt-14 lg:mt-0">
       <Navbar onOpenModal={() => {}} />
       <div className="container mx-auto px-6 py-24 max-w-4xl">
         <h1 className="text-4xl font-extrabold mb-8 text-foreground">Terms and Conditions</h1>
