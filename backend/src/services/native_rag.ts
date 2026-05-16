@@ -41,8 +41,8 @@ export async function checkComplianceTS(housePlanPath: string) {
     else if (fileExt === '.webp') mime = 'image/webp';
     else if (fileExt === '.heic') mime = 'image/heic';
     base64Image = `data:${mime};base64,${imageBuffer.toString('base64')}`;
-    // Still do OCR as a fallback/supplement
-    housePlanText = await OCRService.extractText(housePlanPath, "image");
+    // Gemini handles Vision natively. No need for slow local OCR which hangs the server.
+    housePlanText = "Vision-based analysis (Image provided)";
   }
 
   console.log(`[RAG] Data prepared. Text: ${housePlanText.length} chars. Image: ${base64Image ? 'PRESENT' : 'NONE'}`);
@@ -141,8 +141,8 @@ export async function checkComplianceTS(housePlanPath: string) {
   let retryCount = 0;
   const maxRetries = 2;
   const models = [
-    "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-2.5-flash"
   ];
   
   // Direct Google AI Studio system prompt
@@ -202,10 +202,14 @@ Return valid JSON with mandatory appreciation and betterments:
       });
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
     try {
       response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
           systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -222,6 +226,8 @@ Return valid JSON with mandatory appreciation and betterments:
           ]
         })
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errBody = await response.text();
