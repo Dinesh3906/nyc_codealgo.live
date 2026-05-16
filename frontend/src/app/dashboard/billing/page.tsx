@@ -193,19 +193,20 @@ export default function BillingPage() {
             <Card
               key={index}
               onClick={() => setSelectedPlan(index)}
-              className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isSelected ? 'border-2 border-primary shadow-lg shadow-primary/10 bg-gradient-to-b from-primary/5 to-transparent' : 'border-border/60'}`}
+              className={`relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isSelected ? 'border-2 border-primary shadow-lg shadow-primary/10 bg-gradient-to-b from-primary/5 to-transparent' : 'border-border/60'}`}
             >
+              {plan.badge === "Anniversary Offer" && (
+                <div className="absolute top-0 right-0 w-32 h-32 overflow-hidden pointer-events-none z-10">
+                  <div className="absolute top-6 -right-8 w-40 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[10px] font-bold text-center uppercase tracking-wider rotate-45 shadow-sm ring-1 ring-white/20">
+                    Anniversary Offer
+                  </div>
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
-                  {plan.badge && (
-                    <Badge 
-                      className={
-                        plan.badge === "Anniversary Offer" 
-                          ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-none shadow-sm" 
-                          : "bg-accent text-accent-foreground"
-                      }
-                    >
+                  {plan.badge && plan.badge !== "Anniversary Offer" && (
+                    <Badge className="bg-accent text-accent-foreground">
                       {plan.badge}
                     </Badge>
                   )}
