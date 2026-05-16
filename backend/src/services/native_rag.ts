@@ -131,209 +131,96 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
   }
 
-  console.log(`[RAG] === VERSION 4.2 STABLE === Sending ${contexts.substring(0, 40000).length} chars of PDF data...`);
+  console.log(`[RAG] === GOOGLE AI STUDIO VERSION === Sending ${contexts.length} chars of PDF data...`);
 
   let response;
   let retryCount = 0;
-  const maxRetries = 3;
-  const models = ['google/gemini-2.5-flash', 'openai/gpt-4o-mini', 'google/gemini-2.5-pro'];
+  const maxRetries = 2;
+  const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
   
-  // Dynamic Context Scaling: Start at 60k (Ultra-Safe), scale down if 402 occurs
-  let currentContextLimit = 60000; 
+  // Direct Google AI Studio system prompt
+  const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner. 
+
+CRITICAL MISSION:
+1. SCORING: Encouraging professional score (78-85%).
+2. HUMAN-LIKE ARCHITECTURAL APPRECIATION: Start by proving you are an experienced, thoughtful Senior Plan Examiner. Provide exactly 9-11 highly profound, humanoid bullet points showing deep architectural understanding.
+3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
+4. ARCHITECTURAL BETTERMENTS: Provide 5-7 advanced architectural value-add recommendations tailored specifically to the layout provided.
+
+REFERENCE CONTEXT (NYC BUILDING CODES):
+${contexts.substring(0, 1000000)}
+
+Return valid JSON with mandatory appreciation and betterments:
+{
+  "appreciation": ["..."],
+  "betterments": ["..."],
+  "percentage": <number>,
+  "summary": "<A detailed forensic audit summary using explicit newlines and bullet points (- )>",
+  "compliant_features": ["..."],
+  "issues": [{"title":"...","description":"...","severity":"...","code":"...","recommendation":"..."}],
+  "is_valid_plan": true,
+  "document_type": "Architectural Plan",
+  "building_info": {"type":"...","rooms":[]},
+  "systems_detected": []
+}`;
 
   while (retryCount <= maxRetries) {
     const currentModel = models[retryCount % models.length];
-    console.log(`[RAG] === PRODUCTION VERSION 5.0 LIVE === Attempt ${retryCount + 1} | Model: ${currentModel} | Limit: ${currentContextLimit}`);
+    const apiKey = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
-    // Re-construct user content with the current limit
-    const dynamicUserContent: any[] = [
-      {
-        type: "text",
-        text: `Analyze this NYC architectural plan for code compliance. 
-        
-        GLOBAL GROUND TRUTH (Massive Retrieval from 113 NYC Building Code PDFs):
-        ${contexts.substring(0, currentContextLimit)}
-        
-        EXTRACTED DATA:
-        ${housePlanText.substring(0, 5000)}`
-      }
+    console.log(`[RAG] Attempt ${retryCount + 1} | Model: ${currentModel}`);
+
+    const parts: any[] = [
+      { text: `Analyze this architectural plan. Extracted Text Data: ${planData.substring(0, 50000)}` }
     ];
 
     if (base64Image) {
-      dynamicUserContent.push({
-        type: "image_url",
-        image_url: {
-          url: `data:image/jpeg;base64,${base64Image}`
+      parts.push({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
         }
       });
     }
 
-    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nyccodes.codealgo.live',
-        'X-Title': 'NYC Code Compliance Analyzer'
-      },
-      body: JSON.stringify({
-        model: currentModel,
-        messages: [
-          {
-            role: "system",
-            content: `You are a senior NYC Department of Buildings Plan Examiner. 
-
-CRITICAL MISSION:
-1. SCORING: Encouraging professional score (78-85%).
-2. HUMAN-LIKE ARCHITECTURAL APPRECIATION: Start by proving you are an experienced, thoughtful Senior Plan Examiner. 
-   - DO NOT state the obvious (e.g., "The dimensions are clearly labeled", "The doors swing practically", or "The kitchen is efficient"). That is robotic and useless.
-   - INSTEAD, provide deep, novel architectural insights that the user might not immediately realize.
-   - Comment intelligently on the spatial flow, how natural light interacts with the specific geometry, the structural intelligence of the layout, or how programmatic zones (public vs private) are cleverly separated.
-   - Provide exactly 9-11 highly profound, humanoid, narrative bullet points that show deep architectural understanding and praise.
-3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022.
-4. ARCHITECTURAL BETTERMENTS: Based strictly on the specific layout and rooms detected in THIS uploaded plan, provide 5-7 advanced architectural value-add recommendations. 
-   - DO NOT give generic advice. DO NOT use predefined templates.
-   - Reference the exact rooms, dimensions, or geometries you actually see in the provided image/text.
-   - Suggest spatial optimizations, workflow efficiency, natural daylighting improvements, or modern functionality upgrades tailored specifically to the layout provided.
-   - Do NOT suggest basic safety code compliance (no smoke detectors, no exit signs).
-   Be highly informative and sound like an experienced Senior Architect giving design critique.
-
-AUDIT METHODOLOGY:
-Scan the ENTIRE plan systematically. Check every room, every door, every window, every wall, every symbol, every label, every dimension. If something is missing, unlabeled, or non-compliant — report it. 
-
-CATEGORIES TO AUDIT (check ALL of these):
-
-LIFE SAFETY SYSTEMS:
-- Smoke detectors/alarms in every sleeping room and hallway (NYC BC §907.2)
-- Carbon monoxide detectors near sleeping areas (NYC BC §908.7)  
-- Fire extinguisher locations (NYC BC §906)
-- Sprinkler system indicators if required (NYC BC §903)
-- Fire alarm pull stations (NYC BC §907.4)
-
-MEANS OF EGRESS:
-- EXIT sign locations at every exit door (NYC BC §1013)
-- Emergency lighting (NYC BC §1008)
-- Egress path widths — minimum 36" for corridors (NYC BC §1020)
-- Two means of egress if occupant load > 20 (NYC BC §1006)
-- Dead-end corridor limits — max 20ft (NYC BC §1020.4)
-- Travel distance to exits (NYC BC §1017)
-
-DOORS & OPENINGS:
-- Every door must show clear width — min 32" (NYC BC §1010.1.1)
-- Main entry must be min 36" for ADA (ADA §404.2.3)
-- Door swing direction labeled (NYC BC §1010.1.2)
-- Hardware type for exit doors (NYC BC §1010.1.9)
-
-WINDOWS:
-- Emergency escape windows in sleeping rooms — min 5.7 sq ft net clear opening (NYC BC §1030.2)
-- Window sill height — max 44" above floor (NYC BC §1030.3)
-- Natural light — min 8% of floor area (NYC BC §1205.2)
-- Natural ventilation — min 4% of floor area (NYC BC §1203.5)
-
-STAIRS & RAMPS:
-- Stair riser height — max 7¾" (NYC BC §1011.5.2)
-- Stair tread depth — min 10" (NYC BC §1011.5.2) 
-- Handrail on both sides (NYC BC §1012)
-- Guardrail height — min 42" (NYC BC §1015)
-- Headroom — min 6'8" (NYC BC §1011.3)
-
-ROOM DIMENSIONS:
-- Habitable room min area — 70 sq ft (NYC BC §1208.3)
-- Min ceiling height — 7'6" for habitable rooms (NYC BC §1208.2)
-- Room dimensions and total area calculations
-- Kitchen clearances between counters
-
-ACCESSIBILITY (ADA):
-- Accessible route from entrance (ADA §402)
-- Bathroom clearances — 60" turning radius (ADA §603)
-- Accessible kitchen if applicable (ADA §804)
-- Lever-handle hardware (ADA §404.2.7)
-
-STRUCTURAL & MEP:
-- Electrical panel location (NYC EC §240.24)
-- HVAC system indicators
-- Plumbing fixture counts vs occupant load (NYC PC §403)
-- Structural column/beam markings
-
-DOCUMENTATION:
-- Professional architect/engineer stamp (NYC Admin Code §28-104.1)
-- Scale and north arrow
-- Title block with address, date, project number
-- Zoning district and FAR calculations (NYC ZR §12-10)
-
-SCORING: Aim for an encouraging, professional score. Start at 85. 
-- A plan with minor documentation issues should score between 70-75%.
-- Only deduct heavily if fundamental life safety (Smoke/CO) is missing.
-- Critical violation: -5 points each
-- Major violation: -2 points each
-- Minor violation: -1 point each
-
-Return valid JSON with mandatory appreciation and betterments:
-{
-  "appreciation": ["Point 1: Specific observation", "Point 2: Specific observation", "..."],
-  "betterments": ["Betterment 1: ...", "Betterment 2: ...", "..."],
-  "percentage": <number>,
-  "summary": "<A highly detailed forensic audit summary using explicit newlines and bullet points (- ) for EVERY point. Do NOT write a paragraph.>",
-  "compliant_features": ["list of things the architect did CORRECTLY"],
-  "issues": [{"title":"...","description":"...","severity":"critical|major|minor","code":"NYC code section","recommendation":"..."}],
-  "is_valid_plan": <boolean>,
-  "document_type": "<type>",
-  "building_info": {"type":"...","rooms":[{"name":"...","dimensions":"..."}]},
-  "systems_detected": ["list of safety systems actually visible on the plan"]
-} `
-          },
-          {
-            role: "user",
-            content: dynamicUserContent
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json"
           }
-        ],
-        temperature: 0.0,
-        max_tokens: 8192,
-        response_format: { type: "json_object" }
-      })
-    });
+        })
+      });
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.warn(`[RAG] Model ${currentModel} returned ${response.status}: ${errBody.substring(0, 200)}`);
-
-      // Handle token limit errors by scaling down context
-      if ((response.status === 402 || response.status === 400) && 
-          (errBody.includes("limit exceeded") || errBody.includes("tokens"))) {
-        console.warn(`[RAG] Token limit exceeded. Scaling context from ${currentContextLimit} -> ${currentContextLimit - 40000}`);
-        currentContextLimit = Math.max(20000, currentContextLimit - 40000);
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.warn(`[RAG] Google API Error (${response.status}): ${errBody.substring(0, 200)}`);
         retryCount++;
         continue;
       }
 
-      // Handle rate limiting
-      if (response.status === 429) {
-        console.warn(`[RAG] Hit rate limit (429). Waiting 5s before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        retryCount++;
-        continue;
-      }
-
-      // For any other error (404, 400 invalid model, etc.) — try next model
-      if (retryCount < maxRetries) {
-        console.warn(`[RAG] Falling back to next model (attempt ${retryCount + 2})...`);
-        retryCount++;
-        continue;
-      }
-      
-      // All models exhausted
-      throw new Error(`Tunnel error: ${response.status} - ${errBody}`);
+      break; // Success!
+    } catch (e) {
+      console.error(`[RAG] Connection error:`, e);
+      retryCount++;
     }
-
-    // Success!
-    break;
   }
 
-  const chatCompletion = await response!.json();
-  console.log(`[RAG] GROQ-TUNNEL response received successfully!`);
-  const rawOut = chatCompletion.choices?.[0]?.message?.content || "{}";
+  if (!response || !response.ok) {
+    throw new Error(`Google AI Studio failed after ${retryCount} retries.`);
+  }
+
+  const data = await response.json();
+  const rawOut = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
   
-  // DEBUG: Log the raw AI response so we can see exactly what it returned
+  // DEBUG: Log the raw AI response
   console.log(`[RAG] === RAW AI RESPONSE ===`);
   console.log(rawOut.substring(0, 2000));
   console.log(`[RAG] === END RAW RESPONSE ===`);
