@@ -28,7 +28,7 @@ export const checkUsageLimit = async (req: any, res: Response, next: NextFunctio
 
   try {
     const [rows]: any = await pool.query(
-      'SELECT COUNT(*) as count FROM `plan` WHERE userId = ?',
+      "SELECT COUNT(*) as count FROM `plan` WHERE userId = ? AND status <> 'failed'",
       [userId]
     );
     const planCount = Number(rows[0]?.count || 0);
