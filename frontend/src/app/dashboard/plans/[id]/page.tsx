@@ -433,12 +433,25 @@ export default function PlanDetailPage() {
             </CardHeader>
             <CardContent>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(Array.isArray(analysisResult.appreciation) ? analysisResult.appreciation : [analysisResult.appreciation]).map((point: string, i: number) => (
-                  <li key={i} className="flex items-start gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
-                    <p className="text-sm text-slate-300 leading-relaxed">{point}</p>
-                  </li>
-                ))}
+                {(() => {
+                  const raw = analysisResult.appreciation;
+                  let points: string[] = [];
+                  if (Array.isArray(raw)) {
+                    points = raw;
+                  } else if (typeof raw === 'string') {
+                    // Split by double newlines or single newlines that look like points
+                    points = raw.split(/\n+/).map(p => p.trim()).filter(p => p.length > 5);
+                  }
+                  
+                  if (points.length === 0) return null;
+                  
+                  return points.map((point: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+                      <p className="text-sm text-slate-300 leading-relaxed">{point}</p>
+                    </li>
+                  ));
+                })()}
               </ul>
             </CardContent>
           </Card>
