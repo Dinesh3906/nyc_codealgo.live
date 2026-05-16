@@ -446,7 +446,7 @@ export default function PlanDetailPage() {
               </div>
             </CardHeader>
           </Card>
-          <Card className="bg-slate-800 border-slate-700 flex flex-col items-center justify-center p-6 text-center shadow-xl">
+          <Card className="bg-slate-800/40 backdrop-blur-md border-slate-700/50 flex flex-col items-center justify-center p-6 text-center shadow-xl">
             <div className="text-5xl font-black text-blue-400 mb-1">{analysisResult.percentage || analysisResult.score || 0}%</div>
             <p className="text-xs uppercase tracking-widest text-slate-500 font-bold">Compliance Score</p>
           </Card>
@@ -501,7 +501,7 @@ export default function PlanDetailPage() {
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
             {/* Forensic Summary */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-slate-800/30 backdrop-blur-lg border-slate-700/50 shadow-2xl">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-white">
                   <FileText className="w-5 h-5 text-blue-400" />
@@ -549,7 +549,7 @@ export default function PlanDetailPage() {
             )}
 
             {/* Identified Issues */}
-            <Card className="bg-slate-800/50 border-slate-700">
+            <Card className="bg-slate-800/40 backdrop-blur-md border-slate-700/50">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-white">
                   <AlertTriangle className="w-5 h-5 text-red-400" />

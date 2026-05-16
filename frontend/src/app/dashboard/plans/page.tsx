@@ -42,7 +42,7 @@ export default function PlansHub() {
         </div>
       </div>
 
-      <Card>
+      <Card className="bg-slate-800/30 backdrop-blur-lg border-slate-700/50 shadow-2xl overflow-hidden">
         <CardContent className="p-0">
           {loading && plans.length === 0 ? (
             <div className="p-4 space-y-4">

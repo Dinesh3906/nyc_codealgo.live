@@ -69,27 +69,27 @@ export default function DashboardOverview() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat, i) => (
-          <Card key={i}>
+          <Card key={i} className="bg-slate-800/40 backdrop-blur-md border-slate-700/50 shadow-xl transition-all hover:bg-slate-800/60">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-              <stat.icon className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-wider">{stat.label}</CardTitle>
+              <stat.icon className="h-5 w-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-3xl font-black text-white">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card>
+      <Card className="bg-slate-800/30 backdrop-blur-lg border-slate-700/50 shadow-2xl">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Recent Analysis</CardTitle>
-              <CardDescription>Your latest compliance checks</CardDescription>
+              <CardTitle className="text-xl font-bold text-white">Recent Analysis</CardTitle>
+              <CardDescription className="text-slate-400">Your latest compliance checks</CardDescription>
             </div>
             <Link href="/dashboard/plans">
-              <Button variant="outline" size="sm">View All</Button>
+              <Button variant="outline" size="sm" className="bg-slate-800/50 border-slate-700 hover:bg-slate-700">View All</Button>
             </Link>
           </div>
         </CardHeader>
