@@ -55,8 +55,8 @@ export const sendFeedbackEmail = async (data: {
       </div>
     `,
     attachments: data.attachments?.map(file => ({
-      filename: file.originalname,
-      content: file.buffer,
+      filename: file.filename || file.originalname,
+      content: file.content || file.buffer,
     })),
   };
 
