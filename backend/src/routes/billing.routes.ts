@@ -174,7 +174,8 @@ router.post('/create-checkout', protect, async (req: any, res) => {
     res.json({
       orderId: order.id,
       amount: options.amount,
-      currency: options.currency
+      currency: options.currency,
+      keyId: getRazorpayConfig().keyId
     });
   } catch (error) {
     console.error('Razorpay error:', error);

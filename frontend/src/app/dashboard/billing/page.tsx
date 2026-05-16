@@ -41,10 +41,10 @@ export default function BillingPage() {
         plan: planId,
         couponCode: discount > 0 ? couponCode : null 
       });
-      const { orderId, amount, currency } = res.data;
+      const { orderId, amount, currency, keyId } = res.data;
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: amount,
         currency: currency,
         name: "NYC Code Compliance AI",
