@@ -45,17 +45,17 @@ export default function DashboardOverview() {
 
   if (loading && plans.length === 0) {
     return (
-      <div className="space-y-8 p-6">
+      <div className="space-y-8">
         <div className="space-y-2">
-          <Skeleton className="h-10 w-48 bg-slate-800" />
-          <Skeleton className="h-4 w-64 bg-slate-800" />
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-4 w-64" />
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          <Skeleton className="h-32 bg-slate-800" />
-          <Skeleton className="h-32 bg-slate-800" />
-          <Skeleton className="h-32 bg-slate-800" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
         </div>
-        <Skeleton className="h-96 w-full bg-slate-800" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -69,27 +69,27 @@ export default function DashboardOverview() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat, i) => (
-          <Card key={i} className="bg-slate-800/40 backdrop-blur-md border-slate-700/50 shadow-xl transition-all hover:bg-slate-800/60">
+          <Card key={i} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-slate-200 dark:border-slate-700/50 shadow-sm transition-all hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-wider">{stat.label}</CardTitle>
-              <stat.icon className="h-5 w-5 text-primary" />
+              <CardTitle className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</CardTitle>
+              <stat.icon className="h-5 w-5 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-white">{stat.value}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="bg-slate-800/30 backdrop-blur-lg border-slate-700/50 shadow-2xl">
+      <Card className="bg-white dark:bg-slate-800/30 backdrop-blur-lg border-slate-200 dark:border-slate-700/50 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl font-bold text-white">Recent Analysis</CardTitle>
-              <CardDescription className="text-slate-400">Your latest compliance checks</CardDescription>
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Recent Analysis</CardTitle>
+              <CardDescription className="text-slate-500 dark:text-slate-400">Your latest compliance checks</CardDescription>
             </div>
             <Link href="/dashboard/plans">
-              <Button variant="outline" size="sm" className="bg-slate-800/50 border-slate-700 hover:bg-slate-700">View All</Button>
+              <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">View All</Button>
             </Link>
           </div>
         </CardHeader>
@@ -122,11 +122,11 @@ export default function DashboardOverview() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'}>
+                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'} className="capitalize">
                           {plan.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-bold text-blue-400">
+                      <TableCell className="text-right font-bold text-emerald-500">
                         {score}%
                       </TableCell>
                       <TableCell className="text-right">

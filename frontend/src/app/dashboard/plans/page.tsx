@@ -42,16 +42,16 @@ export default function PlansHub() {
         </div>
       </div>
 
-      <Card className="bg-slate-800/30 backdrop-blur-lg border-slate-700/50 shadow-2xl overflow-hidden">
+      <Card className="bg-white dark:bg-slate-800/30 backdrop-blur-lg border-slate-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
         <CardContent className="p-0">
           {loading && plans.length === 0 ? (
             <div className="p-4 space-y-4">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded bg-slate-800" />
+                  <Skeleton className="h-12 w-12 rounded" />
                   <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-[250px] bg-slate-800" />
-                    <Skeleton className="h-4 w-[200px] bg-slate-800" />
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
                   </div>
                 </div>
               ))}
@@ -95,11 +95,11 @@ export default function PlansHub() {
                         {new Date(plan.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'}>
+                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'} className="capitalize">
                           {plan.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-bold text-blue-400">
+                      <TableCell className="text-right font-bold text-emerald-500">
                         {score}%
                       </TableCell>
                       <TableCell className="text-right">
