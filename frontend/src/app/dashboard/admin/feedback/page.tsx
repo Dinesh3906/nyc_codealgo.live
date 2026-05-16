@@ -116,7 +116,7 @@ export default function AdminFeedbackPage() {
             <p className="text-muted-foreground">View and manage all user complaints and suggestions</p>
           </div>
           <Button onClick={fetchFeedbacks} variant="outline" size="icon">
-            <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`w-4 h-4 ${loading ? 'opacity-50' : ''}`} />
           </Button>
         </div>
 

@@ -130,11 +130,13 @@ export default function ServicesPage() {
               <div className="pt-12">
                 <Button type="submit" className="w-full" disabled={leadLoading}>
                   {leadLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span className="animate-pulse">Submitting...</span>
                   ) : (
-                    <Send className="w-4 h-4 mr-2" />
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Submit Lead
+                    </>
                   )}
-                  Submit Lead
                 </Button>
               </div>
             </form>
@@ -215,11 +217,13 @@ export default function ServicesPage() {
                 disabled={contractorLoading}
               >
                 {contractorLoading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <span className="animate-pulse">Registering...</span>
                 ) : (
-                  <Building2 className="w-4 h-4 mr-2" />
+                  <>
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Register as Contractor
+                  </>
                 )}
-                Register as Contractor
               </Button>
             </form>
           </CardContent>

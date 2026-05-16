@@ -123,7 +123,7 @@ export default function RegisterPage() {
 
             <Button disabled={loading} className="w-full shadow-lg shadow-primary/20 mt-2" size="lg">
               {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <span className="animate-pulse">Registering...</span>
               ) : (
                 <>
                   Create Account

@@ -47,12 +47,18 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     }
   },
   deletePlan: async (id: string) => {
+    const previousPlans = get().plans;
+    // Optimistic Update
+    set({ plans: previousPlans.filter((p) => p.id !== id) });
+    
     try {
       await api.delete(`/plans/${id}`);
-      const plans = get().plans.filter((p) => p.id !== id);
-      set({ plans });
+      toast.success("Plan deleted successfully");
     } catch (err) {
-       toast.error("Error deleting plan.");
+      console.error(err);
+      toast.error("Error deleting plan. Restoring...");
+      // Rollback on failure
+      set({ plans: previousPlans });
     }
   },
   initSocket: () => {

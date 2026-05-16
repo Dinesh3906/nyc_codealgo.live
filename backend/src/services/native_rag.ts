@@ -115,7 +115,7 @@ export async function checkComplianceTS(housePlanPath: string) {
       text: `Analyze this NYC architectural plan for code compliance. 
       
       GLOBAL GROUND TRUTH (Massive Retrieval from 113 NYC Building Code PDFs):
-      ${contexts.substring(0, 150000)}
+      ${contexts.substring(0, 40000)}
       
       EXTRACTED DATA:
       ${housePlanText.substring(0, 5000)}`
@@ -131,16 +131,42 @@ export async function checkComplianceTS(housePlanPath: string) {
     });
   }
 
-  console.log(`[RAG] === VERSION 4.1 STABLE === Sending ${contexts.substring(0, 150000).length} chars of PDF data...`);
+  console.log(`[RAG] === VERSION 4.2 STABLE === Sending ${contexts.substring(0, 40000).length} chars of PDF data...`);
 
   let response;
   let retryCount = 0;
-  const maxRetries = 2;
+  const maxRetries = 3;
   const models = ['google/gemini-2.0-flash-001', 'openai/gpt-4o-mini', 'google/gemini-pro-1.5'];
+  
+  // Dynamic Context Scaling: Start high, scale down only if 402 occurs
+  let currentContextLimit = 120000; 
 
   while (retryCount <= maxRetries) {
     const currentModel = models[retryCount % models.length];
-    console.log(`[RAG] Attempt ${retryCount + 1} using ${currentModel}...`);
+    console.log(`[RAG] Attempt ${retryCount + 1} | Model: ${currentModel} | Context Limit: ${currentContextLimit} chars`);
+
+    // Re-construct user content with the current limit
+    const dynamicUserContent: any[] = [
+      {
+        type: "text",
+        text: `Analyze this NYC architectural plan for code compliance. 
+        
+        GLOBAL GROUND TRUTH (Massive Retrieval from 113 NYC Building Code PDFs):
+        ${contexts.substring(0, currentContextLimit)}
+        
+        EXTRACTED DATA:
+        ${housePlanText.substring(0, 5000)}`
+      }
+    ];
+
+    if (base64Image) {
+      dynamicUserContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/jpeg;base64,${base64Image}`
+        }
+      });
+    }
 
     response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -258,7 +284,7 @@ Return valid JSON with mandatory appreciation and betterments:
           },
           {
             role: "user",
-            content: userContent
+            content: dynamicUserContent
           }
         ],
         temperature: 0.0,
@@ -267,8 +293,18 @@ Return valid JSON with mandatory appreciation and betterments:
       })
     });
 
+    if (response.status === 402 || (response.status === 400 && retryCount < maxRetries)) {
+      const errBody = await response.text();
+      if (errBody.includes("limit exceeded") || errBody.includes("tokens")) {
+        console.warn(`[RAG] Token limit exceeded (402/400). Scaling context from ${currentContextLimit} -> ${currentContextLimit - 40000}`);
+        currentContextLimit = Math.max(20000, currentContextLimit - 40000);
+        retryCount++;
+        continue;
+      }
+    }
+
     if (response.status === 429) {
-      console.warn(`[RAG] Hit rate limit (429). Waiting 5s before retry ${retryCount + 1}...`);
+      console.warn(`[RAG] Hit rate limit (429). Waiting 5s before retry...`);
       await new Promise(resolve => setTimeout(resolve, 5000));
       retryCount++;
       continue;

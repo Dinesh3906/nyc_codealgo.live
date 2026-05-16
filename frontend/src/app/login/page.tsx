@@ -151,7 +151,7 @@ export default function LoginPage() {
 
             <Button disabled={loading} className="w-full shadow-lg shadow-primary/20" size="lg">
               {loading ? (
-                <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <span className="animate-pulse">Signing in...</span>
               ) : (
                 <>
                   Sign In

@@ -38,15 +38,26 @@ export default function HelpFeedbackPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Optimistic: Clear form and show success immediately
+    const submittedData = { ...formData };
+    const submittedImages = [...images];
+    
+    setFormData({
+      type: "feedback",
+      subject: "",
+      message: ""
+    });
+    setImages([]);
+    toast.success("Sending your feedback... you can continue working.");
 
     try {
       const data = new FormData();
-      data.append('type', formData.type);
-      data.append('subject', formData.subject);
-      data.append('message', formData.message);
+      data.append('type', submittedData.type);
+      data.append('subject', submittedData.subject);
+      data.append('message', submittedData.message);
       
-      images.forEach((img) => {
+      submittedImages.forEach((img) => {
         data.append('images', img);
       });
 
@@ -54,18 +65,12 @@ export default function HelpFeedbackPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      toast.success("Thank you! Your message and attachments have been sent.");
-      setFormData({
-        type: "feedback",
-        subject: "",
-        message: ""
-      });
-      setImages([]);
+      toast.success("Feedback sent successfully!", { id: "feedback-success" });
     } catch (error: any) {
       console.error('Feedback error:', error);
-      toast.error(error.response?.data?.message || "Failed to send message. Please try again.");
-    } finally {
-      setLoading(false);
+      toast.error("Failed to send feedback. Please try again later.");
+      // Note: We don't rollback the form to avoid frustrating the user, 
+      // but we warn them it failed.
     }
   };
 
@@ -169,7 +174,7 @@ export default function HelpFeedbackPage() {
 
               <Button disabled={loading} className="w-full md:w-auto shadow-lg shadow-primary/20">
                 {loading ? (
-                  <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  <span className="animate-pulse">Sending...</span>
                 ) : (
                   <>
                     <Send className="w-4 h-4 mr-2" />
