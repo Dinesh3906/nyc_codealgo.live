@@ -75,7 +75,7 @@ export default function HelpFeedbackPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8 w-full">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Help & Feedback</h1>
         <p className="text-muted-foreground mt-1">Get support, report issues, or suggest new features</p>
