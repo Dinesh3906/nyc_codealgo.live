@@ -293,35 +293,35 @@ Return valid JSON with mandatory appreciation and betterments:
       })
     });
 
-    if (response.status === 402 || (response.status === 400 && retryCount < maxRetries)) {
+    if (!response.ok) {
       const errBody = await response.text();
-      if (errBody.includes("limit exceeded") || errBody.includes("tokens")) {
-        console.warn(`[RAG] Token limit exceeded (402/400). Scaling context from ${currentContextLimit} -> ${currentContextLimit - 40000}`);
+      console.warn(`[RAG] Model ${currentModel} returned ${response.status}: ${errBody.substring(0, 200)}`);
+
+      // Handle token limit errors by scaling down context
+      if ((response.status === 402 || response.status === 400) && 
+          (errBody.includes("limit exceeded") || errBody.includes("tokens"))) {
+        console.warn(`[RAG] Token limit exceeded. Scaling context from ${currentContextLimit} -> ${currentContextLimit - 40000}`);
         currentContextLimit = Math.max(20000, currentContextLimit - 40000);
         retryCount++;
         continue;
       }
-    }
 
-    if (response.status === 429) {
-      console.warn(`[RAG] Hit rate limit (429). Waiting 5s before retry...`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      retryCount++;
-      continue;
-    }
+      // Handle rate limiting
+      if (response.status === 429) {
+        console.warn(`[RAG] Hit rate limit (429). Waiting 5s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        retryCount++;
+        continue;
+      }
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.warn(`[RAG] Model ${currentModel} returned ${response.status}: ${errBody.substring(0, 200)}`);
-      
-      // If we still have retries left, try the next model
+      // For any other error (404, 400 invalid model, etc.) — try next model
       if (retryCount < maxRetries) {
         console.warn(`[RAG] Falling back to next model (attempt ${retryCount + 2})...`);
         retryCount++;
         continue;
       }
       
-      // All models exhausted — throw the final error
+      // All models exhausted
       throw new Error(`Tunnel error: ${response.status} - ${errBody}`);
     }
 
