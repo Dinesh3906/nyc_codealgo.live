@@ -76,9 +76,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-border/40 relative z-10">
         <CardHeader className="space-y-4 text-center">
           <Link href="/" className="flex items-center gap-2.5 justify-center group">
-            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-1.5 shadow-md shadow-primary/20">
-              <Hexagon className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
             <span className="text-xl font-bold text-foreground">NYC House Code</span>
           </Link>
           <div>

@@ -28,9 +28,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
       <aside className="fixed top-0 left-0 bottom-0 z-50 w-56 bg-card/90 backdrop-blur-xl border-r border-border/60 hidden lg:flex flex-col">
         <div className="p-5 border-b border-border/60">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-1.5 shadow-md shadow-primary/20">
-              <Hexagon className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
             <span className="text-lg font-bold text-foreground tracking-tight">NYC House Code</span>
           </Link>
         </div>
@@ -78,9 +76,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-b border-border/60 lg:hidden">
         <div className="flex items-center justify-between h-14 px-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-lg p-1.5">
-              <Hexagon className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src="/logo.png" alt="CodeAlgo Logo" className="w-6 h-6 object-contain rounded-md" />
             <span className="text-base font-bold text-foreground">NYC House Code</span>
           </Link>
 

@@ -113,9 +113,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-border/60">
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl p-1.5 shadow-md shadow-primary/20">
-                <Hexagon className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
               <span className="text-lg font-bold text-foreground tracking-tight">NYC House Code</span>
             </Link>
           </div>
