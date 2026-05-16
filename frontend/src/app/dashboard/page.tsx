@@ -4,10 +4,11 @@ import { useEffect } from "react";
 import { usePlanStore } from "@/lib/store/planStore";
 import { useAuthStore } from "@/lib/store/authStore";
 import Link from "next/link";
-import { FileText, AlertTriangle, Activity, Loader2, Trash2, Sparkles } from "lucide-react";
+import { FileText, AlertTriangle, Activity, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function DashboardOverview() {
@@ -19,10 +20,21 @@ export default function DashboardOverview() {
     fetchPlans();
   }, [fetchPlans]);
 
+  // Robust parsing helper
+  const getParsedResult = (plan: any) => {
+    let result = plan.analysisResult;
+    let depth = 0;
+    while (typeof result === 'string' && depth < 5) {
+      try { result = JSON.parse(result); } catch { break; }
+      depth++;
+    }
+    return result || {};
+  };
+
   const totalAnalyzed = plans.length;
-  const totalIssues = plans.reduce((acc, p) => acc + (p.analysisResult?.issues?.length || 0), 0);
+  const totalIssues = plans.reduce((acc, p) => acc + (getParsedResult(p).issues?.length || 0), 0);
   const avgScore = plans.length > 0 
-    ? Math.round(plans.reduce((acc, p) => acc + (p.analysisResult?.score || 0), 0) / plans.length) 
+    ? Math.round(plans.reduce((acc, p) => acc + (getParsedResult(p).score || getParsedResult(p).percentage || 0), 0) / plans.length) 
     : 0;
 
   const stats = [
@@ -33,11 +45,17 @@ export default function DashboardOverview() {
 
   if (loading && plans.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+      <div className="space-y-8 p-6">
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-48 bg-slate-800" />
+          <Skeleton className="h-4 w-64 bg-slate-800" />
         </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-32 bg-slate-800" />
+          <Skeleton className="h-32 bg-slate-800" />
+          <Skeleton className="h-32 bg-slate-800" />
+        </div>
+        <Skeleton className="h-96 w-full bg-slate-800" />
       </div>
     );
   }
@@ -93,37 +111,41 @@ export default function DashboardOverview() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plans.slice(0, 5).map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/dashboard/plans/${plan.id}`} className="hover:underline">
-                        {plan.fileName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'}>
-                        {plan.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {plan.analysisResult?.score || 0}%
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/dashboard/plans/${plan.id}`}>
-                          <Button variant="ghost" size="sm">View</Button>
+                {plans.slice(0, 5).map((plan) => {
+                  const result = getParsedResult(plan);
+                  const score = result.score || result.percentage || 0;
+                  return (
+                    <TableRow key={plan.id}>
+                      <TableCell className="font-medium">
+                        <Link href={`/dashboard/plans/${plan.id}`} className="hover:underline">
+                          {plan.fileName}
                         </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => deletePlan(plan.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'}>
+                          {plan.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-blue-400">
+                        {score}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/dashboard/plans/${plan.id}`}>
+                            <Button variant="ghost" size="sm">View</Button>
+                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => deletePlan(plan.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

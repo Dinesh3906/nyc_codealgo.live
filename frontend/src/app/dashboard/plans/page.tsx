@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function PlansHub() {
@@ -44,11 +45,16 @@ export default function PlansHub() {
       <Card>
         <CardContent className="p-0">
           {loading && plans.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center space-y-4">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                <p className="text-sm text-muted-foreground">Loading plans...</p>
-              </div>
+            <div className="p-4 space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded bg-slate-800" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[250px] bg-slate-800" />
+                    <Skeleton className="h-4 w-[200px] bg-slate-800" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : plans.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -68,40 +74,51 @@ export default function PlansHub() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plans.map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/dashboard/plans/${plan.id}`} className="hover:underline">
-                        {plan.fileName}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(plan.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'}>
-                        {plan.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {plan.analysisResult?.percentage || plan.analysisResult?.score || 0}%
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/dashboard/plans/${plan.id}`}>
-                          <Button variant="outline" size="sm">View Report</Button>
+                {plans.map((plan) => {
+                  // Robust parsing for historical plans (handle double serialization)
+                  let result = plan.analysisResult;
+                  let depth = 0;
+                  while (typeof result === 'string' && depth < 5) {
+                    try { result = JSON.parse(result); } catch { break; }
+                    depth++;
+                  }
+                  const score = result?.percentage || result?.score || 0;
+
+                  return (
+                    <TableRow key={plan.id}>
+                      <TableCell className="font-medium">
+                        <Link href={`/dashboard/plans/${plan.id}`} className="hover:underline">
+                          {plan.fileName}
                         </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => deletePlan(plan.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(plan.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'}>
+                          {plan.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-blue-400">
+                        {score}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/dashboard/plans/${plan.id}`}>
+                            <Button variant="outline" size="sm">View Report</Button>
+                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => deletePlan(plan.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
