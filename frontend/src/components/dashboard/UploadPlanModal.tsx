@@ -5,9 +5,10 @@ import { useDropzone } from "react-dropzone";
 import api from "@/lib/api";
 import { usePlanStore } from "@/lib/store/planStore";
 import { io } from "socket.io-client";
-import { X, Upload, FileText, CheckCircle2, AlertCircle, Loader2, Download } from "lucide-react";
+import { X, Upload, FileText, CheckCircle2, AlertCircle, Loader2, Download, Eye } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -809,10 +810,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               )}
 
               <div className="flex gap-3">
-                <Button className="flex-1" onClick={handleDownload}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Report
-                </Button>
+                <Link href={`/dashboard/plans/${activePlanId}`} className="flex-1">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Full Report
+                  </Button>
+                </Link>
                 <Button variant="outline" className="flex-1" onClick={onClose}>
                   Close
                 </Button>
