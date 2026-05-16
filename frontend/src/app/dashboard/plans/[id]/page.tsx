@@ -151,10 +151,17 @@ export default function PlanDetailPage() {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
         doc.text(label, 20, metaY);
+        
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        doc.text(String(value), 65, metaY);
-        metaY += 8;
+        
+        // Wrap value to prevent overlapping with the score box
+        const maxWidth = scoreBoxX - 65; 
+        const wrappedValue = doc.splitTextToSize(String(value), maxWidth);
+        doc.text(wrappedValue, 65, metaY);
+        
+        // Increase Y based on number of lines in wrapped value
+        metaY += (wrappedValue.length * 5) + 3;
       });
 
       currentY = 135;
@@ -216,8 +223,30 @@ export default function PlanDetailPage() {
         doc.text("EXAMINER'S CONCLUDING APPRECIATION", pageWidth / 2, currentY + 10, { align: 'center' });
         currentY += 15;
 
-        const appPoints = Array.isArray(analysisResult.appreciation) ? analysisResult.appreciation : [analysisResult.appreciation];
-        const cleanPoints = appPoints.map(p => p.trim().replace(/^['"&✦•\-\*]+/, '').trim());
+        // Handle appreciation as either string or array
+        let rawAppreciation = analysisResult.appreciation || "";
+        let appLines: string[] = [];
+        
+        if (Array.isArray(rawAppreciation)) {
+          appLines = rawAppreciation;
+        } else {
+          // Robust splitting for string blocks: split by bullets, numbers, or double newlines
+          appLines = String(rawAppreciation)
+            .split(/(?:^|\n)(?:[•\-\*\d\.]+\s*|✦\s*)/) 
+            .filter(l => l.trim().length > 5);
+          
+          if (appLines.length <= 1) {
+            // Fallback for single block text - split by sentences if no bullets found
+            appLines = String(rawAppreciation).split(/[.!?]+\s+/).filter(l => l.trim().length > 10);
+          }
+        }
+
+        // Sanitizer: Remove weird AI artifacts like "'&" or symbols at the start
+        const cleanPoints = appLines.map((p: string) => 
+          p.trim()
+           .replace(/^['"&✦•\-\*\s]+/, '') // Remove leading garbage
+           .replace(/\s+/g, ' ')           // Clean up extra spaces
+        ).filter((p: string) => p.length > 0);
 
         autoTableModule.default(doc, {
           startY: currentY,
@@ -231,16 +260,21 @@ export default function PlanDetailPage() {
             fontStyle: 'normal'
           },
           bodyStyles: {
-            fillColor: [245, 247, 250], // Light professional background
+            fillColor: [245, 247, 250],
           },
           columnStyles: { 0: { cellWidth: pageWidth - 40 } },
-          margin: { left: 20, right: 20, top: 30 },
-          didDrawPage: (data: any) => {
-            currentY = data.cursor.y;
-          }
+          margin: { left: 20, right: 20, top: 30, bottom: 40 }
         });
-        
-        currentY += 15;
+
+        const lastAppTable = (doc as any).lastAutoTable;
+        currentY = (lastAppTable && lastAppTable.finalY) ? lastAppTable.finalY + 15 : currentY + 100;
+
+        // Check if we need a new page for the signature
+        if (currentY > pageHeight - 60) {
+          doc.addPage();
+          currentY = 30;
+        }
+
         // Digital Signature Look
         doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.3);
         doc.line(20, currentY, 80, currentY);
