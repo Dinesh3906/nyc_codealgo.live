@@ -136,7 +136,7 @@ export async function checkComplianceTS(housePlanPath: string) {
   let response;
   let retryCount = 0;
   const maxRetries = 3;
-  const models = ['google/gemini-2.0-flash-001', 'openai/gpt-4o-mini', 'google/gemini-flash-1.5', 'google/gemini-1.5-pro'];
+  const models = ['google/gemini-2.0-flash-001', 'openai/gpt-4o-mini', 'google/gemini-pro-1.5', 'google/gemini-pro-latest'];
   
   // Dynamic Context Scaling: Start at 60k (Ultra-Safe), scale down if 402 occurs
   let currentContextLimit = 60000; 
@@ -312,6 +312,16 @@ Return valid JSON with mandatory appreciation and betterments:
 
     if (!response.ok) {
       const errBody = await response.text();
+      console.warn(`[RAG] Model ${currentModel} returned ${response.status}: ${errBody.substring(0, 200)}`);
+      
+      // If we still have retries left, try the next model
+      if (retryCount < maxRetries) {
+        console.warn(`[RAG] Falling back to next model (attempt ${retryCount + 2})...`);
+        retryCount++;
+        continue;
+      }
+      
+      // All models exhausted — throw the final error
       throw new Error(`Tunnel error: ${response.status} - ${errBody}`);
     }
 
