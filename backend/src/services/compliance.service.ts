@@ -31,7 +31,8 @@ export interface ComplianceResult {
   issuesCount: number;
   building_info?: any;
   systems_detected?: any[];
-  appreciation?: string;
+  appreciation?: string | string[];
+  betterments?: string[];
 }
 
 export class CompliancePipeline {
