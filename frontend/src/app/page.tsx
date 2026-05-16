@@ -67,6 +67,37 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* SEO Authority Section */}
+      <section className="py-16 bg-background border-t border-border">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Complete New York Building Code Analysis</h2>
+              <p className="text-muted-foreground mb-4">
+                <strong>Code Algo</strong> provides the industry's most accurate <strong>New York Building Code</strong> AI analysis. 
+                Our platform is specifically engineered to handle <strong>NYC DOB compliance</strong> for architectural 
+                house plans, commercial designs, and mechanical engineering layouts.
+              </p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• New York City Construction Codes (NYCCC) Compliance</li>
+                <li>• NYC Fire Code & Plumbing Code Automated Analysis</li>
+                <li>• Zoning Resolution (ZR) Comprehensive Checks</li>
+                <li>• Instant DOB Now Filing Readiness Reports</li>
+              </ul>
+            </div>
+            <div className="bg-muted/50 p-8 rounded-2xl border border-border">
+              <h3 className="text-lg font-bold mb-3 text-foreground">The NYC House Code Expert</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Unlike generic software, <strong>Code Algo</strong> is a specialized <strong>NYC House Code</strong> 
+                expert system. We help architects and developers navigate the complex landscape of <strong>New York 
+                Codes</strong> and <strong>DOB regulations</strong>. Our algorithm is updated in real-time to reflect 
+                the latest 2024 New York City Building Code amendments and local law changes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </main>
   );
