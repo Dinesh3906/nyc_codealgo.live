@@ -100,6 +100,23 @@ router.get('/usage', protect, async (req: any, res) => {
     console.error('Failed to fetch billing usage:', error);
     res.status(500).json({ message: 'Failed to load billing usage.' });
   }
+// POST validate coupon
+router.post('/validate-coupon', protect, async (req: any, res) => {
+  const { code, planId } = req.body;
+  
+  // Hard-coded coupons for now - can be moved to DB later
+  const coupons: any = {
+    'ANNIVERSARY': 5, // $5 off
+    'OFF50': 50,      // $50 off (for Enterprise Pack testing)
+    'WELCOME': 1      // $1 off
+  };
+
+  const discount = coupons[code.toUpperCase()];
+  if (discount !== undefined) {
+    res.json({ valid: true, discount: discount });
+  } else {
+    res.status(400).json({ valid: false, message: 'Invalid coupon code' });
+  }
 });
 
 // POST create checkout session
@@ -126,14 +143,23 @@ router.post('/create-checkout', protect, async (req: any, res) => {
   
   console.log(`[RAZORPAY] Creating order for: ${userId} (${email}), plan: ${planType}`);
   
-  const { unitAmount, productName } = getPlanPricing(planType);
+  const { unitAmount: baseAmount, productName } = getPlanPricing(planType);
+  const { couponCode } = req.body || {};
+  
+  let finalAmount = baseAmount;
+  if (couponCode) {
+    const coupons: any = { 'ANNIVERSARY': 500, 'OFF50': 5000, 'WELCOME': 100 };
+    const discountAmount = coupons[couponCode.toUpperCase()] || 0;
+    finalAmount = Math.max(0, baseAmount - discountAmount);
+    console.log(`[RAZORPAY] Coupon "${couponCode}" applied. Discount: ${discountAmount}, Final Amount: ${finalAmount}`);
+  }
 
   try {
     const options = {
-      amount: unitAmount,
+      amount: finalAmount,
       currency: "USD",
       receipt: `receipt_${userId}_${Date.now()}`.slice(0, 40),
-      notes: { userId, planType, productName }
+      notes: { userId, planType, productName, couponCode: couponCode || 'NONE' }
     };
 
     const order = await razorpay.orders.create(options);
