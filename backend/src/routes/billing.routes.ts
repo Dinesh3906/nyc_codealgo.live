@@ -105,11 +105,9 @@ router.get('/usage', protect, async (req: any, res) => {
 router.post('/validate-coupon', protect, async (req: any, res) => {
   const { code, planId } = req.body;
   
-  // Hard-coded coupons for now - can be moved to DB later
+  // No coupons are live yet. This list will be populated by the admin in the future.
   const coupons: any = {
-    'ANNIVERSARY': 5, // $5 off
-    'OFF50': 50,      // $50 off (for Enterprise Pack testing)
-    'WELCOME': 1      // $1 off
+    // 'CODE': DiscountAmount
   };
 
   const discount = coupons[code.toUpperCase()];
@@ -149,7 +147,8 @@ router.post('/create-checkout', protect, async (req: any, res) => {
   
   let finalAmount = baseAmount;
   if (couponCode) {
-    const coupons: any = { 'ANNIVERSARY': 500, 'OFF50': 5000, 'WELCOME': 100 };
+    // No coupons are live yet. 
+    const coupons: any = {};
     const discountAmount = coupons[couponCode.toUpperCase()] || 0;
     finalAmount = Math.max(0, baseAmount - discountAmount);
     console.log(`[RAZORPAY] Coupon "${couponCode}" applied. Discount: ${discountAmount}, Final Amount: ${finalAmount}`);
