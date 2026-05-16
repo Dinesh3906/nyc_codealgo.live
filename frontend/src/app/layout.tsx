@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     description: "The fastest way to check NYC Building Codes with Code Algo AI.",
   },
   robots: "index, follow",
+  verification: {
+    google: "_5er4jeJ8TtJrhHTqD3gaVeQt__QaenGj8MEZRKO0W0",
+  },
 };
 
 import { Toaster } from 'react-hot-toast';
