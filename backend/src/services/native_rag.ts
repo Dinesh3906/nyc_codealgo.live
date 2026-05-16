@@ -211,7 +211,7 @@ Return valid JSON with mandatory appreciation and betterments:
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout (architectural plans take time)
 
     try {
       response = await fetch(url, {
@@ -275,21 +275,40 @@ Return valid JSON with mandatory appreciation and betterments:
   let resultJSON;
   try {
      let cleanRaw = rawOut.trim();
-     if (cleanRaw.startsWith('```json')) cleanRaw = cleanRaw.replace(/^```json\n?/, '');
-     if (cleanRaw.startsWith('```')) cleanRaw = cleanRaw.replace(/^```\n?/, '');
-     if (cleanRaw.endsWith('```')) cleanRaw = cleanRaw.replace(/\n?```$/, '');
      
+     // Remove markdown blocks
+     cleanRaw = cleanRaw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+     cleanRaw = cleanRaw.replace(/^```\n?/, '').replace(/\n?```$/, '');
+     
+     // Brute Force Extraction: Find the outer-most { }
      const startIdx = cleanRaw.indexOf('{');
      const endIdx = cleanRaw.lastIndexOf('}');
+     
      if (startIdx !== -1 && endIdx !== -1 && endIdx >= startIdx) {
        cleanRaw = cleanRaw.substring(startIdx, endIdx + 1);
      }
+
+     // Auto-Repair: AI sometimes leaves trailing commas or bad escapes
+     cleanRaw = cleanRaw
+       .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+       .replace(/\n/g, '\\n')         // Escape literal newlines within strings (common AI error)
+       .replace(/\r/g, '')            // Remove carriage returns
+       .replace(/\\n\s*"/g, '\\n"')   // Clean up escaped newlines before quotes
+       ;
      
-     resultJSON = JSON.parse(cleanRaw);
+     // Final sanity check: if the escaped newlines broke valid JSON structure, we try the raw cleanRaw first
+     try {
+       resultJSON = JSON.parse(cleanRaw);
+     } catch (firstErr) {
+       // If repair failed, try the original clipped version as it might have been fine
+       const originalClip = rawOut.substring(startIdx, endIdx + 1);
+       resultJSON = JSON.parse(originalClip);
+     }
+
   } catch(e) {
-     console.error("[RAG] !!!! JSON PARSE FAILED !!!! Raw output was:", rawOut.substring(0, 1000));
-     console.error("[RAG] Parse error:", e);
-     throw new Error(`The NYC Forensic Engine encountered a data structure error. This usually happens if the AI response is cut off or malformed.`);
+     console.error("[RAG] !!!! JSON RECOVERY FAILED !!!!");
+     console.error("[RAG] Raw output snippet:", rawOut.substring(0, 1000));
+     throw new Error(`The NYC Forensic Engine encountered a data structure error. The AI response was malformed and could not be recovered.`);
   }
 
   // Encouraging Score Logic
