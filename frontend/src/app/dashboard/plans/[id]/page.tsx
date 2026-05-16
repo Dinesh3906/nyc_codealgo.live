@@ -421,8 +421,8 @@ export default function PlanDetailPage() {
         {/* Human Touch Appreciation */}
         {analysisResult.appreciation && (
           <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-blue-500/20 shadow-2xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <ShieldCheck className="w-24 h-24 text-blue-400" />
+            <div className="absolute -top-6 -right-6 opacity-[0.07] pointer-events-none rotate-12">
+              <ShieldCheck className="w-48 h-48 text-blue-400" />
             </div>
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2 text-white">
