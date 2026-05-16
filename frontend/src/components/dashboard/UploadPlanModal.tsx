@@ -813,7 +813,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 <Link href={`/dashboard/plans/${activePlanId}`} className="flex-1">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
                     <Eye className="w-4 h-4 mr-2" />
-                    View Full Report
+                    See Details
                   </Button>
                 </Link>
                 <Button variant="outline" className="flex-1" onClick={onClose}>
