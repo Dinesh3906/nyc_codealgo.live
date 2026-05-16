@@ -174,24 +174,28 @@ export default function AdminFeedbackPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2 overflow-hidden">
-                        {(fb as any).images && (fb as any).images.map((img: string, idx: number) => (
-                          <a 
-                            key={idx} 
-                            href={`${backendUrl}${img}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="relative group/img"
-                          >
-                            <img 
-                              src={`${backendUrl}${img}`} 
-                              alt="Proof" 
-                              className="inline-block h-8 w-8 rounded-lg ring-2 ring-background object-cover hover:scale-110 transition-transform cursor-pointer" 
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center rounded-lg transition-opacity">
-                              <ExternalLink className="w-3 h-3 text-white" />
-                            </div>
-                          </a>
-                        ))}
+                        {(fb as any).images && (fb as any).images.map((img: string, idx: number) => {
+                          const cleanPath = img.startsWith('/') ? img : `/${img}`;
+                          const fullUrl = `https://api.codealgo.live${cleanPath}`;
+                          return (
+                            <a 
+                              key={idx} 
+                              href={fullUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="relative group/img"
+                            >
+                              <img 
+                                src={fullUrl} 
+                                alt="Proof" 
+                                className="inline-block h-8 w-8 rounded-lg ring-2 ring-background object-cover hover:scale-110 transition-transform cursor-pointer" 
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center rounded-lg transition-opacity">
+                                <ExternalLink className="w-3 h-3 text-white" />
+                              </div>
+                            </a>
+                          );
+                        })}
                         {(!(fb as any).images || (fb as any).images.length === 0) && (
                           <span className="text-xs text-muted-foreground italic">No proofs</span>
                         )}
