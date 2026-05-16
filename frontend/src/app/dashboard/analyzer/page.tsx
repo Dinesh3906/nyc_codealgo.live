@@ -93,7 +93,7 @@ function AnalyzerContent() {
               {usage?.limit === 0 ? 'Buy Credits to Start' : 'New Compliance Check'}
             </Button>
             <Link href="/dashboard/plans">
-              <Button variant="outline" size="lg" className="border-slate-700 hover:bg-slate-800 text-white">
+              <Button variant="outline" size="lg" className="border-slate-600 bg-slate-800/50 hover:bg-slate-700 text-slate-200">
                 View History
               </Button>
             </Link>
