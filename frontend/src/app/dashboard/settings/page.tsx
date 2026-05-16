@@ -82,7 +82,7 @@ export default function HelpFeedbackPage() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl">Send us a message</CardTitle>
             <CardDescription>We typically respond within 24 hours. You can attach up to 3 screenshots.</CardDescription>
@@ -91,9 +91,9 @@ export default function HelpFeedbackPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold">Message Type</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Message Type</label>
                   <select 
-                    className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                     value={formData.type} 
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   >
@@ -104,10 +104,11 @@ export default function HelpFeedbackPage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold">Subject</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Subject</label>
                   <Input 
                     required
                     placeholder="Brief summary"
+                    className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   />
@@ -115,30 +116,30 @@ export default function HelpFeedbackPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold">Message</label>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Message</label>
                 <Textarea 
                   required
                   placeholder="How can we help you?"
-                  className="min-h-[120px] resize-none"
+                  className="min-h-[120px] resize-none bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500"
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 />
               </div>
 
               <div className="space-y-3">
-                <label className="text-sm font-semibold">Attachments (Proofs)</label>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Attachments (Proofs)</label>
                 <div 
                   {...getRootProps()} 
                   className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                    isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    isDragActive ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-700/50 hover:border-emerald-500/50'
                   }`}
                 >
                   <input {...getInputProps()} />
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Drag & drop screenshots here, or click to select
                   </p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">PNG, JPG up to 5MB (Max 3)</p>
+                  <p className="text-xs text-slate-400/60 mt-1">PNG, JPG up to 5MB (Max 3)</p>
                 </div>
 
                 {images.length > 0 && (
@@ -172,7 +173,7 @@ export default function HelpFeedbackPage() {
                 )}
               </div>
 
-              <Button disabled={loading} className="w-full md:w-auto shadow-lg shadow-primary/20">
+              <Button disabled={loading} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20">
                 {loading ? (
                   <span className="animate-pulse">Sending...</span>
                 ) : (
@@ -187,35 +188,35 @@ export default function HelpFeedbackPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="border-primary/20 bg-primary/5">
+          <Card className="border-emerald-500/20 bg-emerald-500/5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                 <LifeBuoy className="w-4 h-4" />
                 Quick Support
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 For urgent account or billing issues, you can also reach us at:
               </p>
               <div className="text-sm">
-                <p className="font-semibold text-foreground">Support Email</p>
-                <a href="mailto:lucky810307@gmail.com" className="text-primary hover:underline">
+                <p className="font-semibold text-slate-900 dark:text-white">Support Email</p>
+                <a href="mailto:lucky810307@gmail.com" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">
                   lucky810307@gmail.com
                 </a>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4" />
                 Common Topics
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
                 {[
                   {
                     q: "How to upload plans?",
@@ -233,10 +234,10 @@ export default function HelpFeedbackPage() {
                   <div key={idx} className="transition-all">
                     <button 
                       onClick={() => setActiveTopic(activeTopic === idx ? null : idx)}
-                      className="w-full p-4 text-left hover:bg-muted transition-colors flex items-center justify-between group"
+                      className="w-full p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between group"
                     >
-                      <p className="text-sm font-medium group-hover:text-primary transition-colors">{topic.q}</p>
-                      <Plus className={`w-4 h-4 transition-transform duration-300 ${activeTopic === idx ? 'rotate-45 text-primary' : 'rotate-0 text-muted-foreground'}`} />
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-emerald-500 transition-colors">{topic.q}</p>
+                      <Plus className={`w-4 h-4 transition-transform duration-300 ${activeTopic === idx ? 'rotate-45 text-emerald-500' : 'rotate-0 text-slate-400'}`} />
                     </button>
                     {activeTopic === idx && (
                       <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
