@@ -846,7 +846,6 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div className="flex gap-3">
                 <Link href={`/dashboard/plans/${activePlanId}`} className="flex-1">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Eye className="w-4 h-4 mr-2" />
                     See Details
                   </Button>
                 </Link>

@@ -405,7 +405,7 @@ export default function PlanDetailPage() {
     );
   }
 
-  const { analysisResult } = plan;
+  const analysisResult = plan.analysisResult || {};
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 pb-20">
@@ -537,7 +537,7 @@ export default function PlanDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {analysisResult.compliant_features.map((feature: string, i: number) => (
+                    {(analysisResult.compliant_features || []).map((feature: string, i: number) => (
                       <div key={i} className="flex items-center gap-2 text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-emerald-500/10">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                         <span className="text-sm">{feature}</span>
@@ -644,7 +644,7 @@ export default function PlanDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {analysisResult.betterments.map((b: string, i: number) => (
+                  {(analysisResult.betterments || []).map((b: string, i: number) => (
                     <div key={i} className="text-xs text-slate-400 leading-relaxed border-b border-slate-700 pb-3 last:border-0 last:pb-0">
                       <span className="text-emerald-500 font-bold mr-2">✦</span>
                       {b.replace(/^Betterment \d+:\s*/, '')}
