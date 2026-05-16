@@ -174,9 +174,16 @@ Return valid JSON with mandatory appreciation and betterments:
   while (retryCount <= maxRetries) {
     const currentModel = models[retryCount % models.length];
     const apiKey = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY;
+    
+    // HARD GUARD: If no API key, crash loudly instead of silently returning garbage
+    if (!apiKey) {
+      console.error(`[RAG] !!!! FATAL: GOOGLE_AI_STUDIO_KEY is NOT SET in .env !!!! This is why scans return "Analysis complete." with 72%.`);
+      throw new Error('GOOGLE_AI_STUDIO_KEY is missing from .env. Add it and restart the server.');
+    }
+    
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
-    console.log(`[RAG] Attempt ${retryCount + 1} | Model: ${currentModel}`);
+    console.log(`[RAG] Attempt ${retryCount + 1} | Model: ${currentModel} | Key: ${apiKey.substring(0, 8)}...`);
 
     const parts: any[] = [
       { text: `Analyze this architectural plan. Here is the OCR text data from the file: ${housePlanText.substring(0, 50000)}` }
@@ -270,8 +277,15 @@ Return valid JSON with mandatory appreciation and betterments:
      
      resultJSON = JSON.parse(cleanRaw);
   } catch(e) {
-     console.error("[RAG] Vision JSON parse error:", e);
-     resultJSON = { percentage: 72, summary: "Analysis complete.", issues: [] };
+     console.error("[RAG] !!!! JSON PARSE FAILED !!!! Raw output was:", rawOut.substring(0, 500));
+     console.error("[RAG] Parse error:", e);
+     // Instead of hiding the failure, surface it so we know
+     resultJSON = { 
+       percentage: 72, 
+       summary: `AI response could not be parsed. Raw preview: ${rawOut.substring(0, 300)}`, 
+       issues: [],
+       _parse_failed: true
+     };
   }
 
   // Encouraging Score Logic
