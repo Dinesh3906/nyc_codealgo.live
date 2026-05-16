@@ -245,17 +245,20 @@ export default function PlanDetailPage() {
           }
         }
 
-        // Sanitizer: Remove weird AI artifacts and leading garbage
-        const cleanPoints = appLines.map((p: string) => 
-          p.trim()
-           .replace(/^[^a-zA-Z0-9✦•\-\*]+/, '') // Remove all non-alphanumeric garbage at start
-           .replace(/\s+/g, ' ')                // Clean up extra spaces
-        ).filter((p: string) => p.length > 5);
+        // Nuclear Sanitizer: Remove ALL leading garbage and fix spaced-out AI text
+        const cleanPoints = appLines.map((p: string) => {
+          let clean = p.trim();
+          // Remove anything at the start that isn't a letter or number (kills "' &", bullets, etc.)
+          clean = clean.replace(/^[^a-zA-Z0-9]+/, '');
+          // Fix spaced-out AI letters: replace multiple spaces with single space
+          clean = clean.replace(/\s{2,}/g, ' ');
+          return clean;
+        }).filter((p: string) => p.length > 5);
 
         autoTableModule.default(doc, {
           startY: currentY,
           head: [],
-          body: cleanPoints.map(p => [`✦ ${p}`]),
+          body: cleanPoints.map(p => [`- ${p}`]), // Use standard dash for maximum compatibility
           theme: 'plain',
           styles: { 
             fontSize: 9.5, 
@@ -263,14 +266,13 @@ export default function PlanDetailPage() {
             textColor: [44, 62, 80],
             font: 'helvetica',
             fontStyle: 'normal',
-            lineColor: [245, 247, 250],
-            lineWidth: 0
+            halign: 'left'
           },
           bodyStyles: {
             fillColor: [245, 247, 250],
-            overflow: 'linebreak' // Ensure wrapping
+            overflow: 'linebreak'
           },
-          columnStyles: { 0: { cellWidth: pageWidth - 50 } }, // Slightly narrower to be safe
+          columnStyles: { 0: { cellWidth: 155 } }, // Hard-coded safe width
           margin: { left: 25, right: 25, top: 30, bottom: 40 }
         });
 
