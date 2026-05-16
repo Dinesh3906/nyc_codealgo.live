@@ -530,8 +530,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       
       // --- CONCLUDING ASSESSMENT & APPRECIATION ---
       if (analysisResult.appreciation) {
-        doc.addPage();
-        currentY = 30;
+        // Only add page if less than 40% space left, otherwise just add spacing
+        if (currentY > pageHeight * 0.6) {
+          doc.addPage();
+          currentY = 30;
+        } else {
+          currentY += 15;
+        }
         
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.rect(20, currentY, pageWidth - 40, 15, 'F');
@@ -591,17 +596,17 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         const lastAppTable = (doc as any).lastAutoTable;
         currentY = (lastAppTable && lastAppTable.finalY) ? lastAppTable.finalY + 15 : currentY + 100;
 
-        // Check if we need a new page for the signature
-        if (currentY > pageHeight - 60) {
+        // Final Stamp System - Ensure it doesn't float alone on a new page
+        if (currentY > pageHeight - 50) {
           doc.addPage();
           currentY = 30;
         }
-        // Final Stamp System
-        const stampX = pageWidth - 65;
-        const stampY = currentY;
+        
+        const stampX = pageWidth - 75;
+        const stampY = currentY + 10;
         
         doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.6);
-        doc.setLineWidth(1.5);
+        doc.setLineWidth(1.2);
         doc.circle(stampX + 20, stampY + 20, 18);
         doc.setLineWidth(0.5);
         doc.circle(stampX + 20, stampY + 20, 15);

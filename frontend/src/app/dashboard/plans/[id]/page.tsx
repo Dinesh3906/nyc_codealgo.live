@@ -212,8 +212,12 @@ export default function PlanDetailPage() {
 
       // PAGE 3: HUMAN TOUCH (Appreciation)
       if (analysisResult.appreciation) {
-        doc.addPage();
-        currentY = 30;
+        if (currentY > pageHeight * 0.6) {
+          doc.addPage();
+          currentY = 30;
+        } else {
+          currentY += 15;
+        }
         
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.rect(20, currentY, pageWidth - 40, 15, 'F');
@@ -273,25 +277,27 @@ export default function PlanDetailPage() {
         const lastAppTable = (doc as any).lastAutoTable;
         currentY = (lastAppTable && lastAppTable.finalY) ? lastAppTable.finalY + 15 : currentY + 100;
 
-        // Check if we need a new page for the signature
-        if (currentY > pageHeight - 60) {
+        // Digital Signature Look - Keep with appreciation
+        if (currentY > pageHeight - 40) {
           doc.addPage();
           currentY = 30;
         }
-
-        // Digital Signature Look
         doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.3);
-        doc.line(20, currentY, 80, currentY);
-        doc.setFontSize(8);
+        doc.line(25, currentY, 85, currentY);
+        doc.setFontSize(8.5);
         doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
-        doc.text("Senior AI Plan Examiner #8842", 20, currentY + 5);
-        currentY += 10;
+        doc.text("Senior AI Plan Examiner #8842", 25, currentY + 5);
+        currentY += 12;
       }
 
       // DETAILED FINDINGS TABLE
       if (analysisResult.issues && analysisResult.issues.length > 0) {
-        doc.addPage();
-        currentY = 30; // Move down to avoid header
+        if (currentY > pageHeight * 0.7) {
+          doc.addPage();
+          currentY = 30;
+        } else {
+          currentY += 20;
+        }
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
