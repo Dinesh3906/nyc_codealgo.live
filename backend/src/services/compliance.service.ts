@@ -148,7 +148,8 @@ export class CompliancePipeline {
         systems_detected: agentResponse.systems_detected || [],
         appreciation: Array.isArray(agentResponse.appreciation) 
           ? agentResponse.appreciation
-          : [agentResponse.appreciation || "We appreciate the professional quality and detail presented in this architectural plan."]
+          : [agentResponse.appreciation || "We appreciate the professional quality and detail presented in this architectural plan."],
+        betterments: agentResponse.betterments || []
       };
 
       // STEP 7-8: DB Storage & Socket Completion (with retry for AWS stability)

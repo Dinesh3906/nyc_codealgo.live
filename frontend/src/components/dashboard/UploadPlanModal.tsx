@@ -497,6 +497,36 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           currentY += 40;
         }
       }
+
+      // --- VALUE-ADD ARCHITECTURAL BETTERMENTS ---
+      if (analysisResult.betterments && analysisResult.betterments.length > 0) {
+        if (currentY > pageHeight - 65) {
+          doc.addPage();
+          currentY = 30;
+        }
+
+        doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
+        doc.roundedRect(20, currentY, pageWidth - 40, 12, 3, 3, 'F');
+        doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text("✦ VALUE-ADD ARCHITECTURAL BETTERMENTS", 25, currentY + 8);
+        currentY += 18;
+
+        analysisResult.betterments.forEach((b: string) => {
+          const splitB = doc.splitTextToSize(`✦ ${b.replace(/^Betterment \d+:\s*/, '')}`, pageWidth - 50);
+          if (currentY + (splitB.length * 5) > pageHeight - 30) {
+            doc.addPage();
+            currentY = 25;
+          }
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+          doc.setFontSize(9.5);
+          doc.setFont('helvetica', 'normal');
+          doc.text(splitB, 25, currentY);
+          currentY += (splitB.length * 5) + 4;
+        });
+        currentY += 10;
+      }
       
       // --- CONCLUDING ASSESSMENT & APPRECIATION ---
       if (analysisResult.appreciation) {
