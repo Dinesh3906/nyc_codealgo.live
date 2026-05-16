@@ -48,8 +48,8 @@ export default function AdminFeedbackPage() {
   const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.email === 'chalams115@gmail.com';
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.codealgo.live/api';
-  const backendUrl = apiBaseUrl.replace('/api', '');
+  // Hardcode the production backend URL for images to be safe against relative path issues
+  const backendUrl = 'https://api.codealgo.live';
 
   useEffect(() => {
     if (hasHydrated && (!isAuthenticated || !isAdmin)) {
