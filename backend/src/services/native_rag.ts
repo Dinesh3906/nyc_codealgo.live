@@ -229,7 +229,8 @@ Return valid JSON with mandatory appreciation and betterments:
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
             { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
           ]
         })
       });
@@ -255,7 +256,15 @@ Return valid JSON with mandatory appreciation and betterments:
   }
 
   const data = await response.json();
-  const rawOut = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  const candidate = data.candidates?.[0];
+  
+  // CRITICAL: Handle safety blocks explicitly
+  if (candidate?.finishReason === 'SAFETY') {
+    console.error("[RAG] !!!! GOOGLE SAFETY FILTER TRIGGERED !!!! This plan was blocked.");
+    throw new Error("PLAN ANALYSIS BLOCKED BY GOOGLE SAFETY FILTERS. This plan contains content that the AI flagged as potentially unsafe. Please check the plan content and try again.");
+  }
+
+  const rawOut = candidate?.content?.parts?.[0]?.text || "{}";
   
   // DEBUG: Log the raw AI response
   console.log(`[RAG] === RAW AI RESPONSE ===`);
