@@ -506,7 +506,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
         const appLines = (analysisResult.appreciation || "").split('\n').filter((l: string) => l.trim().length > 0);
         // Sanitizer: Remove weird AI artifacts like "'&" or symbols at the start
-        const cleanPoints = appLines.map(p => p.trim().replace(/^['"&✦•\-\*]+/, '').trim());
+        const cleanPoints = appLines.map((p: string) => p.trim().replace(/^['"&✦•\-\*\s]+/, '').trim());
 
         autoTable(doc, {
           startY: currentY,

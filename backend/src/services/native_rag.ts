@@ -198,7 +198,13 @@ Return valid JSON with mandatory appreciation and betterments:
             temperature: 0.1,
             maxOutputTokens: 8192,
             responseMimeType: "application/json"
-          }
+          },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ]
         })
       });
 
@@ -230,7 +236,18 @@ Return valid JSON with mandatory appreciation and betterments:
   
   let resultJSON;
   try {
-     resultJSON = JSON.parse(rawOut.trim());
+     let cleanRaw = rawOut.trim();
+     if (cleanRaw.startsWith('```json')) cleanRaw = cleanRaw.replace(/^```json\n?/, '');
+     if (cleanRaw.startsWith('```')) cleanRaw = cleanRaw.replace(/^```\n?/, '');
+     if (cleanRaw.endsWith('```')) cleanRaw = cleanRaw.replace(/\n?```$/, '');
+     
+     const startIdx = cleanRaw.indexOf('{');
+     const endIdx = cleanRaw.lastIndexOf('}');
+     if (startIdx !== -1 && endIdx !== -1 && endIdx >= startIdx) {
+       cleanRaw = cleanRaw.substring(startIdx, endIdx + 1);
+     }
+     
+     resultJSON = JSON.parse(cleanRaw);
   } catch(e) {
      console.error("[RAG] Vision JSON parse error:", e);
      resultJSON = { percentage: 72, summary: "Analysis complete.", issues: [] };
