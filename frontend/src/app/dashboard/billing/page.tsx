@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import Script from "next/script";
 import api from "@/lib/api";
-import { CreditCard, CheckCircle2, Loader2, TrendingUp, Sparkles } from "lucide-react";
+import { CreditCard, CheckCircle2, Loader2, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Luckiest_Guy } from "next/font/google";
 
-const partyFont = Luckiest_Guy({ weight: "400", subsets: ["latin"] });
 
 export default function BillingPage() {
   const [usage, setUsage] = useState<any>(null);
@@ -200,8 +198,7 @@ export default function BillingPage() {
             >
               {plan.badge === "Anniversary Offer" && (
                 <div className="absolute top-4 right-4 z-20">
-                  <div className={`${partyFont.className} bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[11px] px-3 py-1 rounded-full shadow-md border border-white/30 flex items-center gap-1.5 whitespace-nowrap`}>
-                    <Sparkles className="w-3 h-3" />
+                  <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[10px] px-3 py-1 rounded-full shadow-md border border-white/30 font-bold uppercase tracking-wider">
                     Anniversary Offer
                   </div>
                 </div>
