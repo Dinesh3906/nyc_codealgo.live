@@ -136,7 +136,10 @@ export async function checkComplianceTS(housePlanPath: string) {
   let response;
   let retryCount = 0;
   const maxRetries = 2;
-  const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+  const models = [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+  ];
   
   // Direct Google AI Studio system prompt
   const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner. 
