@@ -277,15 +277,9 @@ Return valid JSON with mandatory appreciation and betterments:
      
      resultJSON = JSON.parse(cleanRaw);
   } catch(e) {
-     console.error("[RAG] !!!! JSON PARSE FAILED !!!! Raw output was:", rawOut.substring(0, 500));
+     console.error("[RAG] !!!! JSON PARSE FAILED !!!! Raw output was:", rawOut.substring(0, 1000));
      console.error("[RAG] Parse error:", e);
-     // Instead of hiding the failure, surface it so we know
-     resultJSON = { 
-       percentage: 72, 
-       summary: `AI response could not be parsed. Raw preview: ${rawOut.substring(0, 300)}`, 
-       issues: [],
-       _parse_failed: true
-     };
+     throw new Error(`The NYC Forensic Engine encountered a data structure error. This usually happens if the AI response is cut off or malformed.`);
   }
 
   // Encouraging Score Logic
