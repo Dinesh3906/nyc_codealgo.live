@@ -397,7 +397,7 @@ export default function BillingPage() {
                   </Button>
                   
                   <div className="flex flex-col items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 text-center">
-                    <p>By clicking "Pay Now", you agree to our Terms of Service.</p>
+                    <p>By clicking "Pay Now", you agree to our <a href="/terms" className="underline hover:text-emerald-500">Terms of Service</a> and <a href="/privacy" className="underline hover:text-emerald-500">Privacy Policy</a>.</p>
                     <p className="font-bold text-emerald-600 dark:text-emerald-500">✔ All Taxes Included</p>
                   </div>
                 </CardContent>

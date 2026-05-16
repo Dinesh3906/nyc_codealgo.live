@@ -4,11 +4,11 @@ import { Footer } from "@/components/sections/Sections";
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-background">
-      <Navbar onOpenModal={() => {}} />
+      <Navbar onOpenModal={() => { }} />
       <div className="container mx-auto px-6 py-24 max-w-4xl">
         <h1 className="text-4xl font-extrabold mb-8 text-foreground">Privacy Policy</h1>
         <p className="text-muted-foreground mb-6 text-sm italic">Last Updated: May 16, 2024</p>
-        
+
         <div className="prose prose-invert max-w-none text-muted-foreground space-y-6">
           <section>
             <h2 className="text-2xl font-bold text-foreground mb-4">1. Information We Collect</h2>
