@@ -28,7 +28,7 @@ export default function LandingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background lg:ml-56 mt-14 lg:mt-0">
+    <main className="min-h-screen bg-background pt-16">
       <Navbar onOpenModal={handleAction} />
 
       <Hero onOpenModal={handleAction} />

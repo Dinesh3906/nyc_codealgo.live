@@ -1,13 +1,13 @@
 "use client";
 
-import { Hexagon, Menu, X, Moon, Sun, AlertCircle, Lightbulb, CreditCard, LogIn, Sparkles } from "lucide-react";
+import { Menu, X, Moon, Sun, AlertCircle, Lightbulb, CreditCard, LogIn, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 
 export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -19,113 +19,108 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
     { label: "Problem", href: "#problem", icon: AlertCircle },
     { label: "Solution", href: "#solution", icon: Lightbulb },
     { label: "Pricing", href: "#pricing", icon: CreditCard },
-    { label: "Login", href: "/login", icon: LogIn, isLink: true },
   ];
 
   return (
-    <>
-      {/* Fixed left sidebar - Desktop */}
-      <aside className="fixed top-0 left-0 bottom-0 z-50 w-56 bg-card/90 backdrop-blur-xl border-r border-border/60 hidden lg:flex flex-col">
-        <div className="p-5 border-b border-border/60">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
-            <span className="text-lg font-bold text-foreground tracking-tight">NYC House Code</span>
-          </Link>
-        </div>
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md transition-all duration-300">
+      <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-7xl">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
+          <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+            NYC House Code
+          </span>
+        </Link>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const El = item.isLink ? Link : 'a';
-            return (
-              <El
-                key={item.label}
-                href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
-              >
-                <Icon className="w-4 h-4" />
-                {item.label}
-              </El>
-            );
-          })}
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-8">
+          {navItems.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {item.label}
+            </a>
+          ))}
         </nav>
 
-        <div className="p-4 border-t border-border/60 space-y-2">
-          <Button onClick={onOpenModal} className="w-full shadow-md shadow-primary/20" size="sm">
+        {/* Right side controls */}
+        <div className="hidden md:flex items-center gap-4">
+          <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mr-2">
+            Login
+          </Link>
+          
+          <Button onClick={onOpenModal} size="sm" className="shadow-md shadow-primary/10">
             <Sparkles className="w-4 h-4 mr-2" />
             Get Started
           </Button>
+
           {mounted && (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="w-full justify-start rounded-xl"
+              className="rounded-xl w-9 h-9"
+              aria-label="Toggle Theme"
             >
-              {theme === "dark" ? (
-                <><Sun className="w-4 h-4 mr-2" /> Light Mode</>
-              ) : (
-                <><Moon className="w-4 h-4 mr-2" /> Dark Mode</>
-              )}
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
           )}
         </div>
-      </aside>
 
-      {/* Mobile top bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-b border-border/60 lg:hidden">
-        <div className="flex items-center justify-between h-14 px-4">
-          <Link href="/" className="flex items-center gap-2 group">
-            <img src="/logo.png" alt="CodeAlgo Logo" className="w-6 h-6 object-contain rounded-md" />
-            <span className="text-base font-bold text-foreground">NYC House Code</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <Button onClick={onOpenModal} size="sm" variant="default">
-              Get Started
-            </Button>
+        {/* Mobile menu trigger */}
+        <div className="flex md:hidden items-center gap-3">
+          {mounted && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="rounded-xl w-9 h-9"
             >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-          </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(!isOpen)}
+            className="rounded-xl w-9 h-9"
+          >
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
+      </div>
 
-        {/* Mobile dropdown */}
-        {sidebarOpen && (
-          <div className="border-t border-border/60 bg-card/95 backdrop-blur-xl p-4 shadow-xl">
-            <div className="flex flex-col gap-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const El = item.isLink ? Link : 'a';
-                return (
-                  <El
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                  >
-                    <Icon className="w-4 h-4" />
-                    {item.label}
-                  </El>
-                );
-              })}
-              {mounted && (
-                <button
-                  onClick={() => { setTheme(theme === "dark" ? "light" : "dark"); setSidebarOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                >
-                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                </button>
-              )}
+      {/* Mobile menu dropdown */}
+      {isOpen && (
+        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md px-6 py-4 shadow-xl">
+          <div className="flex flex-col gap-4">
+            {navItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {item.label}
+              </a>
+            ))}
+            <div className="border-t border-border/40 pt-4 flex flex-col gap-3">
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Login
+              </Link>
+              <Button onClick={() => { setIsOpen(false); onOpenModal(); }} className="w-full">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Get Started
+              </Button>
             </div>
           </div>
-        )}
-      </nav>
-    </>
+        </div>
+      )}
+    </header>
   );
 }
