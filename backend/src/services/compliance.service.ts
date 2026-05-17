@@ -137,7 +137,7 @@ export class CompliancePipeline {
             title: title,
             description: description,
             severity: agentResponse.percentage < 70 ? 'critical' : agentResponse.percentage < 85 ? 'major' : 'minor',
-            rule: "NYC Building Code 2022",
+            rule: "NYC Building Code 2026",
             suggestion: "Refer to the specific NYC Code section mentioned above for correction requirements."
           });
 
