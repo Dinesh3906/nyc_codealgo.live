@@ -11,8 +11,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "CodeAlgo | #1 New York Building Codes & House AI Analyzer",
-  description: "CodeAlgo verifies New York home quotes, house plans, construction estimates, and property documentation with accuracy and compliance.",
-  keywords: ["NYC house plans", "home quote verification", "New York construction quotes", "building estimate verification", "CodeAlgo", "Residential Quote Verification", "Building Plan Validation"],
+  description: "Complete NYC house codes list, New York building regulations, and home plan code verification platform for residential and commercial properties.",
+  keywords: ["NYC codes checking", "New york codes", "Nyc codes", "Nyc codes list", "Nyc codes ppt", "New york city codes", "New york city house codes", "New york city house codes list", "NYC house codes list", "New York building codes", "NYC code compliance checker"],
   authors: [{ name: "CodeAlgo Team" }],
   alternates: {
     canonical: "https://nyccodes.codealgo.live",
@@ -64,6 +64,37 @@ const jsonLd = {
   }
 };
 
+const faqJsonLd = {
+ "@context":"https://schema.org",
+ "@type":"FAQPage",
+ "mainEntity":[
+   {
+     "@type":"Question",
+     "name":"What are NYC house codes?",
+     "acceptedAnswer":{
+       "@type":"Answer",
+       "text":"NYC house codes are strict building, safety, electrical, and plumbing regulations governing construction and safety for residential and commercial properties in New York City."
+     }
+   },
+   {
+     "@type":"Question",
+     "name":"How do I verify New York building compliance?",
+     "acceptedAnswer":{
+       "@type":"Answer",
+       "text":"You can use CodeAlgo's AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
+     }
+   },
+   {
+     "@type":"Question",
+     "name":"What codes apply to residential homes in NYC?",
+     "acceptedAnswer":{
+       "@type":"Answer",
+       "text":"Residential homes in NYC must adhere to the 2022 NYC Construction Codes, the NYC Fire Code, Zoning Resolution, and specific Multiple Dwelling Laws depending on the borough."
+     }
+   }
+ ]
+};
+
 import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({
@@ -77,6 +108,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900`}>
