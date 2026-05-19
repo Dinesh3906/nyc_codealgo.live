@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'New York City House Codes | NYC Residential Building Rules - CodeAlgo',
+  title: '#1 New York City House Codes | NYC Residential Building Rules - CodeAlgo',
   description: 'Understand the New York City house codes, zoning laws, and building regulations required for residential code checking and compliance.',
 };
 
@@ -12,7 +12,7 @@ export default function NewYorkCityHouseCodesPage() {
       <main className="container mx-auto px-6 py-16 max-w-5xl">
         <header className="mb-12">
           <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-6">
-            New York City House Codes
+            #1 New York City House Codes
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
             The ultimate guide to New York City house codes, residential regulations, and compliance requirements for homeowners and architects.

@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'New York City House Codes List (2026 Updated) | CodeAlgo',
+  title: '#1 New York City House Codes List (2026 Updated) | CodeAlgo',
   description: 'Complete 2026 New York City house codes list. Comprehensive guide to NYC residential building rules and regulations.',
 };
 
@@ -12,7 +12,7 @@ export default function NYCHouseCodesListPage() {
       <main className="container mx-auto px-6 py-16 max-w-5xl">
         <header className="mb-12">
           <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-6">
-            New York City House Codes List
+            #1 New York City House Codes List
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
             The definitive 2026 updated list of NYC house codes. Understand the New York building codes required for residential homes.

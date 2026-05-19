@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'NYC Codes Checking | New York House Code Verification - CodeAlgo',
+  title: '#1 NYC Codes Checking | New York House Code Verification - CodeAlgo',
   description: 'Complete NYC codes checking platform. Verify New York building regulations and house code compliance instantly with CodeAlgo.',
 };
 
@@ -12,7 +12,7 @@ export default function NYCCodesCheckingPage() {
       <main className="container mx-auto px-6 py-16 max-w-5xl">
         <header className="mb-12">
           <h1 className="text-4xl md:text-6xl font-extrabold text-foreground mb-6">
-            NYC Codes Checking & Verification
+            #1 NYC Codes Checking & Verification
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
             Verify your New York building compliance and check residential house plans instantly. CodeAlgo is the premier NYC codes checking platform.
