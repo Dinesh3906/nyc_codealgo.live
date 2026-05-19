@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CodeAlgo | NYC Home Quote Verification & House Plan Validation",
+  title: "CodeAlgo | #1 New York Building Codes & House AI Analyzer",
   description: "CodeAlgo verifies New York home quotes, house plans, construction estimates, and property documentation with accuracy and compliance.",
   keywords: ["NYC house plans", "home quote verification", "New York construction quotes", "building estimate verification", "CodeAlgo", "Residential Quote Verification", "Building Plan Validation"],
   authors: [{ name: "CodeAlgo Team" }],
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     canonical: "https://nyccodes.codealgo.live",
   },
   openGraph: {
-    title: "CodeAlgo - NYC Quote Verification",
+    title: "CodeAlgo | #1 New York Building Codes & House AI Analyzer",
     description: "Verify New York home plans and construction quotes with CodeAlgo.",
     type: "website",
     url: "https://nyccodes.codealgo.live",
