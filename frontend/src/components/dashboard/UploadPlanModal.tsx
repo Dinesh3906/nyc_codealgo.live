@@ -665,12 +665,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Upload Plan for Analysis</CardTitle>
-              <CardDescription>Upload your architectural plan for NYC code compliance check</CardDescription>
+              <CardTitle className="text-white">Upload Plan for Analysis</CardTitle>
+              <CardDescription className="text-slate-400">Upload your architectural plan for NYC code compliance check</CardDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-4 h-4" />
