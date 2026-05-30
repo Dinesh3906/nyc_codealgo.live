@@ -289,12 +289,12 @@ Return valid JSON with mandatory appreciation and betterments:
      }
 
      // Auto-Repair: AI sometimes leaves trailing commas or bad escapes
-     cleanRaw = cleanRaw
-       .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-       .replace(/\n/g, '\\n')         // Escape literal newlines within strings (common AI error)
-       .replace(/\r/g, '')            // Remove carriage returns
-       .replace(/\\n\s*"/g, '\\n"')   // Clean up escaped newlines before quotes
-       ;
+     cleanRaw = cleanRaw.replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
+
+     // Escape actual literal newlines ONLY inside double-quoted string values, leaving structural newlines intact
+     cleanRaw = cleanRaw.replace(/"([^"\\]|\\.)*"/g, (match: string) => {
+       return match.replace(/\n/g, '\\n').replace(/\r/g, '');
+     });
      
      // Final sanity check: if the escaped newlines broke valid JSON structure, we try the raw cleanRaw first
      try {
