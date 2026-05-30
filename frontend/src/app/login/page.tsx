@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -34,6 +35,10 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreeToTerms) {
+      setError("You must agree to the Terms and Conditions and Privacy Policy to log in.");
+      return;
+    }
     setLoading(true);
     setError("");
 
@@ -186,7 +191,7 @@ export default function LoginPage() {
                 <input 
                   type="checkbox" 
                   id="remember"
-                  className="w-4 h-4 rounded border-input accent-primary"
+                  className="w-4 h-4 rounded border-input accent-primary cursor-pointer"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
@@ -195,7 +200,28 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <Button disabled={loading} className="w-full shadow-lg shadow-primary/20" size="lg">
+              <div className="flex items-start space-x-2 pt-1 pb-2">
+                <input 
+                  type="checkbox" 
+                  id="agreeToTerms"
+                  required
+                  className="w-4 h-4 mt-0.5 rounded border-input accent-primary cursor-pointer"
+                  checked={agreeToTerms}
+                  onChange={(e) => setAgreeToTerms(e.target.checked)}
+                />
+                <label htmlFor="agreeToTerms" className="text-sm text-muted-foreground cursor-pointer leading-tight">
+                  I agree to the{" "}
+                  <Link href="/terms" target="_blank" className="text-primary font-semibold hover:underline">
+                    Terms and Conditions
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" target="_blank" className="text-primary font-semibold hover:underline">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+
+              <Button disabled={loading || !agreeToTerms} className="w-full shadow-lg shadow-primary/20" size="lg">
                 {loading ? <span className="animate-pulse">Signing in...</span> : <>Sign In <ArrowRight className="w-4 h-4 ml-2" /></>}
               </Button>
             </form>
