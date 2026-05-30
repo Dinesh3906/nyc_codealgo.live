@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "NYC Codes - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
-  description: "NYC Codes is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, review projects, and optimize AI prompts instantly.",
+  title: "CodeAlgo - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
+  description: "CodeAlgo is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, review projects, and optimize AI prompts instantly.",
   keywords: [
     "ai code analyzer", 
     "code review ai", 
@@ -35,28 +35,28 @@ export const metadata: Metadata = {
     "New York building codes", 
     "NYC code compliance checker"
   ],
-  authors: [{ name: "NYC Codes Team" }],
+  authors: [{ name: "CodeAlgo Team" }],
   alternates: {
     canonical: "https://nyccodes.codealgo.live",
   },
   openGraph: {
-    title: "NYC Codes - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
-    description: "NYC Codes is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, and optimize AI prompts.",
+    title: "CodeAlgo - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
+    description: "CodeAlgo is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, and optimize AI prompts.",
     type: "website",
     url: "https://nyccodes.codealgo.live",
-    siteName: "NYC Codes",
+    siteName: "CodeAlgo",
     images: [
       {
         url: "https://nyccodes.codealgo.live/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "NYC Codes - AI Plan & Code Optimization",
+        alt: "CodeAlgo - AI Plan & Code Optimization",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "NYC Codes - AI Code & Prompt Analyzer",
+    title: "CodeAlgo - AI Code & Prompt Analyzer",
     description: "AI-powered code analyzer and prompt optimization platform.",
   },
   robots: "index, follow",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "NYC Codes",
+  "name": "CodeAlgo",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Web",
   "url": "https://nyccodes.codealgo.live",
