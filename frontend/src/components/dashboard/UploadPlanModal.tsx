@@ -804,63 +804,59 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           )}
 
           {status === 'completed' && analysisResult && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 p-6 rounded-xl">
-                <div className="w-12 h-12 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+            <div className="space-y-4">
+              {/* Success Banner */}
+              <div className="flex items-center gap-4 bg-emerald-900 border border-emerald-700 p-5 rounded-xl">
+                <div className="w-12 h-12 bg-emerald-600/30 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-emerald-950 dark:text-emerald-50">Analysis Complete</h3>
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400/90 font-semibold">Compliance score: {analysisResult.score}%</p>
+                  <h3 className="text-lg font-bold text-white">Analysis Complete</h3>
+                  <p className="text-sm text-emerald-300 font-semibold">Compliance score: {analysisResult.score}%</p>
                 </div>
               </div>
 
+              {/* Metric Cards */}
               <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold">Issues Found</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-black text-slate-900 dark:text-white">{analysisResult.issues?.length || 0}</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardDescription className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold">Critical</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-black text-red-600 dark:text-red-500">
-                      {(analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="bg-slate-800 border border-slate-600 rounded-xl p-4 shadow-lg">
+                  <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-2">Issues Found</p>
+                  <p className="text-4xl font-black text-white">{analysisResult.issues?.length || 0}</p>
+                </div>
+                <div className="bg-slate-800 border border-slate-600 rounded-xl p-4 shadow-lg">
+                  <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-2">Critical</p>
+                  <p className="text-4xl font-black text-red-400">
+                    {(analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length}
+                  </p>
+                </div>
               </div>
 
+              {/* Issues List */}
               {(analysisResult.issues || []).length > 0 && (
-                <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
                   {analysisResult.issues.slice(0, 3).map((issue: any, idx: number) => (
-                    <div key={idx} className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-colors">
-                      <div className={`p-2 rounded-lg shrink-0 ${issue.severity === 'critical' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
+                    <div key={idx} className="flex gap-3 p-4 bg-slate-900 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors cursor-default">
+                      <div className={`p-2 rounded-lg shrink-0 ${issue.severity === 'critical' ? 'bg-red-500/20' : 'bg-amber-500/20'}`}>
                         <AlertCircle className={`w-5 h-5 ${
-                          issue.severity === 'critical' ? 'text-red-500' : 'text-amber-500'
+                          issue.severity === 'critical' ? 'text-red-400' : 'text-amber-400'
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{issue.title || issue.description}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">CODE: {issue.rule || issue.code || 'N/A'}</p>
+                        <p className="text-sm font-semibold text-white truncate">{issue.title || issue.description}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-mono">CODE: {issue.rule || issue.code || 'N/A'}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="flex gap-3">
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-1">
                 <Link href={`/dashboard/plans/${activePlanId}`} className="flex-1">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold">
                     See Details
                   </Button>
                 </Link>
-                <Button variant="outline" className="flex-1" onClick={onClose}>
+                <Button variant="outline" className="flex-1 border-slate-600 text-slate-200 hover:bg-slate-800 hover:text-white" onClick={onClose}>
                   Close
                 </Button>
               </div>
