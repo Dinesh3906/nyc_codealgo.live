@@ -5,8 +5,14 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
 const getRazorpayConfig = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_Sld4SjARAkmKx1';
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'VCXoKOb3aPlPE6IF675AxkHT';
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    console.error("FATAL CONFIGURATION ERROR: Razorpay API credentials (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET) are missing!");
+    throw new Error("FATAL: Razorpay API credentials are missing!");
+  }
+
   return { keyId, keySecret };
 };
 

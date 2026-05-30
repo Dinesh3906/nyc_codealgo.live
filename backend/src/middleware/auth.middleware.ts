@@ -14,7 +14,12 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+    const secret = process.env.JWT_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      console.error("FATAL SECURITY BREACH: JWT_SECRET environment variable is missing in production!");
+      return res.status(500).json({ message: "Internal Server Configuration Error." });
+    }
+    const decoded = jwt.verify(token, secret || 'secret') as any;
     
     // Fetch user using pool with simple retry for AWS stability
     let users: any = [];

@@ -1,8 +1,10 @@
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
+import helmet from 'helmet';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { apiLimiter, authLimiter } from './middleware/rateLimit.middleware';
 import authRoutes from './routes/auth.routes';
 import planRoutes from './routes/plans.routes';
 import billingRoutes from './routes/billing.routes';
@@ -10,6 +12,12 @@ import leadsRoutes from './routes/leads.routes';
 import feedbackRoutes from './routes/feedback.routes';
 
 const app = express();
+
+// Secure HTTP Headers with Helmet
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 const allowedOrigins = [
   'https://nyccodes.codealgo.live',
   'https://www.nyccodes.codealgo.live',
@@ -18,14 +26,19 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean) as string[];
 
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // Allow mobile apps or server-to-server calls
+  return allowedOrigins.includes(origin) || origin.endsWith('codealgo.live') || origin.includes('localhost');
+};
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // Allow for production stability
+        callback(new Error('Not allowed by CORS'));
       }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -33,33 +46,25 @@ const io = new Server(httpServer, {
   },
 });
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && (origin.includes('codealgo.live') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
 app.use(cors({ 
-  origin: true,
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
+
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Apply rate limiting to all API requests
+app.use('/api', apiLimiter);
 
 // Request Logging
 app.use((req, res, next) => {
@@ -76,21 +81,8 @@ io.on('connection', (socket) => {
   });
 });
 
-// Debug Route (Temporary)
-app.get('/api/debug-keys', (req, res) => {
-  const groq = process.env.GROQ_API_KEY || '';
-  const pinecone = process.env.PINECONE_API_KEY || '';
-  res.json({
-    groq_prefix: groq.substring(0, 7),
-    groq_length: groq.length,
-    pinecone_prefix: pinecone.substring(0, 7),
-    pinecone_length: pinecone.length,
-    cors_origin: process.env.CORS_ORIGIN || 'NOT SET'
-  });
-});
-
-// Routes
-app.use('/api/auth', authRoutes);
+// Routes - auth gets its own stricter rate limiter
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/upload-plan', planRoutes); // Convenience alias
 app.use('/api/billing', billingRoutes);

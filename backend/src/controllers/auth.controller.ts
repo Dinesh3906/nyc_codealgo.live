@@ -2,11 +2,16 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import pool from '../db';
 
 
 const generateToken = (id: string, email: string) => {
-  return jwt.sign({ id, email }, process.env.JWT_SECRET || 'secret', {
+  const secret = process.env.JWT_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error("FATAL: JWT_SECRET environment variable is missing in production!");
+  }
+  return jwt.sign({ id, email }, secret || 'secret', {
     expiresIn: '30d',
   });
 };
@@ -112,7 +117,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return res.json({ message: 'If an account exists with this email, you will receive an OTP shortly.' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 999999).toString();
     const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
     await pool.query(

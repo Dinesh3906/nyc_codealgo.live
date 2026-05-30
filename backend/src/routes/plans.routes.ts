@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import fs from 'fs';
+import path from 'path';
 import { protect } from '../middleware/auth.middleware';
 import { checkUsageLimit } from '../middleware/usage.middleware';
 import { CompliancePipeline } from '../services/compliance.service';
@@ -136,6 +137,31 @@ router.get('/:id', protect, async (req: any, res) => {
     res.json(plan);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching plan' });
+  }
+});
+
+// GET download plan file securely with user ownership check
+router.get('/:id/download', protect, async (req: any, res) => {
+  try {
+    const [plans]: any = await pool.query(
+      "SELECT * FROM `plan` WHERE id = ? AND COALESCE(fileUrl, '') <> ''",
+      [req.params.id]
+    );
+    const plan = plans[0];
+
+    if (!plan || plan.userId !== req.user.id) {
+       return res.status(404).json({ message: 'Plan not found' });
+    }
+
+    const absolutePath = path.resolve(plan.fileUrl);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ message: 'Plan file not found on server.' });
+    }
+
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ message: 'Error downloading plan file.' });
   }
 });
 
