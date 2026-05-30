@@ -95,7 +95,7 @@ export async function checkComplianceTS(housePlanPath: string) {
       vector: queryVector,
       includeMetadata: true,
     });
-    
+
     for (const match of queryResponse.matches) {
       const text = String(match.metadata?.text || "");
       if (!seenTexts.has(text.substring(0, 50))) {
@@ -144,7 +144,7 @@ export async function checkComplianceTS(housePlanPath: string) {
     "gemini-2.5-pro",
     "gemini-2.5-flash"
   ];
-  
+
   // Direct Google AI Studio system prompt
   const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner. 
 
@@ -153,7 +153,7 @@ CRITICAL MISSION:
 2. HUMAN-LIKE ARCHITECTURAL APPRECIATION: Start by proving you are an experienced, thoughtful Senior Plan Examiner. Provide exactly 4-5 concise, highly profound, humanoid bullet points showing deep architectural understanding.
 3. FORENSIC AUDIT: Scrutinize the plan against the NYC Building Code 2022. 
 4. INDIVIDUAL ISSUES: DO NOT bunch multiple violations into one. For EVERY discrepancy found, create a SEPARATE entry in the "issues" array. If you find 5 violations, there must be 5 entries in "issues".
-5. ARCHITECTURAL BETTERMENTS: Provide 3-4 concise, advanced architectural value-add recommendations tailored specifically to the layout provided.
+5. ARCHITECTURAL BETTERMENTS: Provide 5-7 concise, advanced architectural value-add recommendations tailored specifically to the layout provided.
 6. CONCISENESS: Keep all text fields, summaries, and descriptions highly technical and concise. Avoid verbose essay-like text to ensure the complete analysis fits within response limits.
 
 REFERENCE CONTEXT (NYC BUILDING CODES):
@@ -176,13 +176,13 @@ Return valid JSON with mandatory appreciation and betterments:
   while (retryCount <= maxRetries) {
     const currentModel = models[retryCount % models.length];
     const apiKey = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY;
-    
+
     // HARD GUARD: If no API key, crash loudly instead of silently returning garbage
     if (!apiKey) {
       console.error(`[RAG] !!!! FATAL: GOOGLE_AI_STUDIO_KEY is NOT SET in .env !!!! This is why scans return "Analysis complete." with 72%.`);
       throw new Error('GOOGLE_AI_STUDIO_KEY is missing from .env. Add it and restart the server.');
     }
-    
+
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
     console.log(`[RAG] Attempt ${retryCount + 1} | Model: ${currentModel} | Key: ${apiKey.substring(0, 8)}...`);
@@ -194,7 +194,7 @@ Return valid JSON with mandatory appreciation and betterments:
     if (base64Image) {
       let mimeType = "image/jpeg";
       let data = base64Image;
-      
+
       if (base64Image.startsWith("data:")) {
         const matches = base64Image.match(/^data:(.+);base64,(.*)$/);
         if (matches && matches.length === 3) {
@@ -259,7 +259,7 @@ Return valid JSON with mandatory appreciation and betterments:
 
   const data = await response.json();
   const candidate = data.candidates?.[0];
-  
+
   // CRITICAL: Handle safety blocks explicitly
   if (candidate?.finishReason === 'SAFETY') {
     console.error("[RAG] !!!! GOOGLE SAFETY FILTER TRIGGERED !!!! This plan was blocked.");
@@ -267,58 +267,58 @@ Return valid JSON with mandatory appreciation and betterments:
   }
 
   const rawOut = candidate?.content?.parts?.[0]?.text || "{}";
-  
+
   // DEBUG: Log the raw AI response
   console.log(`[RAG] === RAW AI RESPONSE ===`);
   console.log(rawOut.substring(0, 2000));
   console.log(`[RAG] === END RAW RESPONSE ===`);
-  
+
   let resultJSON;
   try {
-     let cleanRaw = rawOut.trim();
-     
-     // Remove markdown blocks
-     cleanRaw = cleanRaw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-     cleanRaw = cleanRaw.replace(/^```\n?/, '').replace(/\n?```$/, '');
-     
-     // Brute Force Extraction: Find the outer-most { }
-     const startIdx = cleanRaw.indexOf('{');
-     const endIdx = cleanRaw.lastIndexOf('}');
-     
-     if (startIdx !== -1 && endIdx !== -1 && endIdx >= startIdx) {
-       cleanRaw = cleanRaw.substring(startIdx, endIdx + 1);
-     }
+    let cleanRaw = rawOut.trim();
 
-     // Auto-Repair: AI sometimes leaves trailing commas or bad escapes
-     cleanRaw = cleanRaw.replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
+    // Remove markdown blocks
+    cleanRaw = cleanRaw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    cleanRaw = cleanRaw.replace(/^```\n?/, '').replace(/\n?```$/, '');
 
-     // Escape actual literal newlines ONLY inside double-quoted string values, leaving structural newlines intact
-     cleanRaw = cleanRaw.replace(/"([^"\\]|\\.)*"/g, (match: string) => {
-       return match.replace(/\n/g, '\\n').replace(/\r/g, '');
-     });
-     
-     // Final sanity check: if the escaped newlines broke valid JSON structure, we try the raw cleanRaw first
-     try {
-       resultJSON = JSON.parse(cleanRaw);
-     } catch (firstErr) {
-       // If repair failed, try the original clipped version as it might have been fine
-       const originalClip = rawOut.substring(startIdx, endIdx + 1);
-       resultJSON = JSON.parse(originalClip);
-     }
+    // Brute Force Extraction: Find the outer-most { }
+    const startIdx = cleanRaw.indexOf('{');
+    const endIdx = cleanRaw.lastIndexOf('}');
 
-  } catch(e: any) {
-      console.error("[RAG] !!!! JSON RECOVERY FAILED !!!!");
-      console.error("[RAG] Error message:", e?.message);
-      console.error("[RAG] Error stack:", e?.stack);
-      console.error("[RAG] Raw output snippet:", rawOut.substring(0, 1000));
-      throw new Error(`The NYC Forensic Engine encountered a data structure error. The AI response was malformed and could not be recovered. Reason: ${e?.message}`);
+    if (startIdx !== -1 && endIdx !== -1 && endIdx >= startIdx) {
+      cleanRaw = cleanRaw.substring(startIdx, endIdx + 1);
+    }
+
+    // Auto-Repair: AI sometimes leaves trailing commas or bad escapes
+    cleanRaw = cleanRaw.replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas
+
+    // Escape actual literal newlines ONLY inside double-quoted string values, leaving structural newlines intact
+    cleanRaw = cleanRaw.replace(/"([^"\\]|\\.)*"/g, (match: string) => {
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '');
+    });
+
+    // Final sanity check: if the escaped newlines broke valid JSON structure, we try the raw cleanRaw first
+    try {
+      resultJSON = JSON.parse(cleanRaw);
+    } catch (firstErr) {
+      // If repair failed, try the original clipped version as it might have been fine
+      const originalClip = rawOut.substring(startIdx, endIdx + 1);
+      resultJSON = JSON.parse(originalClip);
+    }
+
+  } catch (e: any) {
+    console.error("[RAG] !!!! JSON RECOVERY FAILED !!!!");
+    console.error("[RAG] Error message:", e?.message);
+    console.error("[RAG] Error stack:", e?.stack);
+    console.error("[RAG] Raw output snippet:", rawOut.substring(0, 1000));
+    throw new Error(`The NYC Forensic Engine encountered a data structure error. The AI response was malformed and could not be recovered. Reason: ${e?.message}`);
   }
 
   // Encouraging Score Logic
   let finalScore = resultJSON.percentage || resultJSON.score || 72;
   const issues = resultJSON.issues || [];
   const systemsDetected = resultJSON.systems_detected || [];
-  
+
   // No more aggressive score slashing. We trust the AI's 70%+ baseline.
   console.log(`[RAG] FINAL SCORE: ${finalScore}% | Issues: ${issues.length} | Systems: ${systemsDetected.length}`);
 
