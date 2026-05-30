@@ -805,31 +805,31 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
           {status === 'completed' && analysisResult && (
             <div className="space-y-6">
-              <div className="flex items-center gap-4 bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-xl">
-                <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+              <div className="flex items-center gap-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 p-6 rounded-xl">
+                <div className="w-12 h-12 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Analysis Complete</h3>
-                  <p className="text-sm text-emerald-400/80 font-medium">Compliance score: {analysisResult.score}%</p>
+                  <h3 className="text-lg font-bold text-emerald-950 dark:text-emerald-50">Analysis Complete</h3>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400/90 font-semibold">Compliance score: {analysisResult.score}%</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-slate-800/50 border-slate-700 shadow-lg">
+                <Card className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-md">
                   <CardHeader className="pb-2">
-                    <CardDescription className="text-slate-400 text-xs uppercase tracking-wider font-bold">Issues Found</CardDescription>
+                    <CardDescription className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold">Issues Found</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-3xl font-black text-white">{analysisResult.issues?.length || 0}</p>
+                    <p className="text-3xl font-black text-slate-900 dark:text-white">{analysisResult.issues?.length || 0}</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-slate-800/50 border-slate-700 shadow-lg">
+                <Card className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-md">
                   <CardHeader className="pb-2">
-                    <CardDescription className="text-slate-400 text-xs uppercase tracking-wider font-bold">Critical</CardDescription>
+                    <CardDescription className="text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold">Critical</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-3xl font-black text-red-500">
+                    <p className="text-3xl font-black text-red-600 dark:text-red-500">
                       {(analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length}
                     </p>
                   </CardContent>
@@ -839,15 +839,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               {(analysisResult.issues || []).length > 0 && (
                 <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                   {analysisResult.issues.slice(0, 3).map((issue: any, idx: number) => (
-                    <div key={idx} className="flex gap-4 p-4 bg-slate-900/50 border border-slate-700 rounded-xl hover:bg-slate-900 transition-colors">
+                    <div key={idx} className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-colors">
                       <div className={`p-2 rounded-lg shrink-0 ${issue.severity === 'critical' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
                         <AlertCircle className={`w-5 h-5 ${
                           issue.severity === 'critical' ? 'text-red-500' : 'text-amber-500'
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-200 truncate">{issue.title || issue.description}</p>
-                        <p className="text-xs text-slate-500 mt-1 font-mono">CODE: {issue.rule || issue.code || 'N/A'}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{issue.title || issue.description}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">CODE: {issue.rule || issue.code || 'N/A'}</p>
                       </div>
                     </div>
                   ))}
