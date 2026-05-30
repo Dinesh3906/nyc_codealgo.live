@@ -313,44 +313,97 @@ Return valid JSON with mandatory appreciation and betterments:
     });
 
     // ---- TRUNCATION REPAIR ----
-    // If JSON.parse fails, try to repair truncated JSON by closing open structures
+    // If JSON.parse fails, try to repair truncated JSON by closing open structures using a multi-layered strategy
     const attemptParse = (raw: string): any => {
       try {
         return JSON.parse(raw);
-      } catch (err) {
-        // Step 1: If we're mid-string (unclosed quote), close it
-        let repaired = raw;
+      } catch (err: any) {
+        console.log(`[RAG] Initial JSON parse failed: ${err.message}. Applying recovery algorithm...`);
+        
+        // LAYER 1: Simple Closing Quote Repair (Preserves maximum AI Content!)
+        try {
+          let repaired = raw.trim();
+          const quoteMatches = repaired.match(/(?<!\\)"/g);
+          if (quoteMatches && quoteMatches.length % 2 !== 0) {
+            // Odd number of quotes - truncated inside a string.
+            // If it ends with an unescaped backslash, remove it
+            if (repaired.endsWith('\\')) {
+              repaired = repaired.slice(0, -1);
+            }
+            repaired += '"'; // Close the string
+          }
+          
+          // Close open arrays/objects
+          const openBraces = (repaired.match(/{/g) || []).length;
+          const closeBraces = (repaired.match(/}/g) || []).length;
+          const openBrackets = (repaired.match(/\[/g) || []).length;
+          const closeBrackets = (repaired.match(/\]/g) || []).length;
 
-        // Count unescaped quotes to detect unclosed strings
-        const quoteMatches = repaired.match(/(?<!\\)"/g);
-        if (quoteMatches && quoteMatches.length % 2 !== 0) {
-          // Odd number of quotes — truncated inside a string value
-          // Trim back to last clean point in the string, then close it
-          repaired = repaired.replace(/,?\s*"[^"]*$/, '""');
-          if (!repaired.endsWith('"')) repaired += '"';
+          for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+          for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+
+          console.log(`[RAG] Trying Layer 1 Repair: closing unclosed string quote...`);
+          const parsed = JSON.parse(repaired);
+          console.log(`[RAG] Layer 1 Repair successful! Preserved all truncated string content.`);
+          return parsed;
+        } catch (layer1Err: any) {
+          console.warn(`[RAG] Layer 1 Repair failed: ${layer1Err.message}`);
         }
 
-        // Step 2: Remove any dangling comma after closing a string
-        repaired = repaired.replace(/,\s*$/, '');
+        // LAYER 2: Fallback (Blank out the last unclosed string element entirely)
+        try {
+          let repaired = raw.trim();
+          const quoteMatches = repaired.match(/(?<!\\)"/g);
+          if (quoteMatches && quoteMatches.length % 2 !== 0) {
+            repaired = repaired.replace(/,?\s*"[^"]*$/, '""');
+          }
+          repaired = repaired.replace(/,\s*$/, '');
 
-        // Step 3: Close any open brackets/braces
-        const openBraces = (repaired.match(/{/g) || []).length;
-        const closeBraces = (repaired.match(/}/g) || []).length;
-        const openBrackets = (repaired.match(/\[/g) || []).length;
-        const closeBrackets = (repaired.match(/\]/g) || []).length;
+          const openBraces = (repaired.match(/{/g) || []).length;
+          const closeBraces = (repaired.match(/}/g) || []).length;
+          const openBrackets = (repaired.match(/\[/g) || []).length;
+          const closeBrackets = (repaired.match(/\]/g) || []).length;
 
-        // Close arrays first (inner), then objects (outer)
-        for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
-        for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+          for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+          for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
 
-        console.log(`[RAG] Truncation repair applied: added ${openBrackets - closeBrackets} ] and ${openBraces - closeBraces} }`);
-        return JSON.parse(repaired);
+          console.log(`[RAG] Trying Layer 2 Repair: blanking out last unclosed string element...`);
+          const parsed = JSON.parse(repaired);
+          console.log(`[RAG] Layer 2 Repair successful!`);
+          return parsed;
+        } catch (layer2Err: any) {
+          console.warn(`[RAG] Layer 2 Repair failed: ${layer2Err.message}`);
+        }
+
+        // LAYER 3: Aggressive Truncation (Trim back to last valid comma and close)
+        try {
+          let repaired = raw.trim();
+          const lastComma = repaired.lastIndexOf(',');
+          if (lastComma !== -1) {
+            repaired = repaired.substring(0, lastComma);
+          }
+          
+          const openBraces = (repaired.match(/{/g) || []).length;
+          const closeBraces = (repaired.match(/}/g) || []).length;
+          const openBrackets = (repaired.match(/\[/g) || []).length;
+          const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+          for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']';
+          for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}';
+
+          console.log(`[RAG] Trying Layer 3 Repair: trimming back to last comma...`);
+          const parsed = JSON.parse(repaired);
+          console.log(`[RAG] Layer 3 Repair successful!`);
+          return parsed;
+        } catch (layer3Err: any) {
+          throw new Error(`All repair layers failed. Last error: ${layer3Err.message}`);
+        }
       }
     };
 
     try {
       resultJSON = attemptParse(cleanRaw);
-    } catch (firstErr) {
+    } catch (firstErr: any) {
       // If repair failed, try the original clipped version
       if (startIdx !== -1) {
         const originalClip = rawOut.substring(startIdx, (endIdx !== -1 ? endIdx + 1 : rawOut.length));
