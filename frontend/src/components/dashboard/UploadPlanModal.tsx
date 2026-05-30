@@ -673,7 +673,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <CardDescription className="text-slate-400">Upload your architectural plan for NYC code compliance check</CardDescription>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 text-slate-300" />
             </Button>
           </div>
         </CardHeader>
@@ -683,15 +683,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${
-                  isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                  isDragActive ? 'border-primary bg-primary/5' : 'border-slate-600 hover:border-primary/50'
                 }`}
               >
                 <input {...getInputProps()} />
-                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <Upload className="w-12 h-12 mx-auto mb-4 text-slate-400" />
                 {file ? (
                   <div>
-                    <p className="font-medium text-foreground">{file.name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="font-medium text-white">{file.name}</p>
+                    <p className="text-sm text-slate-400 mt-1">
                       {file.size < 1024 * 1024
                         ? `${(file.size / 1024).toFixed(2)} KB`
                         : `${(file.size / 1024 / 1024).toFixed(2)} MB`} • Ready to analyze
@@ -699,15 +699,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   </div>
                 ) : (
                   <div>
-                    <p className="font-medium text-foreground">Drop your file here or click to browse</p>
-                    <p className="text-sm text-muted-foreground mt-1">Supports PDF and image files</p>
+                    <p className="font-medium text-white">Drop your file here or click to browse</p>
+                    <p className="text-sm text-slate-400 mt-1">Supports PDF and image files</p>
                   </div>
                 )}
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800">
+              <div className="bg-amber-950/40 border border-amber-700/50 rounded-lg p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-200">
                   AI analysis is for advisory purposes only. Professional review recommended before DOB submission.
                 </p>
               </div>
@@ -740,7 +740,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   <svg className="w-full h-full -rotate-90">
                     <circle
                       cx="64" cy="64" r="58"
-                      className="fill-none stroke-slate-100 dark:stroke-slate-800 stroke-[6]"
+                      className="fill-none stroke-slate-700 stroke-[6]"
                     />
                     <motion.circle
                       cx="64" cy="64" r="58"
@@ -774,10 +774,10 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-xl font-bold text-white">
                         {status === 'uploading' ? 'Securing Connection...' : statusMessage}
                       </h3>
-                      <p className="text-sm text-slate-500 max-w-[280px] mx-auto mt-1">
+                      <p className="text-sm text-slate-300 max-w-[280px] mx-auto mt-1">
                         {status === 'uploading' 
                           ? 'Encrypting and uploading your architectural data to our secure servers.'
                           : 'Our senior AI plan examiner is verifying your designs against 113 NYC Building Code chapters.'}
@@ -792,7 +792,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                     <motion.div 
                       key={idx}
                       className={`h-1.5 rounded-full flex-1 transition-colors duration-500 ${
-                        progress >= step ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-800'
+                        progress >= step ? 'bg-primary' : 'bg-slate-700'
                       }`}
                       animate={progress >= step ? { scaleY: [1, 1.5, 1] } : {}}
                       transition={{ duration: 0.4 }}
@@ -865,12 +865,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
           {status === 'error' && (
             <div className="text-center py-12 space-y-6">
-              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto">
-                <AlertCircle className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+                <AlertCircle className="w-8 h-8 text-red-400" />
               </div>
               <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-semibold mb-1 leading-tight">{errorMessage || "Something went wrong"}</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-lg font-semibold mb-1 leading-tight text-white">{errorMessage || "Something went wrong"}</h3>
+                <p className="text-sm text-slate-300">
                   {errorMessage.includes('limit reached') 
                    ? "You can add more scans to your account immediately from the billing page." 
                    : "Please try again or contact support"}
