@@ -229,7 +229,7 @@ export default function NYCHouseCodesListClient() {
           <p className="text-xl text-slate-400 leading-relaxed max-w-3xl">
             The definitive interactive index of NYC residential and commercial building codes. Search, filter, and verify municipal rules for fire safety, egress limits, ADA accessibility, and MEP designs.
           </p>
-        </nav>
+        </header>
 
         {/* Dynamic SEO Informational Block */}
         <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 mb-12 backdrop-blur-md">
