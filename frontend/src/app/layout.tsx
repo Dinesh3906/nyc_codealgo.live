@@ -10,32 +10,54 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CodeAlgo | #1 New York Building Codes & House AI Analyzer",
-  description: "Complete NYC house codes list, New York building regulations, and home plan code verification platform for residential and commercial properties.",
-  keywords: ["NYC codes checking", "New york codes", "Nyc codes", "Nyc codes list", "Nyc codes ppt", "New york city codes", "New york city house codes", "New york city house codes list", "NYC house codes list", "New York building codes", "NYC code compliance checker"],
-  authors: [{ name: "CodeAlgo Team" }],
+  title: "NYC Codes - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
+  description: "NYC Codes is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, review projects, and optimize AI prompts instantly.",
+  keywords: [
+    "ai code analyzer", 
+    "code review ai", 
+    "prompt analyzer", 
+    "ai coding assistant", 
+    "bug detector ai", 
+    "code checker", 
+    "code optimization tool", 
+    "prompt engineering tool", 
+    "chatgpt prompt analyzer", 
+    "developer ai tools",
+    "NYC codes checking", 
+    "New york codes", 
+    "Nyc codes", 
+    "Nyc codes list", 
+    "Nyc codes ppt", 
+    "New york city codes", 
+    "New york city house codes", 
+    "New york city house codes list", 
+    "NYC house codes list", 
+    "New York building codes", 
+    "NYC code compliance checker"
+  ],
+  authors: [{ name: "NYC Codes Team" }],
   alternates: {
     canonical: "https://nyccodes.codealgo.live",
   },
   openGraph: {
-    title: "CodeAlgo | #1 New York Building Codes & House AI Analyzer",
-    description: "Verify New York home plans and construction quotes with CodeAlgo.",
+    title: "NYC Codes - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
+    description: "NYC Codes is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, and optimize AI prompts.",
     type: "website",
     url: "https://nyccodes.codealgo.live",
-    siteName: "CodeAlgo",
+    siteName: "NYC Codes",
     images: [
       {
         url: "https://nyccodes.codealgo.live/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "CodeAlgo NYC Plan Verification",
+        alt: "NYC Codes - AI Plan & Code Optimization",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CodeAlgo",
-    description: "NYC Home Quote & House Plan Verification Platform",
+    title: "NYC Codes - AI Code & Prompt Analyzer",
+    description: "AI-powered code analyzer and prompt optimization platform.",
   },
   robots: "index, follow",
   verification: {
@@ -50,11 +72,13 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "name": "CodeAlgo",
+  "@type": "SoftwareApplication",
+  "name": "NYC Codes",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web",
   "url": "https://nyccodes.codealgo.live",
   "logo": "https://nyccodes.codealgo.live/logo.png",
-  "description": "NYC home quote and house plan verification platform",
+  "description": "AI-powered code analyzer, prompt optimizer, and building code compliance check engine.",
   "areaServed": "New York",
   "address": {
     "@type": "PostalAddress",
