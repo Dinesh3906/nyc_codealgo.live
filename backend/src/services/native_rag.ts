@@ -305,10 +305,12 @@ Return valid JSON with mandatory appreciation and betterments:
        resultJSON = JSON.parse(originalClip);
      }
 
-  } catch(e) {
-     console.error("[RAG] !!!! JSON RECOVERY FAILED !!!!");
-     console.error("[RAG] Raw output snippet:", rawOut.substring(0, 1000));
-     throw new Error(`The NYC Forensic Engine encountered a data structure error. The AI response was malformed and could not be recovered.`);
+  } catch(e: any) {
+      console.error("[RAG] !!!! JSON RECOVERY FAILED !!!!");
+      console.error("[RAG] Error message:", e?.message);
+      console.error("[RAG] Error stack:", e?.stack);
+      console.error("[RAG] Raw output snippet:", rawOut.substring(0, 1000));
+      throw new Error(`The NYC Forensic Engine encountered a data structure error. The AI response was malformed and could not be recovered. Reason: ${e?.message}`);
   }
 
   // Encouraging Score Logic
