@@ -856,7 +856,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                     See Details
                   </Button>
                 </Link>
-                <Button variant="outline" className="flex-1 border-slate-600 text-slate-200 hover:bg-slate-800 hover:text-white" onClick={onClose}>
+                <Button className="flex-1 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500 font-bold" onClick={onClose}>
                   Close
                 </Button>
               </div>
