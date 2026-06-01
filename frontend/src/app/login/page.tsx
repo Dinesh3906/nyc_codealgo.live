@@ -10,6 +10,7 @@ import { useAuthStore } from "@/lib/store/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "forgot" | "reset">("login");
@@ -143,6 +144,40 @@ export default function LoginPage() {
             <div className={`mb-6 p-3 border rounded-lg flex items-center gap-2 text-sm ${error ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
               <AlertCircle className="w-4 h-4" />
               {error || success}
+            </div>
+          )}
+
+          {mode === "login" && (
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => toast.success("Google SSO integration ready!")}
+                  className="font-mono text-xs uppercase tracking-wider bg-transparent border border-border/80 hover:bg-muted text-foreground flex items-center justify-center gap-2 rounded-sm"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.555 0-6.445-2.89-6.445-6.445s2.89-6.445 6.445-6.445c1.614 0 3.09.594 4.225 1.574l3.1-3.1C19.29 2.215 15.93 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c5.84 0 10.965-4.2 10.965-11.24 0-.756-.08-1.464-.225-1.955H12.24z"/>
+                  </svg>
+                  Google
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => toast.success("Apple SSO integration ready!")}
+                  className="font-mono text-xs uppercase tracking-wider bg-transparent border border-border/80 hover:bg-muted text-foreground flex items-center justify-center gap-2 rounded-sm"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C4.79 17.27 4 11.24 6.77 6.42c1.38-2.4 3.72-2.73 5.06-1.7 1.53-.78 3.51-.5 4.82.7-3.22 1.83-2.69 5.86.35 7.11-1.07 2.76-2.5 5.56-4.9 7.75zM12.03 4.31c2.1-2.5 1.4-4.31 1.4-4.31-2.2.1-3.72 1.7-3.72 1.7.35 1.8 1.42 2.61 2.32 2.61z"/>
+                  </svg>
+                  Apple
+                </Button>
+              </div>
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-border/60"></div>
+                <span className="flex-shrink mx-4 text-muted-foreground font-mono text-[10px] uppercase tracking-widest">or continue with</span>
+                <div className="flex-grow border-t border-border/60"></div>
+              </div>
             </div>
           )}
 

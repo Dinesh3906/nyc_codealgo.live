@@ -16,32 +16,84 @@ const generateToken = (id: string, email: string) => {
   });
 };
 
-export const register = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+export const registerSendOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
 
   try {
-    // Check if user exists using pool
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if user already exists
     const [existingUsers]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
-    
+    if (existingUsers.length > 0 && existingUsers[0].isVerified) {
+      return res.status(400).json({ message: 'User already exists and is verified' });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
     if (existingUsers.length > 0) {
-      return res.status(400).json({ message: 'User already exists' });
+      // User exists but unverified, update their OTP
+      await pool.query(
+        'UPDATE `user` SET emailOtp = ?, emailOtpExpiry = ? WHERE email = ?',
+        [otp, expiry, email]
+      );
+    } else {
+      // New user registration step, insert placeholder record
+      const id = uuidv4();
+      const placeholderPassword = await bcrypt.hash(uuidv4(), 10); // temporary password placeholder
+      await pool.query(
+        'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit, isVerified, emailOtp, emailOtpExpiry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [id, email, placeholderPassword, 'Unverified User', 'architect', 'free', 0, false, otp, expiry]
+      );
+    }
+
+    const { sendOtpEmail } = require('../services/mail.service');
+    await sendOtpEmail(email, otp);
+
+    res.json({ message: 'Verification OTP sent successfully to your email.' });
+  } catch (error: any) {
+    console.error('Register Send OTP Error:', error);
+    res.status(500).json({ message: 'Failed to send verification OTP.' });
+  }
+};
+
+export const register = async (req: Request, res: Response) => {
+  const { name, email, password, dob, phone, otp } = req.body;
+
+  try {
+    if (!email || !password || !name || !otp) {
+      return res.status(400).json({ message: 'All fields and OTP are required' });
+    }
+
+    // Verify OTP
+    const [users]: any = await pool.query(
+      'SELECT * FROM `user` WHERE email = ? AND emailOtp = ? AND emailOtpExpiry > NOW()',
+      [email, otp]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired verification OTP.' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const id = uuidv4();
 
-    // Insert user using pool
+    // Update unverified user with full details and verify them
     await pool.query(
-      'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, email, hashedPassword, name, 'architect', 'free', 0]
+      'UPDATE `user` SET name = ?, password = ?, dob = ?, phone = ?, isVerified = 1, emailOtp = NULL, emailOtpExpiry = NULL WHERE email = ?',
+      [name, hashedPassword, dob || null, phone || null, email]
     );
 
+    const [updatedUsers]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
+    const user = updatedUsers[0];
+
     res.status(201).json({
-      id,
-      name,
-      email,
-      token: generateToken(id, email),
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      token: generateToken(user.id, user.email),
     });
   } catch (error: any) {
     console.error('Registration Error:', error);
