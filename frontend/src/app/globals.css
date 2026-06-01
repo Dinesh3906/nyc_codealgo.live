@@ -10,7 +10,7 @@
     --card-foreground: 220 25% 6%;
     --popover: 45 15% 96%;
     --popover-foreground: 220 25% 6%;
-    --primary: 217 80% 45%; /* Deep blueprint steel blue */
+    --primary: 142 76% 36%; /* Premium compliance green (Emerald 600) */
     --primary-foreground: 210 40% 98%;
     --secondary: 215 15% 90%;
     --secondary-foreground: 220 25% 6%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 215 12% 84%; /* Thin design lines */
     --input: 215 12% 84%;
-    --ring: 217 80% 45%;
+    --ring: 142 76% 36%;
     --radius: 0px; /* Sharp technical 90-degree CAD corners */
   }
 
@@ -33,7 +33,7 @@
     --card-foreground: 210 15% 94%;
     --popover: 210 24% 4%;
     --popover-foreground: 210 15% 94%;
-    --primary: 214 84% 56%; /* Autodesk steel blue */
+    --primary: 142 70% 45%; /* Autodesk compliance green (Emerald 500) */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 15% 10%; /* Dark slate graphite */
     --secondary-foreground: 210 15% 94%;
@@ -45,7 +45,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 210 15% 11%; /* Crisp technical borders */
     --input: 210 15% 10%;
-    --ring: 214 84% 56%;
+    --ring: 142 70% 45%;
   }
 }
 
@@ -61,7 +61,7 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-sky-300;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-emerald-400 to-teal-300;
   }
   .glass {
     @apply bg-card/75 backdrop-blur-xl border border-border/60 shadow-lg shadow-black/20;
@@ -69,14 +69,14 @@
   .blueprint-grid {
     background-size: 24px 24px;
     background-image: 
-      linear-gradient(to right, rgba(56, 116, 203, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(56, 116, 203, 0.05) 1px, transparent 1px);
+      linear-gradient(to right, rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
   }
   .blueprint-grid-fine {
     background-size: 8px 8px;
     background-image: 
-      linear-gradient(to right, rgba(56, 116, 203, 0.02) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(56, 116, 203, 0.02) 1px, transparent 1px);
+      linear-gradient(to right, rgba(16, 185, 129, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(16, 185, 129, 0.02) 1px, transparent 1px);
   }
   .scanline {
     animation: scan 4s linear infinite;
