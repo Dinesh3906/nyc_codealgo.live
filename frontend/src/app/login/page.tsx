@@ -35,6 +35,14 @@ export default function LoginPage() {
     }
   }, []);
 
+  const handleGoogleLogin = () => {
+    const backendUrl = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5000'
+      : 'https://api.codealgo.live';
+    window.location.href = `${backendUrl}/api/auth/google`;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeToTerms) {
@@ -153,7 +161,7 @@ export default function LoginPage() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => toast.success("Google SSO integration ready!")}
+                  onClick={handleGoogleLogin}
                   className="font-mono text-xs uppercase tracking-wider bg-transparent border border-border/80 hover:bg-muted text-foreground flex items-center justify-center gap-2 rounded-sm"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">

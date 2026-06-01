@@ -227,3 +227,83 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to reset password.' });
   }
 };
+
+export const googleAuthRedirect = async (req: Request, res: Response) => {
+  const isLocal = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
+  const redirectUri = isLocal
+    ? 'http://localhost:5000/api/auth/google/callback'
+    : 'https://api.codealgo.live/api/auth/google/callback';
+
+  const clientId = '782344767987-5kvji7i83jmo6qq0m1r59vpbns0elu62.apps.googleusercontent.com';
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email`;
+  
+  res.redirect(authUrl);
+};
+
+export const googleAuthCallback = async (req: Request, res: Response) => {
+  const { code } = req.query;
+  const isLocal = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
+  const redirectUri = isLocal
+    ? 'http://localhost:5000/api/auth/google/callback'
+    : 'https://api.codealgo.live/api/auth/google/callback';
+  const frontendUrl = isLocal ? 'http://localhost:3000' : 'https://nyccodes.codealgo.live';
+
+  if (!code) {
+    return res.redirect(`${frontendUrl}/login?error=Google authentication failed`);
+  }
+
+  try {
+    const clientId = '782344767987-5kvji7i83jmo6qq0m1r59vpbns0elu62.apps.googleusercontent.com';
+    const clientSecret = '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';
+
+    // 1. Exchange OAuth authorization code for Access Token
+    const axios = require('axios');
+    const tokenRes = await axios.post('https://oauth2.googleapis.com/token', {
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    });
+
+    const { access_token } = tokenRes.data;
+
+    // 2. Fetch User Profile using Access Token
+    const userRes = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+
+    const { email, name } = userRes.data;
+
+    if (!email) {
+      return res.redirect(`${frontendUrl}/login?error=Google did not return an email address`);
+    }
+
+    // 3. Find or Create User in RDS MySQL Database
+    const [existingUsers]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
+    let user = existingUsers[0];
+
+    if (!user) {
+      // User doesn't exist, create account
+      const id = uuidv4();
+      const randomPassword = await bcrypt.hash(uuidv4(), 10);
+      await pool.query(
+        'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit, isVerified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [id, email, randomPassword, name || 'Google User', 'architect', 'free', 0, true]
+      );
+      const [newUsers]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
+      user = newUsers[0];
+    } else if (!user.isVerified) {
+      // Mark existing unverified placeholder user as verified
+      await pool.query('UPDATE `user` SET isVerified = 1 WHERE email = ?', [email]);
+    }
+
+    // 4. Generate JWT and redirect back to frontend dashboard!
+    const token = generateToken(user.id, user.email);
+    res.redirect(`${frontendUrl}/dashboard?token=${token}&id=${user.id}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`);
+
+  } catch (error: any) {
+    console.error('Google OAuth Error:', error);
+    res.redirect(`${frontendUrl}/login?error=Google login failed due to a database or network error`);
+  }
+};

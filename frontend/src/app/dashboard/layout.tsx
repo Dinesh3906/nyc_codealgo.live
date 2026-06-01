@@ -48,7 +48,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   
-  const { user, isAuthenticated, hasHydrated, logout } = useAuthStore();
+  const { user, isAuthenticated, hasHydrated, logout, login } = useAuthStore();
   const { searchQuery, setSearchQuery, initSocket } = usePlanStore();
 
   useEffect(() => {
@@ -57,6 +57,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted || !hasHydrated) return;
+
+    // Check if we have social login tokens in the URL parameters
+    const paramToken = searchParams.get('token');
+    const paramId = searchParams.get('id');
+    const paramName = searchParams.get('name');
+    const paramEmail = searchParams.get('email');
+
+    if (paramToken && paramId && paramName && paramEmail) {
+      const userData = {
+        id: paramId,
+        name: decodeURIComponent(paramName),
+        email: decodeURIComponent(paramEmail)
+      };
+      login(userData, paramToken);
+      router.replace('/dashboard');
+      return;
+    }
 
     if (!isAuthenticated) {
       const success = searchParams.get('success');
@@ -70,7 +87,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
 
     initSocket();
-  }, [mounted, hasHydrated, isAuthenticated, initSocket, pathname, router, searchParams]);
+  }, [mounted, hasHydrated, isAuthenticated, initSocket, pathname, router, searchParams, login]);
 
   const handleLogout = () => {
     logout();
