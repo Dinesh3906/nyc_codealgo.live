@@ -148,10 +148,10 @@ export default function RootLayout({
         {/* Global theme loader & bulletproof click delegator bypass */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
-            // 1. Immediately evaluate saved or system theme to prevent hydration flash
+            // 1. Immediately evaluate saved theme to prevent hydration flash (defaults to light mode)
             try {
               const saved = localStorage.getItem('theme');
-              if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              if (saved === 'dark') {
                 document.documentElement.classList.add('dark');
                 document.body.classList.add('dark');
               } else {
