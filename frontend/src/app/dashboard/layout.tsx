@@ -189,12 +189,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </Button>
 
             <Button
+              id="theme-toggle-btn-dashboard"
               variant="ghost"
               size="icon"
-              className="rounded-xl w-10 h-10"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="rounded-xl w-10 h-10 theme-toggle-trigger"
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <span className="theme-icon-sun"><Sun className="w-5 h-5 text-amber-500" /></span>
+              <span className="theme-icon-moon hidden"><Moon className="w-5 h-5 text-primary" /></span>
             </Button>
           </div>
         </header>

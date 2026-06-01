@@ -5,30 +5,92 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
 import Image from 'next/image';
+import toast from "react-hot-toast";
 
 export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const navItems = [
-    { label: "Problem", href: "#problem", icon: AlertCircle },
-    { label: "Solution", href: "#solution", icon: Lightbulb },
-    { label: "Pricing", href: "#pricing", icon: CreditCard },
+    { label: "Platform", href: "#platform" },
+    { label: "Workflow", href: "#workflow" },
+    { label: "Compliance", href: "#compliance" },
+    { label: "Pricing", href: "#pricing" },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md transition-all duration-300">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-md transition-all duration-300">
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          function setupThemeToggle() {
+            const btn = document.getElementById('theme-toggle-btn-desktop');
+            const mobileBtn = document.getElementById('theme-toggle-btn-mobile');
+            
+            function syncIcons(isDarkTheme) {
+              const suns = document.querySelectorAll('.theme-icon-sun');
+              const moons = document.querySelectorAll('.theme-icon-moon');
+              if (isDarkTheme) {
+                suns.forEach(s => s.classList.remove('hidden'));
+                moons.forEach(m => m.classList.add('hidden'));
+              } else {
+                suns.forEach(s => s.classList.add('hidden'));
+                moons.forEach(m => m.classList.remove('hidden'));
+              }
+            }
+            
+            // Sync initial state on load
+            const activeIsDark = document.documentElement.classList.contains('dark');
+            syncIcons(activeIsDark);
+            
+            function toggle() {
+              const isDark = document.documentElement.classList.contains('dark');
+              const newTheme = isDark ? 'light' : 'dark';
+              
+              if (newTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+                localStorage.setItem('theme', 'dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+                localStorage.setItem('theme', 'light');
+              }
+              
+              syncIcons(newTheme === 'dark');
+            }
+            
+            if (btn) {
+              btn.replaceWith(btn.cloneNode(true));
+              const newBtn = document.getElementById('theme-toggle-btn-desktop');
+              newBtn.addEventListener('click', toggle);
+            }
+            if (mobileBtn) {
+              mobileBtn.replaceWith(mobileBtn.cloneNode(true));
+              const newMobileBtn = document.getElementById('theme-toggle-btn-mobile');
+              newMobileBtn.addEventListener('click', toggle);
+            }
+          }
+          
+          window.addEventListener('DOMContentLoaded', setupThemeToggle);
+          if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setupThemeToggle();
+          }
+          setTimeout(setupThemeToggle, 200);
+          setTimeout(setupThemeToggle, 800);
+          setTimeout(setupThemeToggle, 2000);
+        })();
+      ` }} />
       <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-7xl">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <Image src="/logo.png" alt="CodeAlgo AI Building Code Checker Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
-          <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+          <Image 
+            src="/logo.png" 
+            alt="NYC House Code Logo" 
+            width={28} 
+            height={28} 
+            className="w-7 h-7 object-contain rounded-sm" 
+            priority={true} 
+          />
+          <span className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">
             NYC House Code
           </span>
         </Link>
@@ -39,7 +101,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
             <a
               key={item.label}
               href={item.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground hover:text-primary transition-colors"
             >
               {item.label}
             </a>
@@ -48,76 +110,77 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
 
         {/* Right side controls */}
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mr-2">
+          <Link href="/login" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mr-2">
             Login
           </Link>
           
-          <Button onClick={onOpenModal} size="sm" className="shadow-md shadow-primary/10">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Get Started
+          <Button 
+            onClick={onOpenModal} 
+            size="sm" 
+            className="font-mono text-xs uppercase tracking-wider bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-4 py-2 border border-primary/20 rounded-sm transition-all"
+          >
+            Analyze a Drawing
           </Button>
 
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-xl w-9 h-9"
-              aria-label="Toggle Theme"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </Button>
-          )}
+          <Button
+            id="theme-toggle-btn-desktop"
+            variant="outline"
+            size="icon"
+            className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
+            aria-label="Toggle Theme"
+          >
+            <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
+            <span className="theme-icon-moon hidden flex items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+          </Button>
         </div>
 
         {/* Mobile menu trigger */}
         <div className="flex md:hidden items-center gap-3">
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-xl w-9 h-9"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </Button>
-          )}
+          <Button
+            id="theme-toggle-btn-mobile"
+            variant="outline"
+            size="icon"
+            className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
+            aria-label="Toggle Theme"
+          >
+            <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
+            <span className="theme-icon-moon hidden flex items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsOpen(!isOpen)}
-            className="rounded-xl w-9 h-9"
+            className="rounded-sm w-8 h-8"
           >
-            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>
 
       {/* Mobile menu dropdown */}
       {isOpen && (
-        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-md px-6 py-4 shadow-xl">
+        <div className="md:hidden border-t border-border/60 bg-background/95 backdrop-blur-md px-6 py-4 shadow-xl">
           <div className="flex flex-col gap-4">
             {navItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
               >
                 {item.label}
               </a>
             ))}
-            <div className="border-t border-border/40 pt-4 flex flex-col gap-3">
+            <div className="border-t border-border/60 pt-4 flex flex-col gap-3">
               <Link
                 href="/login"
                 onClick={() => setIsOpen(false)}
-                className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
               >
                 Login
               </Link>
-              <Button onClick={() => { setIsOpen(false); onOpenModal(); }} className="w-full">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Get Started
+              <Button onClick={() => { setIsOpen(false); onOpenModal(); }} className="w-full font-mono text-xs uppercase bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2 border border-primary/20 rounded-sm">
+                Analyze a Drawing
               </Button>
             </div>
           </div>

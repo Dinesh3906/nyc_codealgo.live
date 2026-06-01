@@ -4,53 +4,48 @@
 
 @layer base {
   :root {
-    --background: 220 13% 95%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 45 15% 96%; /* NYC permit-paper off-white #F8F6F2 */
+    --foreground: 220 25% 6%; /* Technical dark slate */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 162 72% 38%;
+    --card-foreground: 220 25% 6%;
+    --popover: 45 15% 96%;
+    --popover-foreground: 220 25% 6%;
+    --primary: 217 80% 45%; /* Deep blueprint steel blue */
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 45 93% 58%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --secondary: 215 15% 90%;
+    --secondary-foreground: 220 25% 6%;
+    --muted: 215 10% 90%;
+    --muted-foreground: 215 12% 40%; /* Concrete gray */
+    --accent: 38 95% 45%; /* Construction safety amber */
+    --accent-foreground: 220 25% 6%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 162 72% 38%;
-    --radius: 0.75rem;
+    --border: 215 12% 84%; /* Thin design lines */
+    --input: 215 12% 84%;
+    --ring: 217 80% 45%;
+    --radius: 0px; /* Sharp technical 90-degree CAD corners */
   }
 
   .dark {
-    --background: 160 15% 5%;
-    --foreground: 150 10% 92%;
-    --card: 160 15% 8%;
-    --card-foreground: 150 10% 88%;
-    --popover: 160 15% 5%;
-    --popover-foreground: 150 10% 92%;
-    --primary: 162 72% 45%;
+    --background: 210 24% 4%; /* Charcoal black #080A0C */
+    --foreground: 210 15% 94%; /* Crisp technical white */
+    --card: 210 20% 6%; /* Architectural graphite #0E1216 */
+    --card-foreground: 210 15% 94%;
+    --popover: 210 24% 4%;
+    --popover-foreground: 210 15% 94%;
+    --primary: 214 84% 56%; /* Autodesk steel blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 10% 92%;
-    --secondary-foreground: 160 30% 8%;
-    --muted: 160 10% 12%;
-    --muted-foreground: 150 8% 52%;
-    --accent: 45 85% 50%;
-    --accent-foreground: 160 30% 8%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 160 10% 16%;
-    --input: 160 12% 14%;
-    --ring: 162 72% 45%;
-    --chart-1: 162 72% 45%;
-    --chart-2: 45 85% 50%;
-    --chart-3: 200 70% 55%;
-    --chart-4: 280 60% 60%;
-    --chart-5: 0 72% 55%;
+    --secondary: 210 15% 10%; /* Dark slate graphite */
+    --secondary-foreground: 210 15% 94%;
+    --muted: 210 18% 8%; /* Blueprint navy background */
+    --muted-foreground: 215 12% 62%; /* Concrete gray */
+    --accent: 38 92% 52%; /* Safety amber highlight */
+    --accent-foreground: 210 24% 4%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 210 15% 11%; /* Crisp technical borders */
+    --input: 210 15% 10%;
+    --ring: 214 84% 56%;
   }
 }
 
@@ -66,9 +61,37 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-sky-300;
   }
   .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50;
+    @apply bg-card/75 backdrop-blur-xl border border-border/60 shadow-lg shadow-black/20;
+  }
+  .blueprint-grid {
+    background-size: 24px 24px;
+    background-image: 
+      linear-gradient(to right, rgba(56, 116, 203, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(56, 116, 203, 0.05) 1px, transparent 1px);
+  }
+  .blueprint-grid-fine {
+    background-size: 8px 8px;
+    background-image: 
+      linear-gradient(to right, rgba(56, 116, 203, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(56, 116, 203, 0.02) 1px, transparent 1px);
+  }
+  .scanline {
+    animation: scan 4s linear infinite;
   }
 }
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  50% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+

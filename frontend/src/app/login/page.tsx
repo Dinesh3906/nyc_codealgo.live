@@ -129,11 +129,11 @@ export default function LoginPage() {
               {mode === "login" ? "Welcome Back" : mode === "forgot" ? "Forgot Password" : "Reset Password"}
             </CardTitle>
             <CardDescription>
-              {mode === "login" 
-                ? "Log in to manage your plan compliance." 
-                : mode === "forgot" 
-                ? "Enter your email to receive a verification code." 
-                : "Enter the code sent to your email and set a new password."}
+              {mode === "login"
+                ? "Log in to manage your plan compliance."
+                : mode === "forgot"
+                  ? "Enter your email to receive a verification code."
+                  : "Enter the code sent to your email and set a new password."}
             </CardDescription>
           </div>
         </CardHeader>
@@ -189,8 +189,8 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="remember"
                   className="w-4 h-4 rounded border-input accent-primary cursor-pointer"
                   checked={rememberMe}
@@ -202,8 +202,8 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-start space-x-2 pt-1 pb-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="agreeToTerms"
                   required
                   className="w-4 h-4 mt-0.5 rounded border-input accent-primary cursor-pointer"
@@ -222,7 +222,7 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <Button disabled={loading || !agreeToTerms} className="w-full shadow-lg shadow-primary/20" size="lg">
+              <Button disabled={loading} className="w-full shadow-lg shadow-primary/20" size="lg">
                 {loading ? <span className="animate-pulse">Signing in...</span> : <>Sign In <ArrowRight className="w-4 h-4 ml-2" /></>}
               </Button>
             </form>
