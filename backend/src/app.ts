@@ -27,8 +27,14 @@ const allowedOrigins = [
 ].filter(Boolean) as string[];
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
+  console.log(`[CORS Check] Request Origin: "${origin}" | Allowed Origins List:`, allowedOrigins);
   if (!origin) return true; // Allow mobile apps or server-to-server calls
-  return allowedOrigins.includes(origin) || origin.endsWith('codealgo.live') || origin.includes('localhost');
+  const isAllowed = allowedOrigins.includes(origin) || 
+                    origin.includes('codealgo.live') || 
+                    origin.includes('localhost') || 
+                    origin.includes('127.0.0.1');
+  console.log(`[CORS Result] Origin "${origin}" allowed:`, isAllowed);
+  return isAllowed;
 };
 
 const httpServer = createServer(app);
