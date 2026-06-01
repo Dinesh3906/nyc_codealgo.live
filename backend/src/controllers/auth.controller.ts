@@ -46,6 +46,13 @@ export const register = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Registration Error:', error);
     
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(500).json({ 
+        message: 'AWS RDS connection refused. Please verify that your database instance is running and your current IP is whitelisted.',
+        error: error.message 
+      });
+    }
+    
     // Check if it's a database error
     if (error.code && error.code.startsWith('ER_')) {
       return res.status(500).json({ 
@@ -80,6 +87,12 @@ export const login = async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     console.error('Login Error:', error);
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(500).json({ 
+        message: 'AWS RDS connection refused. Please verify that your database instance is running and your current IP is whitelisted.',
+        error: error.message 
+      });
+    }
     if (error.code && error.code.startsWith('ER_')) {
       return res.status(500).json({ 
         message: 'Database connection failed. Please check your DB settings.', 
