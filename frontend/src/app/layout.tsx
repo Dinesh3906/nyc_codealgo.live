@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   verification: {
     google: "_5er4jeJ8TtJrhHTqD3gaVeQt__QaenGj8MEZRKO0W0",
     other: {
-      'msvalidate.01': 'PASTE_BING_CODE_HERE',
+      'msvalidate.01': '820FA10433E723DDFD5E6037ACDAB686',
     },
   },
   icons: {
@@ -104,34 +104,34 @@ const websiteSchema = {
 };
 
 const faqJsonLd = {
- "@context":"https://schema.org",
- "@type":"FAQPage",
- "mainEntity":[
-   {
-     "@type":"Question",
-     "name":"What are NYC house codes?",
-     "acceptedAnswer":{
-       "@type":"Answer",
-       "text":"NYC house codes are strict building, safety, electrical, and plumbing regulations governing construction and safety for residential and commercial properties in New York City."
-     }
-   },
-   {
-     "@type":"Question",
-     "name":"How do I verify New York building compliance?",
-     "acceptedAnswer":{
-       "@type":"Answer",
-       "text":"You can use CodeAlgo's AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
-     }
-   },
-   {
-     "@type":"Question",
-     "name":"What codes apply to residential homes in NYC?",
-     "acceptedAnswer":{
-       "@type":"Answer",
-       "text":"Residential homes in NYC must adhere to the 2022 NYC Construction Codes, the NYC Fire Code, Zoning Resolution, and specific Multiple Dwelling Laws depending on the borough."
-     }
-   }
- ]
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What are NYC house codes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "NYC house codes are strict building, safety, electrical, and plumbing regulations governing construction and safety for residential and commercial properties in New York City."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I verify New York building compliance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You can use CodeAlgo's AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What codes apply to residential homes in NYC?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Residential homes in NYC must adhere to the 2022 NYC Construction Codes, the NYC Fire Code, Zoning Resolution, and specific Multiple Dwelling Laws depending on the borough."
+      }
+    }
+  ]
 };
 
 export default function RootLayout({
@@ -144,9 +144,10 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
+
         {/* Global theme loader & bulletproof click delegator bypass */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script dangerouslySetInnerHTML={{
+          __html: `
           (function() {
             // 1. Immediately evaluate saved theme to prevent hydration flash (defaults to light mode)
             try {

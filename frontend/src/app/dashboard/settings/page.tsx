@@ -94,7 +94,7 @@ export default function HelpFeedbackPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Message Type</label>
                   <select 
-                    className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                    className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm text-slate-900 dark:text-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
                     value={formData.type} 
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   >
@@ -109,7 +109,7 @@ export default function HelpFeedbackPage() {
                   <Input 
                     required
                     placeholder="Brief summary"
-                    className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500"
+                    className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-xl focus:border-blue-500"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   />
@@ -121,7 +121,7 @@ export default function HelpFeedbackPage() {
                 <Textarea 
                   required
                   placeholder="How can we help you?"
-                  className="min-h-[120px] resize-none bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-xl focus:border-emerald-500"
+                  className="min-h-[120px] resize-none bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 rounded-xl focus:border-blue-500"
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 />
@@ -132,7 +132,7 @@ export default function HelpFeedbackPage() {
                 <div 
                   {...getRootProps()} 
                   className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                    isDragActive ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-700/50 hover:border-emerald-500/50'
+                    isDragActive ? 'border-blue-500 bg-blue-500/5' : 'border-slate-200 dark:border-slate-700/50 hover:border-blue-500/50'
                   }`}
                 >
                   <input {...getInputProps()} />
@@ -176,7 +176,7 @@ export default function HelpFeedbackPage() {
                 )}
               </div>
 
-              <Button disabled={loading} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20">
+              <Button disabled={loading} className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20">
                 {loading ? (
                   <span className="animate-pulse">Sending...</span>
                 ) : (
@@ -191,9 +191,9 @@ export default function HelpFeedbackPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="border-emerald-500/20 bg-emerald-500/5">
+          <Card className="border-blue-500/20 bg-blue-500/5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-2">
                 <LifeBuoy className="w-4 h-4" />
                 Quick Support
               </CardTitle>
@@ -204,7 +204,7 @@ export default function HelpFeedbackPage() {
               </p>
               <div className="text-sm">
                 <p className="font-semibold text-slate-900 dark:text-white">Support Email</p>
-                <a href="mailto:lucky810307@gmail.com" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">
+                <a href="mailto:lucky810307@gmail.com" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
                   lucky810307@gmail.com
                 </a>
               </div>
@@ -239,8 +239,8 @@ export default function HelpFeedbackPage() {
                       onClick={() => setActiveTopic(activeTopic === idx ? null : idx)}
                       className="w-full p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-between group"
                     >
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-emerald-500 transition-colors">{topic.q}</p>
-                      <Plus className={`w-4 h-4 transition-transform duration-300 ${activeTopic === idx ? 'rotate-45 text-emerald-500' : 'rotate-0 text-slate-400'}`} />
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-500 transition-colors">{topic.q}</p>
+                      <Plus className={`w-4 h-4 transition-transform duration-300 ${activeTopic === idx ? 'rotate-45 text-blue-500' : 'rotate-0 text-slate-400'}`} />
                     </button>
                     {activeTopic === idx && (
                       <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">

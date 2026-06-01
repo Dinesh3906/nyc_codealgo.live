@@ -72,7 +72,7 @@ export default function DashboardOverview() {
           <Card key={i} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-slate-200 dark:border-slate-700/50 shadow-sm transition-all hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</CardTitle>
-              <stat.icon className="h-5 w-5 text-emerald-500" />
+              <stat.icon className="h-5 w-5 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</div>
@@ -126,7 +126,7 @@ export default function DashboardOverview() {
                           {plan.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-bold text-emerald-500">
+                      <TableCell className="text-right font-bold text-blue-500">
                         {score}%
                       </TableCell>
                       <TableCell className="text-right">

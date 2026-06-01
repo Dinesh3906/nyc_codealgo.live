@@ -202,25 +202,25 @@ export default function NYCHouseCodesListClient() {
   }, [searchTerm, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200">
       
       {/* Dynamic Floating Gradient Backgrounds */}
-      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-emerald-950/20 via-slate-950 to-transparent pointer-events-none z-0" />
-      <div className="absolute top-[20%] right-[10%] w-[400px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-950/20 via-slate-950 to-transparent pointer-events-none z-0" />
+      <div className="absolute top-[20%] right-[10%] w-[400px] h-[400px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none z-0" />
       <div className="absolute top-[60%] left-[5%] w-[450px] h-[450px] bg-teal-500/5 blur-[150px] rounded-full pointer-events-none z-0" />
 
       <main className="relative container mx-auto px-6 py-16 max-w-5xl z-10">
         
         {/* Breadcrumb for Google Crawler SEO */}
         <nav className="mb-8 text-sm text-slate-500 flex items-center gap-2">
-          <Link href="/" className="hover:text-emerald-400 transition-colors">Home</Link>
+          <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
           <span>/</span>
           <span className="text-slate-300">NYC House Codes List</span>
         </nav>
 
         {/* Premium Header */}
         <header className="mb-12 border-b border-slate-800/80 pb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
             ✨ Complete 2026 Interactive Directory
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-6 leading-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
@@ -240,15 +240,15 @@ export default function NYCHouseCodesListClient() {
           <div className="grid sm:grid-cols-3 gap-6 mt-6 pt-6 border-t border-slate-800/60">
             <div>
               <h3 className="text-slate-400 font-bold mb-1">Total Codes Index</h3>
-              <p className="text-2xl font-extrabold text-emerald-400">113 Chapters</p>
+              <p className="text-2xl font-extrabold text-blue-400">113 Chapters</p>
             </div>
             <div>
               <h3 className="text-slate-400 font-bold mb-1">Zoning Resolutions</h3>
-              <p className="text-2xl font-extrabold text-emerald-400">59 Districts</p>
+              <p className="text-2xl font-extrabold text-blue-400">59 Districts</p>
             </div>
             <div>
               <h3 className="text-slate-400 font-bold mb-1">Target Requirements</h3>
-              <p className="text-2xl font-extrabold text-emerald-400">10,000+ Rules</p>
+              <p className="text-2xl font-extrabold text-blue-400">10,000+ Rules</p>
             </div>
           </div>
         </section>
@@ -263,7 +263,7 @@ export default function NYCHouseCodesListClient() {
                 placeholder="Search code sections, keywords (e.g. egress, stair height, ADA slope)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500/50 rounded-lg py-3 px-11 text-slate-100 placeholder:text-slate-600 focus:outline-none transition-all focus:ring-1 focus:ring-emerald-500/20"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500/50 rounded-lg py-3 px-11 text-slate-100 placeholder:text-slate-600 focus:outline-none transition-all focus:ring-1 focus:ring-blue-500/20"
               />
               <svg className="absolute left-4 top-3.5 h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -286,7 +286,7 @@ export default function NYCHouseCodesListClient() {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     selectedCategory === category
-                      ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
+                      ? 'bg-blue-500 text-slate-950 shadow-md font-bold'
                       : 'bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -308,14 +308,14 @@ export default function NYCHouseCodesListClient() {
               {filteredItems.map((item, idx) => (
                 <article 
                   key={idx}
-                  className="group bg-slate-900/40 border border-slate-800/80 hover:border-emerald-500/30 rounded-xl p-6 hover:shadow-lg transition-all hover:bg-slate-900/60 duration-300"
+                  className="group bg-slate-900/40 border border-slate-800/80 hover:border-blue-500/30 rounded-xl p-6 hover:shadow-lg transition-all hover:bg-slate-900/60 duration-300"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-emerald-400 font-extrabold text-sm px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/20">
+                      <span className="font-mono text-blue-400 font-extrabold text-sm px-2.5 py-1 rounded bg-blue-950/40 border border-blue-500/20">
                         {item.code}
                       </span>
-                      <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                      <h3 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors">
                         {item.term}
                       </h3>
                     </div>
@@ -356,7 +356,7 @@ export default function NYCHouseCodesListClient() {
 
         {/* High-Impact SEO Search Engine Dominance Strategy Block */}
         <section className="mt-16 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
           
           <div className="max-w-3xl relative z-10">
             <h2 className="text-3xl font-black text-white mb-4">
@@ -366,7 +366,7 @@ export default function NYCHouseCodesListClient() {
               Don&apos;t spend hours scrolling through thousands of pages of municipal PDF regulations or worrying about hidden structural traps. CodeAlgo&apos;s AI compliance engine parses your architectural plans and instantly identifies potential code violations, saving time and preventing DOB design rejection.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/dashboard" className="inline-flex justify-center items-center px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-lg rounded-xl shadow-lg hover:shadow-emerald-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <Link href="/dashboard" className="inline-flex justify-center items-center px-8 py-4 bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold text-lg rounded-xl shadow-lg hover:shadow-blue-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all">
                 Launch Code Compliance Checker
               </Link>
               <Link href="/nyc-codes-checking" className="inline-flex justify-center items-center px-8 py-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white font-bold text-lg rounded-xl transition-all">

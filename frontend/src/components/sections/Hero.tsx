@@ -183,7 +183,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
                       className={`flex items-center justify-between px-1.5 py-1 rounded-sm border transition-colors text-left ${activeLayers.egress ? 'bg-primary/5 border-primary/20 text-foreground' : 'border-transparent text-muted-foreground'}`}
                     >
                       <span>E-EGRESS</span>
-                      <span className={`w-1.5 h-1.5 rounded-full ${activeLayers.egress ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${activeLayers.egress ? 'bg-blue-400' : 'bg-zinc-700'}`} />
                     </button>
                   </div>
 
@@ -265,7 +265,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
                     <span>
                       COORD Y: <span className="text-foreground">{coords.y}</span>
                     </span>
-                    <span className="text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-wider">
+                    <span className="text-blue-600 dark:text-blue-500 font-bold uppercase tracking-wider">
                       GRID COMPLIANT
                     </span>
                   </div>
@@ -279,7 +279,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
                     
                     <div className="leading-tight">
                       <div className="flex items-center gap-1 text-[9px] font-semibold text-foreground">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" />
                         Egress Width
                       </div>
                       <span className="text-[8px] text-muted-foreground block mt-0.5 leading-snug">
@@ -289,7 +289,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
 
                     <div className="leading-tight">
                       <div className="flex items-center gap-1 text-[9px] font-semibold text-foreground">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" />
                         Room Dimensions
                       </div>
                       <span className="text-[8px] text-muted-foreground block mt-0.5 leading-snug">
@@ -299,7 +299,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
 
                     <div className="leading-tight">
                       <div className="flex items-center gap-1 text-[9px] font-semibold text-foreground">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" />
                         Occupancy
                       </div>
                       <span className="text-[8px] text-muted-foreground block mt-0.5 leading-snug">

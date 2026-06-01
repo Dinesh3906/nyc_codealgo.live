@@ -149,7 +149,7 @@ export default function LoginPage() {
 
         <CardContent>
           {(error || success) && (
-            <div className={`mb-6 p-3 border rounded-lg flex items-center gap-2 text-sm ${error ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+            <div className={`mb-6 p-3 border rounded-lg flex items-center gap-2 text-sm ${error ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
               <AlertCircle className="w-4 h-4" />
               {error || success}
             </div>
@@ -294,7 +294,7 @@ export default function LoginPage() {
                     required
                     maxLength={6}
                     placeholder="000000"
-                    className="w-full max-w-[260px] text-center text-3xl font-mono tracking-[0.4em] h-16 border-2 border-emerald-500/30 bg-slate-50/5 dark:bg-slate-900/50 rounded-xl"
+                    className="w-full max-w-[260px] text-center text-3xl font-mono tracking-[0.4em] h-16 border-2 border-blue-500/30 bg-slate-50/5 dark:bg-slate-900/50 rounded-xl"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   />

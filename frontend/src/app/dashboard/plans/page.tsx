@@ -99,7 +99,7 @@ export default function PlansHub() {
                           {plan.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-bold text-emerald-500">
+                      <TableCell className="text-right font-bold text-blue-500">
                         {score}%
                       </TableCell>
                       <TableCell className="text-right">

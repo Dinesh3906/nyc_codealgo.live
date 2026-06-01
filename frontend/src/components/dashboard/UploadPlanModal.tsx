@@ -151,8 +151,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         majorBg: [254, 243, 199],  // Amber 100
         minor: [37, 99, 235],      // Blue 600
         minorBg: [219, 234, 254],  // Blue 100
-        compliant: [5, 150, 105],  // Emerald 600
-        compliantBg: [209, 250, 229] // Emerald 100
+        compliant: [37, 99, 235],  // Blue 600
+        compliantBg: [219, 234, 254] // Blue 100
       };
 
       // Helper function to draw rounded badge
@@ -806,13 +806,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           {status === 'completed' && analysisResult && (
             <div className="space-y-4">
               {/* Success Banner */}
-              <div className="flex items-center gap-4 bg-emerald-900 border border-emerald-700 p-5 rounded-xl">
-                <div className="w-12 h-12 bg-emerald-600/30 rounded-full flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+              <div className="flex items-center gap-4 bg-blue-900 border border-blue-700 p-5 rounded-xl">
+                <div className="w-12 h-12 bg-blue-600/30 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-7 h-7 text-blue-400" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">Analysis Complete</h3>
-                  <p className="text-sm text-emerald-300 font-semibold">Compliance score: {analysisResult.score}%</p>
+                  <p className="text-sm text-blue-300 font-semibold">Compliance score: {analysisResult.score}%</p>
                 </div>
               </div>
 

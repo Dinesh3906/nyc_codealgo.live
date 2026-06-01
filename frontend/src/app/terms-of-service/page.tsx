@@ -5,10 +5,10 @@ import { Footer } from "@/components/sections/Sections";
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200 relative overflow-hidden">
+    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative overflow-hidden">
       
       {/* Background decoration */}
-      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-emerald-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
 
       <Navbar onOpenModal={() => { }} />
       
@@ -132,7 +132,7 @@ export default function TermsPage() {
             <p>
               For terms and legal inquiries, please contact:
               <br />
-              <strong>Email:</strong> <a href="mailto:support@nyccodes.codealgo.live" className="text-emerald-400 hover:underline">support@nyccodes.codealgo.live</a>
+              <strong>Email:</strong> <a href="mailto:support@nyccodes.codealgo.live" className="text-blue-400 hover:underline">support@nyccodes.codealgo.live</a>
             </p>
           </section>
 

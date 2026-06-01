@@ -140,7 +140,7 @@ export default function RegisterPage() {
           )}
 
           {success && (
-            <div className="mb-6 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium animate-in fade-in duration-200">
+            <div className="mb-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm font-medium animate-in fade-in duration-200">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               <span>{success}</span>
             </div>
@@ -317,7 +317,7 @@ export default function RegisterPage() {
                     required
                     maxLength={6}
                     placeholder="000000"
-                    className="w-full max-w-[260px] text-center text-3xl font-mono tracking-[0.4em] h-16 border-2 border-emerald-500/30 bg-slate-50/5 dark:bg-slate-900/50 rounded-xl"
+                    className="w-full max-w-[260px] text-center text-3xl font-mono tracking-[0.4em] h-16 border-2 border-blue-500/30 bg-slate-50/5 dark:bg-slate-900/50 rounded-xl"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   />

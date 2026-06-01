@@ -395,7 +395,7 @@ export function InteractiveBlueprintScanner() {
       status: "Pass",
       code: "NYC BC Section 708",
       text: "1-hour fire partition wall between tenant residential spaces matches spatial thickness and assembly listings (Compliant).",
-      alertStyle: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30"
+      alertStyle: "text-blue-500 bg-blue-500/10 border-blue-500/30"
     },
     access: {
       name: "Clear Floor Turn Space",
@@ -403,7 +403,7 @@ export function InteractiveBlueprintScanner() {
       status: "Pass",
       code: "NYC BC Section 1107",
       text: "Accessible bathroom spaces verify standard 60-inch internal diameter turning radius for wheelchair mobility limits.",
-      alertStyle: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30"
+      alertStyle: "text-blue-500 bg-blue-500/10 border-blue-500/30"
     }
   };
 
@@ -429,7 +429,7 @@ export function InteractiveBlueprintScanner() {
           <div className="lg:col-span-7 bg-white dark:bg-[#0C0F12] border border-border rounded-sm relative p-4 flex flex-col h-[400px] transition-colors duration-300">
             <div className="flex items-center justify-between pb-3 border-b border-border text-[10px] text-muted-foreground">
               <span className="uppercase font-bold tracking-wider text-primary flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 Active Canvas: Sheet A-102
               </span>
               <span>Viewport Scale: 1:150</span>
@@ -524,7 +524,7 @@ export function InteractiveBlueprintScanner() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-foreground">{zones[activeZone as keyof typeof zones].name}</h3>
                   <Badge variant="outline" className={`font-mono text-[9px] uppercase border px-2 py-0.5 ${
-                    zones[activeZone as keyof typeof zones].status === "Pass" ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/5" :
+                    zones[activeZone as keyof typeof zones].status === "Pass" ? "border-blue-500/30 text-blue-500 bg-blue-500/5" :
                     zones[activeZone as keyof typeof zones].status === "Warning" ? "border-amber-500/30 text-amber-500 bg-amber-500/5" :
                     "border-red-500/30 text-red-500 bg-red-500/5"
                   }`}>
@@ -771,15 +771,15 @@ export function ReportPreview() {
 
                 <div className="flex items-center justify-between py-1">
                   <span className="text-foreground font-semibold">✓ Egress Exit Corridor clearances</span>
-                  <span className="text-emerald-500 font-bold uppercase">Passed</span>
+                  <span className="text-blue-500 font-bold uppercase">Passed</span>
                 </div>
                 <div className="flex items-center justify-between py-1">
                   <span className="text-foreground font-semibold">✓ Minimum habitable space envelope</span>
-                  <span className="text-emerald-500 font-bold uppercase">Passed</span>
+                  <span className="text-blue-500 font-bold uppercase">Passed</span>
                 </div>
                 <div className="flex items-center justify-between py-1 border-b border-border/40 pb-1.5">
                   <span className="text-foreground font-semibold">✓ Stair tread dimension geometry</span>
-                  <span className="text-emerald-500 font-bold uppercase">Passed</span>
+                  <span className="text-blue-500 font-bold uppercase">Passed</span>
                 </div>
 
                 <div className="flex items-center justify-between py-1 pt-1.5 text-amber-500">
@@ -791,7 +791,7 @@ export function ReportPreview() {
               {/* Stamps / Signatures footer */}
               <div className="mt-4 pt-4 border-t border-border/60 flex items-center justify-between text-[8px] text-muted-foreground/80 font-mono">
                 <div>
-                  SYSTEM AUDIT INTEGRITY: <span className="text-emerald-500 font-bold">100% SUCCESS</span><br />
+                  SYSTEM AUDIT INTEGRITY: <span className="text-blue-500 font-bold">100% SUCCESS</span><br />
                   COMPLIANCE SCORE: <span className="text-foreground font-bold">92.8%</span>
                 </div>
                 <div className="w-24 h-8 bg-[#F8F6F2] dark:bg-zinc-900 border border-border flex items-center justify-center text-[7px] text-muted-foreground/50 dark:text-muted-foreground/40 font-bold rounded-sm uppercase tracking-wide transition-colors duration-300">

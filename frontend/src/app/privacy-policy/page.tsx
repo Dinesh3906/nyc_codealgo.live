@@ -5,16 +5,16 @@ import { Footer } from "@/components/sections/Sections";
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200 relative overflow-hidden">
+    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative overflow-hidden">
       
       {/* Background decoration */}
-      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-emerald-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
 
       <Navbar onOpenModal={() => { }} />
       
       <div className="relative container mx-auto px-6 py-24 max-w-4xl z-10">
         <header className="mb-12 border-b border-slate-800/80 pb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
             Enterprise Grade Security & Compliance
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
@@ -89,8 +89,8 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section className="bg-slate-900/60 border border-emerald-500/30 p-6 rounded-xl my-8">
-            <h2 className="text-2xl font-bold text-emerald-400 mb-3">4. AI Processing & Training Policy</h2>
+          <section className="bg-slate-900/60 border border-blue-500/30 p-6 rounded-xl my-8">
+            <h2 className="text-2xl font-bold text-blue-400 mb-3">4. AI Processing & Training Policy</h2>
             <p className="text-lg text-white font-medium mb-2">
               Are my building plans used to train AI models?
             </p>
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-4">
               <strong>Construction AI Technologies Inc.</strong><br/>
-              Email: <a href="mailto:support@nyccodes.codealgo.live" className="text-emerald-400 hover:underline">support@nyccodes.codealgo.live</a><br />
+              Email: <a href="mailto:support@nyccodes.codealgo.live" className="text-blue-400 hover:underline">support@nyccodes.codealgo.live</a><br />
               Address: 1 World Trade Center, Suite 4500, New York, NY 10007
             </p>
           </section>

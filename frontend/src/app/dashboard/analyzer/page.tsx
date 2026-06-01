@@ -67,14 +67,14 @@ function AnalyzerContent() {
 
   return (
     <div className="space-y-8">
-      <Card className="border-2 border-emerald-500/20 bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-950 overflow-hidden relative shadow-lg">
+      <Card className="border-2 border-blue-500/20 bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-950 overflow-hidden relative shadow-lg">
         <div className="absolute top-0 right-0 p-8 opacity-10">
-          <ShieldCheck className="w-48 h-48 text-emerald-500" />
+          <ShieldCheck className="w-48 h-48 text-blue-500" />
         </div>
         <CardHeader className="space-y-4 relative">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
-            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">AI-Powered Forensic Audit</Badge>
+            <ShieldCheck className="w-5 h-5 text-blue-500" />
+            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">AI-Powered Forensic Audit</Badge>
             {(usage?.limit === 0 || isExpired) && (
               <Badge variant="destructive" className="animate-pulse cursor-pointer" onClick={() => router.push('/dashboard/billing')}>
                 {isExpired ? 'Plan Expired' : 'Credits Required'}
@@ -82,13 +82,13 @@ function AnalyzerContent() {
             )}
           </div>
           <div className="max-w-2xl">
-            <CardTitle className="text-4xl font-black text-slate-900 dark:text-white leading-tight">NYC DOB Compliance <span className="text-emerald-500">Analyzer</span></CardTitle>
+            <CardTitle className="text-4xl font-black text-slate-900 dark:text-white leading-tight">NYC DOB Compliance <span className="text-blue-500">Analyzer</span></CardTitle>
             <CardDescription className="text-lg text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
               Instantly verify your architectural plans against 113 NYC Building Code chapters using our Vectorless RAG forensic engine.
             </CardDescription>
           </div>
           <div className="flex gap-4 pt-4">
-            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-600/20 px-8" onClick={handleNewCheck}>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/20 px-8" onClick={handleNewCheck}>
               <Upload className="w-5 h-5 mr-2" />
               {usage?.limit === 0 ? 'Buy Credits to Start' : 'New Compliance Check'}
             </Button>
@@ -107,10 +107,10 @@ function AnalyzerContent() {
           { icon: Zap, title: "Forensic RAG", desc: "Advanced vectorless retrieval system for hyper-accurate code section matching." },
           { icon: FileText, title: "Executive Audit", desc: "Professional reports with Senior Examiner appreciation and architectural betterments." }
         ].map((item, i) => (
-          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-500/30 transition-all shadow-sm">
+          <Card key={i} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-500/30 transition-all shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-3 text-slate-900 dark:text-white">
-                <item.icon className="w-5 h-5 text-emerald-500" />
+                <item.icon className="w-5 h-5 text-blue-500" />
                 {item.title}
               </CardTitle>
             </CardHeader>
@@ -164,18 +164,18 @@ function AnalyzerContent() {
                     className="group flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="bg-white dark:bg-slate-900 p-3 rounded-lg group-hover:bg-emerald-500/10 transition-colors shadow-sm">
-                        <FileText className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
+                      <div className="bg-white dark:bg-slate-900 p-3 rounded-lg group-hover:bg-blue-500/10 transition-colors shadow-sm">
+                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-500" />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-500 transition-colors">{plan.fileName}</p>
+                        <p className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-500 transition-colors">{plan.fileName}</p>
                         <p className="text-xs text-slate-500 mt-1">
                           Audited on {new Date(plan.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-black text-emerald-600 dark:text-emerald-500">
+                      <p className="text-2xl font-black text-blue-600 dark:text-blue-500">
                         {plan.status === 'analyzed' ? `${score}%` : '--'}
                       </p>
                       <p className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">Compliance</p>
