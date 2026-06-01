@@ -150,6 +150,13 @@ export default function RootLayout({
           (function() {
             // 1. Immediately evaluate saved theme to prevent hydration flash (defaults to light mode)
             try {
+              // Reset old cached dark theme once to force the new Permit-Paper Light Mode default
+              const themeVersion = localStorage.getItem('theme_version_v2');
+              if (!themeVersion) {
+                localStorage.setItem('theme', 'light');
+                localStorage.setItem('theme_version_v2', 'true');
+              }
+              
               const saved = localStorage.getItem('theme');
               if (saved === 'dark') {
                 document.documentElement.classList.add('dark');
