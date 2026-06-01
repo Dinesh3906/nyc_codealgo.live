@@ -101,7 +101,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
             <a
               key={item.label}
               href={item.href}
-              className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground hover:text-primary transition-colors"
+              className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
             >
               {item.label}
             </a>
@@ -130,7 +130,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
             aria-label="Toggle Theme"
           >
             <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
-            <span className="theme-icon-moon hidden flex items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+            <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
           </Button>
         </div>
 
@@ -144,7 +144,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
             aria-label="Toggle Theme"
           >
             <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
-            <span className="theme-icon-moon hidden flex items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+            <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
           </Button>
           <Button
             variant="ghost"
