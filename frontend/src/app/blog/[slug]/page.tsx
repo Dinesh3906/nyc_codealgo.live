@@ -31,6 +31,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       url: `https://nyccodes.codealgo.live/blog/${post.slug}`,
       type: "article",
       images: [`https://nyccodes.codealgo.live/blog/${post.slug}/opengraph-image`],
+      siteName: "CodeAlgo",
+      locale: "en_US",
+      tags: [post.keyword],
+      publishedTime: post.datePublished,
     },
     twitter: {
       card: "summary_large_image",
@@ -64,6 +68,18 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     .map(slug => BLOG_POSTS.find(p => p.slug === slug))
     .filter(Boolean);
 
+  // Helper function to safely format dates for Schema, preventing empty string validation errors
+  const formatSchemaDate = (dateString?: string) => {
+    if (!dateString) return undefined;
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return undefined;
+      return d.toISOString();
+    } catch {
+      return undefined;
+    }
+  };
+
   // Fix 6D + Fix 11C: Complete Article schema with Person author
   const articleSchema = {
     "@context": "https://schema.org",
@@ -88,8 +104,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         "url": "https://nyccodes.codealgo.live/logo.png"
       }
     },
-    "datePublished": pubDate,
-    "dateModified": modDate,
+    "datePublished": formatSchemaDate(post.datePublished),
+    "dateModified": formatSchemaDate(post.dateModified || post.datePublished),
     "image": `https://nyccodes.codealgo.live/blog/${post.slug}/opengraph-image`,
     "mainEntityOfPage": {
       "@type": "WebPage",

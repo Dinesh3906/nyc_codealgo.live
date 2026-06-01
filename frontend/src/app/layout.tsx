@@ -245,6 +245,9 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
+          <a href="#main-content" className="skip-to-content">
+            Skip to main content
+          </a>
           <Toaster />
           {children}
         </ThemeProvider>

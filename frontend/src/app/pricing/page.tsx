@@ -25,6 +25,32 @@ export default function PricingPage() {
       <div className="container mx-auto max-w-4xl text-center">
         <h1 className="text-4xl font-bold mb-6 text-foreground">CodeAlgo Pricing: Plans for Architects and Developers</h1>
         <p className="text-xl text-muted-foreground">Affordable plans for individual architects, engineering firms, and contractors.</p>
+        
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "CodeAlgo",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "WebBrowser",
+              "offers": {
+                "@type": "Offer",
+                "name": "Professional Plan",
+                "description": "Full NYC building code compliance checking per project.",
+                "priceSpecification": {
+                  "@type": "PriceSpecification",
+                  "price": "199.00",
+                  "priceCurrency": "USD",
+                  "billingIncrement": "per project",
+                  "unitText": "Project"
+                },
+                "availability": "https://schema.org/InStock"
+              }
+            }),
+          }}
+        />
       </div>
     </main>
   );

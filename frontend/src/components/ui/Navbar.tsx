@@ -151,15 +151,18 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
             size="icon"
             onClick={() => setIsOpen(!isOpen)}
             className="rounded-sm w-8 h-8"
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
+            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
           >
-            {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {isOpen ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
           </Button>
         </div>
       </div>
 
       {/* Mobile menu dropdown */}
       {isOpen && (
-        <div className="md:hidden border-t border-border/60 bg-background/95 backdrop-blur-md px-6 py-4 shadow-xl">
+        <nav id="mobile-menu" aria-label="Mobile Navigation" className="md:hidden border-t border-border/60 bg-background/95 backdrop-blur-md px-6 py-4 shadow-xl">
           <div className="flex flex-col gap-4">
             {navItems.map((item) => (
               <a
@@ -184,7 +187,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
               </Button>
             </div>
           </div>
-        </div>
+        </nav>
       )}
     </header>
   );
