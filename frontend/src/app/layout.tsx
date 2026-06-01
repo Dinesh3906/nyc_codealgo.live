@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -10,6 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://nyccodes.codealgo.live'),
   title: "NYC Building Code AI Compliance Checker | CodeAlgo",
   description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
   keywords: [
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
     "building code checker",
     "NYC house codes list"
   ],
-  authors: [{ name: "CodeAlgo Team" }],
+  authors: [{ name: "CodeAlgo Editorial Team" }],
   alternates: {
     canonical: "https://nyccodes.codealgo.live",
   },
@@ -33,10 +35,10 @@ export const metadata: Metadata = {
     siteName: "CodeAlgo",
     images: [
       {
-        url: "https://nyccodes.codealgo.live/og-image.jpg",
+        url: "https://nyccodes.codealgo.live/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "CodeAlgo - NYC Building Code Optimization",
+        alt: "CodeAlgo — NYC Building Code Compliance Checker",
       },
     ],
   },
@@ -48,6 +50,9 @@ export const metadata: Metadata = {
   robots: "index, follow",
   verification: {
     google: "_5er4jeJ8TtJrhHTqD3gaVeQt__QaenGj8MEZRKO0W0",
+    other: {
+      'msvalidate.01': 'PASTE_BING_CODE_HERE',
+    },
   },
   icons: {
     icon: "/icon.png",
@@ -56,12 +61,13 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = {
+const softwareAppSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "CodeAlgo",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
+  "url": "https://nyccodes.codealgo.live",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers across all 5 NYC boroughs",
   "areaServed": { "@type": "City", "name": "New York City" },
@@ -71,6 +77,22 @@ const jsonLd = {
     "PDF compliance report generation",
     "Pre-permit readiness scoring"
   ]
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "CodeAlgo",
+  "url": "https://nyccodes.codealgo.live",
+  "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://nyccodes.codealgo.live/blog?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
 };
 
 const faqJsonLd = {
@@ -104,8 +126,6 @@ const faqJsonLd = {
  ]
 };
 
-import { Toaster } from 'react-hot-toast';
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -118,7 +138,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
         <script
           type="application/ld+json"

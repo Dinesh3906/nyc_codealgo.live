@@ -1,20 +1,20 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "About Us - CodeAlgo NYC Compliance Engine | CodeAlgo",
+  title: "About CodeAlgo: AI-Powered NYC Code Compliance | CodeAlgo",
   description: "CodeAlgo is the leading AI platform dedicated to simplifying New York City building code compliance for construction professionals.",
   alternates: {
     canonical: "https://nyccodes.codealgo.live/about",
   },
   openGraph: {
-    title: "About Us - CodeAlgo",
+    title: "About CodeAlgo: AI-Powered NYC Code Compliance",
     description: "The leading AI platform for NYC building code compliance.",
     url: "https://nyccodes.codealgo.live/about",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "About Us - CodeAlgo",
+    title: "About CodeAlgo: AI-Powered NYC Code Compliance",
   },
   keywords: ["about CodeAlgo", "NYC building code company", "construction tech NYC"],
 };
@@ -47,7 +47,7 @@ export default function AboutPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
       <div className="container mx-auto max-w-4xl text-center">
-        <h1 className="text-4xl font-bold mb-6 text-foreground">About CodeAlgo</h1>
+        <h1 className="text-4xl font-bold mb-6 text-foreground">About CodeAlgo: AI-Powered NYC Code Compliance</h1>
         <p className="text-xl text-muted-foreground">Our mission is to eliminate NYC DOB rejection delays using Artificial Intelligence.</p>
       </div>
     </main>

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
+import Link from "next/link";
 import Navbar from "@/components/ui/Navbar";
 import Hero from "@/components/sections/Hero";
 import { Button } from "@/components/ui/button";
@@ -74,29 +75,38 @@ export default function LandingPage() {
             <div>
               <h2 className="text-2xl font-bold mb-4 text-foreground">Complete New York Building Code Analysis</h2>
               <p className="text-muted-foreground mb-4">
-                <strong>Code Algo</strong> provides the industry's most accurate <strong>New York Building Code</strong> AI analysis. 
-                Our platform is specifically engineered to handle <strong>NYC DOB compliance</strong> for architectural 
+                <strong>CodeAlgo</strong> provides the industry&apos;s most accurate <strong>New York Building Code</strong> AI analysis.
+                Our platform is specifically engineered to handle <strong>NYC DOB compliance</strong> for architectural
                 house plans, commercial designs, and mechanical engineering layouts.
               </p>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• New York City Construction Codes (NYCCC) Compliance</li>
-                <li>• NYC Fire Code & Plumbing Code Automated Analysis</li>
+                <li>• NYC Fire Code &amp; Plumbing Code Automated Analysis</li>
                 <li>• Zoning Resolution (ZR) Comprehensive Checks</li>
                 <li>• Instant DOB Now Filing Readiness Reports</li>
               </ul>
+              <div className="mt-6 space-y-2">
+                <p className="text-sm font-medium text-foreground">Essential Resources:</p>
+                <ul className="space-y-1.5 text-sm">
+                  <li><Link href="/blog/nyc-building-code-checklist-2026" className="text-primary hover:underline">NYC building code checklist 2026</Link></li>
+                  <li><Link href="/blog/nyc-existing-building-code-2026-guide" className="text-primary hover:underline">NYC existing building code 2026</Link></li>
+                  <li><Link href="/blog/common-nyc-code-violations-architectural-plans" className="text-primary hover:underline">Common NYC code violations</Link></li>
+                </ul>
+              </div>
             </div>
             <div className="bg-muted/50 p-8 rounded-2xl border border-border">
               <h3 className="text-lg font-bold mb-3 text-foreground">The NYC House Code Expert</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Unlike generic software, <strong>Code Algo</strong> is a specialized <strong>NYC House Code</strong> 
-                expert system. We help architects and developers navigate the complex landscape of <strong>New York 
-                Codes</strong> and <strong>DOB regulations</strong>. Our algorithm is updated in real-time to reflect 
-                the latest 2024 New York City Building Code amendments and local law changes.
+                Unlike generic software, <strong>CodeAlgo</strong> is a specialized <strong>NYC House Code</strong>
+                expert system. We help architects and developers navigate the complex landscape of <strong>New York
+                Codes</strong> and <strong>DOB regulations</strong>. Our algorithm is updated in real-time to reflect
+                the latest 2026 New York City Building Code amendments and local law changes.
               </p>
             </div>
           </div>
         </div>
       </section>
+
 
       <Footer />
     </main>

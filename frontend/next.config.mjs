@@ -5,6 +5,10 @@ const nextConfig = {
     position: 'bottom-right',
   },
   compress: true,
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react'],
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
