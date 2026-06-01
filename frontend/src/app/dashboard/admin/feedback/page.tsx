@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Image as ImageIcon
 } from "lucide-react";
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -203,10 +204,13 @@ export default function AdminFeedbackPage() {
                               rel="noopener noreferrer"
                               className="relative group/img"
                             >
-                              <img 
+                              <Image 
                                 src={fullUrl} 
-                                alt="Proof" 
+                                alt="NYC Building Code Violation Proof Screenshot" 
+                                width={32}
+                                height={32}
                                 className="inline-block h-8 w-8 rounded-lg ring-2 ring-background object-cover hover:scale-110 transition-transform cursor-pointer" 
+                                unoptimized
                               />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center rounded-lg transition-opacity">
                                 <ExternalLink className="w-3 h-3 text-white" />

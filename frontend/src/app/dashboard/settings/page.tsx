@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { LifeBuoy, Send, AlertCircle, HelpCircle, Upload, Image as ImageIcon, X, Plus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,10 +147,12 @@ export default function HelpFeedbackPage() {
                   <div className="grid grid-cols-3 gap-3 pt-2">
                     {images.map((file, index) => (
                       <div key={index} className="relative group aspect-video bg-muted rounded-lg overflow-hidden border border-border">
-                        <img 
+                        <Image 
                           src={URL.createObjectURL(file)} 
-                          alt="Preview" 
+                          alt="Uploaded NYC code analysis reference image" 
+                          fill
                           className="absolute inset-0 w-full h-full object-cover"
+                          unoptimized
                           onLoad={(e) => {
                             // Optionally revoke the URL if not needed anymore, 
                             // but usually it's fine until the component unmounts

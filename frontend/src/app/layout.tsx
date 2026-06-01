@@ -10,38 +10,24 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CodeAlgo - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
-  description: "CodeAlgo is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, review projects, and optimize AI prompts instantly.",
+  title: "NYC Building Code AI Compliance Checker | CodeAlgo",
+  description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
   keywords: [
-    "ai code analyzer", 
-    "code review ai", 
-    "prompt analyzer", 
-    "ai coding assistant", 
-    "bug detector ai", 
-    "code checker", 
-    "code optimization tool", 
-    "prompt engineering tool", 
-    "chatgpt prompt analyzer", 
-    "developer ai tools",
-    "NYC codes checking", 
-    "New york codes", 
-    "Nyc codes", 
-    "Nyc codes list", 
-    "Nyc codes ppt", 
-    "New york city codes", 
-    "New york city house codes", 
-    "New york city house codes list", 
-    "NYC house codes list", 
-    "New York building codes", 
-    "NYC code compliance checker"
+    "NYC building code",
+    "DOB code requirements",
+    "NYC DOB compliance",
+    "architect software",
+    "NYC fire code",
+    "building code checker",
+    "NYC house codes list"
   ],
   authors: [{ name: "CodeAlgo Team" }],
   alternates: {
     canonical: "https://nyccodes.codealgo.live",
   },
   openGraph: {
-    title: "CodeAlgo - AI Code Analyzer, Prompt Analyzer & Code Review Platform",
-    description: "CodeAlgo is an AI-powered code analyzer and prompt optimization platform that helps developers detect bugs, improve code quality, and optimize AI prompts.",
+    title: "NYC Building Code AI Compliance Checker | CodeAlgo",
+    description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports.",
     type: "website",
     url: "https://nyccodes.codealgo.live",
     siteName: "CodeAlgo",
@@ -50,14 +36,14 @@ export const metadata: Metadata = {
         url: "https://nyccodes.codealgo.live/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "CodeAlgo - AI Plan & Code Optimization",
+        alt: "CodeAlgo - NYC Building Code Optimization",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CodeAlgo - AI Code & Prompt Analyzer",
-    description: "AI-powered code analyzer and prompt optimization platform.",
+    title: "NYC Building Code AI Compliance Checker",
+    description: "Check architectural plans against NYC building codes instantly.",
   },
   robots: "index, follow",
   verification: {
@@ -74,18 +60,17 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "CodeAlgo",
-  "applicationCategory": "DeveloperApplication",
+  "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
-  "url": "https://nyccodes.codealgo.live",
-  "logo": "https://nyccodes.codealgo.live/logo.png",
-  "description": "AI-powered code analyzer, prompt optimizer, and building code compliance check engine.",
-  "areaServed": "New York",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "New York",
-    "addressRegion": "NY",
-    "addressCountry": "US"
-  }
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers across all 5 NYC boroughs",
+  "areaServed": { "@type": "City", "name": "New York City" },
+  "featureList": [
+    "112+ NYC code requirement checks",
+    "Instant violation detection",
+    "PDF compliance report generation",
+    "Pre-permit readiness scoring"
+  ]
 };
 
 const faqJsonLd = {
@@ -129,6 +114,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Hexagon, Mail, Lock, User, ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import Image from 'next/image';
 import api from "@/lib/api";
 import { useAuthStore } from "@/lib/store/authStore";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md shadow-2xl border-border/40 relative z-10">
         <CardHeader className="space-y-4 text-center">
           <Link href="/" className="flex items-center gap-2.5 justify-center group">
-            <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
+            <Image src="/logo.png" alt="CodeAlgo Building Code Compliance Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
             <span className="text-xl font-bold text-foreground">NYC House Code</span>
           </Link>
           <div>

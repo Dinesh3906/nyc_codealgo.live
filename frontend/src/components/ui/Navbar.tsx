@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
+import Image from 'next/image';
 
 export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +27,7 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md transition-all duration-300">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-7xl">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
+          <Image src="/logo.png" alt="CodeAlgo AI Building Code Checker Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
           <span className="text-lg font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
             NYC House Code
           </span>

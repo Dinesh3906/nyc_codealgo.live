@@ -16,6 +16,7 @@ import {
   Shield,
   Sparkles
 } from "lucide-react";
+import Image from 'next/image';
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -113,7 +114,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-border/60">
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="CodeAlgo Logo" className="w-8 h-8 object-contain rounded-md" />
+              <Image src="/logo.png" alt="CodeAlgo NYC Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
               <span className="text-lg font-bold text-foreground tracking-tight">NYC House Code</span>
             </Link>
           </div>
