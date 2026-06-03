@@ -1123,8 +1123,8 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-foreground uppercase tracking-wider mb-4 border-b border-border/40 pb-1 text-[9px]">Regulatory Docs</h4>
             <ul className="space-y-2 text-muted-foreground">
-              <li><a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
-              <li><a href="/privacy" className="hover:text-primary transition-colors">Privacy Ledger</a></li>
+              <li><a href="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</a></li>
+              <li><a href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Ledger</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">NYS Board Disclosures</a></li>
             </ul>
           </div>
