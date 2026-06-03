@@ -7,15 +7,19 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import Image from 'next/image';
 import toast from "react-hot-toast";
+import { usePathname } from "next/navigation";
 
 export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const pathname = usePathname();
+  const hideThemeToggle = pathname === '/terms-of-service' || pathname === '/privacy-policy';
+
   const navItems = [
-    { label: "Platform", href: "#platform" },
-    { label: "Workflow", href: "#workflow" },
-    { label: "Compliance", href: "#compliance" },
-    { label: "Pricing", href: "#pricing" },
+    { label: "Platform", href: "/#platform" },
+    { label: "Workflow", href: "/#workflow" },
+    { label: "Compliance", href: "/#compliance" },
+    { label: "Pricing", href: "/#pricing" },
   ];
 
   return (
@@ -98,13 +102,13 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.label}
               href={item.href}
               className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -122,30 +126,34 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
             Analyze a Drawing
           </Button>
 
-          <Button
-            id="theme-toggle-btn-desktop"
-            variant="outline"
-            size="icon"
-            className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
-            aria-label="Toggle Theme"
-          >
-            <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
-            <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
-          </Button>
+          {!hideThemeToggle && (
+            <Button
+              id="theme-toggle-btn-desktop"
+              variant="outline"
+              size="icon"
+              className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
+              aria-label="Toggle Theme"
+            >
+              <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
+              <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+            </Button>
+          )}
         </div>
 
         {/* Mobile menu trigger */}
         <div className="flex md:hidden items-center gap-3">
-          <Button
-            id="theme-toggle-btn-mobile"
-            variant="outline"
-            size="icon"
-            className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
-            aria-label="Toggle Theme"
-          >
-            <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
-            <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
-          </Button>
+          {!hideThemeToggle && (
+            <Button
+              id="theme-toggle-btn-mobile"
+              variant="outline"
+              size="icon"
+              className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
+              aria-label="Toggle Theme"
+            >
+              <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
+              <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -165,14 +173,14 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
         <nav id="mobile-menu" aria-label="Mobile Navigation" className="md:hidden border-t border-border/60 bg-background/95 backdrop-blur-md px-6 py-4 shadow-xl">
           <div className="flex flex-col gap-4">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
                 className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
             <div className="border-t border-border/60 pt-4 flex flex-col gap-3">
               <Link
