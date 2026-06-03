@@ -5,7 +5,7 @@ import { Footer } from "@/components/sections/Sections";
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative overflow-hidden">
+    <main className="dark min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative overflow-hidden">
       
       {/* Background decoration */}
       <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
