@@ -96,7 +96,7 @@ router.post('/submit', protect, (req, res, next) => {
 
 router.get('/', protect, async (req: any, res) => {
   try {
-    if (req.user.email !== 'chalams115@gmail.com') {
+    if (req.user.email !== 'chalams115@gmail.com' && req.user.email !== 'sathvi2018@gmail.com') {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 

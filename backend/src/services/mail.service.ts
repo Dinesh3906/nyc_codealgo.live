@@ -100,3 +100,83 @@ export const sendOtpEmail = async (email: string, otp: string) => {
 
   return transporter.sendMail(mailOptions);
 };
+
+export const sendAdminOtpEmail = async (email: string, otp: string) => {
+  // Fallback if SMTP not configured
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
+    console.warn(`⚠️ SMTP not configured. Admin OTP for ${email}: ${otp}`);
+    return { messageId: 'mock-id-dev-mode' };
+  }
+
+  const mailOptions = {
+    from: `"CodeAlgo Admin Portal" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Admin Verification Code: ${otp}`,
+    html: `
+      <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #0f172a; padding: 30px; text-align: center;">
+          <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">CodeAlgo Admin Panel</h1>
+        </div>
+        <div style="padding: 40px 30px; text-align: center;">
+          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">Database Access Verification</h2>
+          <p style="color: #64748b; font-size: 15px; line-height: 24px; margin-bottom: 30px;">
+            A request was made to access the User Database from your administrator account. Use the verification code below to authorize access. This code expires in 10 minutes.
+          </p>
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 2px dashed #3b82f6; display: inline-block;">
+            <span style="font-family: monospace; font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #3b82f6;">${otp}</span>
+          </div>
+          <p style="color: #ef4444; font-size: 13px; margin-top: 30px; font-weight: 600;">
+            Security Warning: If you did not request this code, please secure your account credentials immediately.
+          </p>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} CodeAlgo. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
+export const sendGiftCreditsEmail = async (email: string, credits: number) => {
+  // Fallback if SMTP not configured
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
+    console.warn(`⚠️ SMTP not configured. Gift Credits email for ${email}: ${credits} credits`);
+    return { messageId: 'mock-id-dev-mode' };
+  }
+
+  const mailOptions = {
+    from: `"CodeAlgo Credits" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `🎁 You've received ${credits} free scan credits!`,
+    html: `
+      <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #10b981; padding: 40px 30px; text-align: center; color: white;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🎁</div>
+          <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.025em;">Credits Gifted!</h1>
+        </div>
+        <div style="padding: 40px 30px; text-align: center;">
+          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">CodeAlgo has gifted you credits</h2>
+          <p style="color: #64748b; font-size: 15px; line-height: 24px; margin-bottom: 30px;">
+            We've successfully credited <strong>${credits} scans</strong> to your account! You can now use these to scan and analyze your design blueprints against NYC Building Codes.
+          </p>
+          <div style="background-color: #f0fdf4; padding: 16px 24px; border-radius: 9999px; display: inline-block; border: 1px solid #bbf7d0;">
+            <span style="font-size: 18px; font-weight: 800; color: #15803d;">+${credits} Free Scan Credits</span>
+          </div>
+          <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
+            Head over to your dashboard to start scanning right away.
+          </p>
+          <div style="margin-top: 24px;">
+            <a href="https://nyccodes.codealgo.live/dashboard" style="background-color: #10b981; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">Go to Dashboard</a>
+          </div>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} CodeAlgo. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};

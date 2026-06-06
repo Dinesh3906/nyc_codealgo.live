@@ -10,6 +10,8 @@ import planRoutes from './routes/plans.routes';
 import billingRoutes from './routes/billing.routes';
 import leadsRoutes from './routes/leads.routes';
 import feedbackRoutes from './routes/feedback.routes';
+import adminRoutes from './routes/admin.routes';
+import notificationRoutes from './routes/notification.routes';
 
 const app = express();
 
@@ -62,7 +64,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Admin-Token', 'x-admin-token']
 }));
 
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
@@ -94,6 +96,8 @@ app.use('/api/upload-plan', planRoutes); // Convenience alias
 app.use('/api/billing', billingRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Export for server.ts
 export { app, httpServer, io };

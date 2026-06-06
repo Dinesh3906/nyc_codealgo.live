@@ -14,7 +14,13 @@ import {
   Sun,
   LifeBuoy,
   Shield,
-  Sparkles
+  Sparkles,
+  Database,
+  Bell,
+  Info,
+  AlertTriangle,
+  Megaphone,
+  Gift
 } from "lucide-react";
 import Image from 'next/image';
 import Link from "next/link";
@@ -23,9 +29,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
 import { usePlanStore } from "@/lib/store/planStore";
 import UploadPlanModal from "@/components/dashboard/UploadPlanModal";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { toast } from "react-hot-toast";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -47,6 +55,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  // Notification states
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedNotification, setSelectedNotification] = useState<any | null>(null);
   
   const { user, isAuthenticated, hasHydrated, logout, login } = useAuthStore();
   const { searchQuery, setSearchQuery, initSocket } = usePlanStore();
@@ -89,6 +103,46 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     initSocket();
   }, [mounted, hasHydrated, isAuthenticated, initSocket, pathname, router, searchParams, login]);
 
+  const fetchNotifications = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await api.get('/notifications');
+      setNotifications(res.data);
+      setUnreadCount(res.data.filter((n: any) => !n.isRead).length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (mounted && hasHydrated && isAuthenticated) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [mounted, hasHydrated, isAuthenticated]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.post('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      toast.success('All notifications marked as read.');
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleMarkOneRead = async (id: string) => {
+    try {
+      await api.post(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -102,8 +156,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { name: "Help & Feedback", icon: LifeBuoy, path: "/dashboard/settings" },
   ];
 
-  const adminNavItems = user?.email === 'chalams115@gmail.com' ? [
-    { name: "Admin Center", icon: Shield, path: "/dashboard/admin/feedback" }
+  const adminNavItems = (user?.email === 'chalams115@gmail.com' || user?.email === 'sathvi2018@gmail.com') ? [
+    { name: "Admin Center", icon: Shield, path: "/dashboard/admin/feedback" },
+    { name: "User Database", icon: Database, path: "/dashboard/admin/database" }
   ] : [];
 
   const allNavItems = [...navItems, ...adminNavItems];
@@ -196,7 +251,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <Menu className="w-5 h-5" />
           </Button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 lg:ml-0 ml-3">
             <Button
               onClick={() => setShowUploadModal(true)}
               className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl px-4"
@@ -215,6 +270,98 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <span className="theme-icon-moon hidden"><Moon className="w-5 h-5 text-primary" /></span>
             </Button>
           </div>
+
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Notification Bell Dropdown */}
+            <div className="relative">
+              <Button
+                onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                variant="ghost"
+                size="icon"
+                className="rounded-xl w-10 h-10 relative"
+              >
+                <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 text-[7px] font-bold text-white rounded-full flex items-center justify-center animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+
+              {showNotifDropdown && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifDropdown(false)} />
+                  <div className="absolute right-0 top-12 w-80 bg-card border border-border/60 rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-155">
+                    <div className="p-4 border-b border-border/60 flex items-center justify-between bg-muted/20">
+                      <span className="text-sm font-bold text-foreground">Notifications</span>
+                      {unreadCount > 0 && (
+                        <Button 
+                          onClick={handleMarkAllRead} 
+                          variant="link" 
+                          className="h-auto p-0 text-xs text-blue-500 hover:text-blue-400 font-semibold"
+                        >
+                          Mark all as read
+                        </Button>
+                      )}
+                    </div>
+                    <div className="overflow-y-auto max-h-72 divide-y divide-border/40">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+                          <Bell className="w-8 h-8 opacity-20" />
+                          <p className="text-xs">All caught up! No notifications.</p>
+                        </div>
+                      ) : (
+                        notifications.map((item) => {
+                          let Icon = Info;
+                          let iconClass = "text-blue-500 bg-blue-500/10";
+                          if (item.type === 'gift') {
+                            Icon = Gift;
+                            iconClass = "text-emerald-500 bg-emerald-500/10";
+                          } else if (item.type === 'alert') {
+                            Icon = AlertTriangle;
+                            iconClass = "text-red-500 bg-red-500/10";
+                          } else if (item.type === 'news') {
+                            Icon = Megaphone;
+                            iconClass = "text-indigo-500 bg-indigo-500/10";
+                          }
+
+                          return (
+                            <div 
+                              key={item.id} 
+                              onClick={() => {
+                                handleMarkOneRead(item.id);
+                                setSelectedNotification(item);
+                                setShowNotifDropdown(false);
+                              }}
+                              className={cn(
+                                "p-3.5 flex items-start gap-3 transition-colors cursor-pointer hover:bg-muted/30 text-left",
+                                !item.isRead ? "bg-primary/5 border-l-2 border-primary" : ""
+                              )}
+                            >
+                              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", iconClass)}>
+                                <Icon className="w-4.5 h-4.5" />
+                              </div>
+                              <div className="flex-1 min-w-0 space-y-0.5">
+                                <p className={cn("text-xs font-semibold text-foreground truncate", !item.isRead ? "font-bold text-primary" : "")}>
+                                  {item.title}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground leading-normal break-words whitespace-normal">
+                                  {item.message}
+                                </p>
+                                <p className="text-[9px] text-muted-foreground/80 mt-1">
+                                  {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(item.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </header>
 
         {/* Page Content */}
@@ -232,6 +379,83 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       )}
 
       <UploadPlanModal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)} />
+
+      {selectedNotification && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop with blur */}
+          <div 
+            className="fixed inset-0 bg-background/80 backdrop-blur-md transition-opacity duration-300" 
+            onClick={() => setSelectedNotification(null)}
+          />
+          
+          {/* Dialog Content */}
+          <div className="bg-card border border-border/60 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative z-10 flex flex-col p-6 animate-in zoom-in-95 duration-200 text-left">
+            <button
+              onClick={() => setSelectedNotification(null)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground rounded-full p-1 hover:bg-muted transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Icon Header */}
+            <div className="flex items-center gap-4 mb-4">
+              {(() => {
+                let Icon = Info;
+                let iconClass = "text-blue-500 bg-blue-500/10";
+                let typeLabel = "System Info";
+                if (selectedNotification.type === 'gift') {
+                  Icon = Gift;
+                  iconClass = "text-emerald-500 bg-emerald-500/10";
+                  typeLabel = "Credits Gifted";
+                } else if (selectedNotification.type === 'alert') {
+                  Icon = AlertTriangle;
+                  iconClass = "text-red-500 bg-red-500/10";
+                  typeLabel = "Alert";
+                } else if (selectedNotification.type === 'news') {
+                  Icon = Megaphone;
+                  iconClass = "text-indigo-500 bg-indigo-500/10";
+                  typeLabel = "Announcement";
+                }
+                return (
+                  <>
+                    <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", iconClass)}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className={cn("text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full", iconClass)}>
+                        {typeLabel}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(selectedNotification.createdAt).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })} • {new Date(selectedNotification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Title */}
+            <h3 className="text-lg font-bold text-foreground mb-2 leading-snug">
+              {selectedNotification.title}
+            </h3>
+
+            {/* Message Body */}
+            <div className="text-sm text-muted-foreground leading-relaxed overflow-y-auto max-h-60 whitespace-pre-wrap pr-1">
+              {selectedNotification.message}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-6 flex justify-end">
+              <Button
+                onClick={() => setSelectedNotification(null)}
+                className="rounded-xl px-5 py-2 text-sm font-semibold"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -288,14 +288,20 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
       const id = uuidv4();
       const randomPassword = await bcrypt.hash(uuidv4(), 10);
       await pool.query(
-        'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit, isVerified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [id, email, randomPassword, name || 'Google User', 'architect', 'free', 0, true]
+        'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit, isVerified, provider) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [id, email, randomPassword, name || 'Google User', 'architect', 'free', 0, true, 'google']
       );
       const [newUsers]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
       user = newUsers[0];
-    } else if (!user.isVerified) {
-      // Mark existing unverified placeholder user as verified
-      await pool.query('UPDATE `user` SET isVerified = 1 WHERE email = ?', [email]);
+    } else {
+      if (user.provider !== 'google') {
+        await pool.query('UPDATE `user` SET provider = ? WHERE email = ?', ['google', email]);
+        user.provider = 'google';
+      }
+      if (!user.isVerified) {
+        // Mark existing unverified placeholder user as verified
+        await pool.query('UPDATE `user` SET isVerified = 1 WHERE email = ?', [email]);
+      }
     }
 
     // 4. Generate JWT and redirect back to frontend dashboard!
