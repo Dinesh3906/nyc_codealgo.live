@@ -92,7 +92,11 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg']
+      'image/*': ['.png', '.jpg', '.jpeg'],
+      'image/vnd.dwg': ['.dwg'],
+      'image/vnd.dxf': ['.dxf'],
+      'application/acad': ['.dwg'],
+      'application/dxf': ['.dxf']
     },
     multiple: false
   });
@@ -700,7 +704,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 ) : (
                   <div>
                     <p className="font-medium text-white">Drop your file here or click to browse</p>
-                    <p className="text-sm text-slate-400 mt-1">Supports PDF and image files</p>
+                    <p className="text-sm text-slate-400 mt-1">Supports PDF, CAD (DWG/DXF), and image files</p>
                   </div>
                 )}
               </div>

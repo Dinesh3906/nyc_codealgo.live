@@ -30,11 +30,29 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.dwg', '.dxf'];
+    const allowedTypes = [
+      'application/pdf',
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'application/acad',
+      'application/x-acad',
+      'application/autocad_dwg',
+      'image/vnd.dwg',
+      'image/x-dwg',
+      'application/dxf',
+      'application/x-dxf',
+      'image/vnd.dxf',
+      'text/x-dxf',
+      'text/dxf',
+      'application/octet-stream'
+    ];
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF and Images (PNG/JPG) are allowed.'));
+      cb(new Error('Invalid file type. Only PDF, Images (PNG/JPG), and AutoCAD (DWG/DXF) are allowed.'));
     }
   }
 });

@@ -22,6 +22,84 @@ async function generateQueryEmbedding(text: string): Promise<number[]> {
   return Array.from(output.data);
 }
 
+function extractTextFromCAD(filePath: string, ext: string): string {
+  try {
+    if (ext === '.dxf') {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const lines = content.split(/\r?\n/);
+      const texts: string[] = [];
+      for (let i = 0; i < lines.length - 1; i++) {
+        if (lines[i].trim() === '1') {
+          const val = lines[i + 1].trim();
+          // Filter out formatting code prefixes like \A1; or \P or empty strings
+          if (val && val.length > 1 && !val.startsWith('\\')) {
+            texts.push(val);
+          }
+        }
+      }
+      return texts.join('\n');
+    } else {
+      // .dwg binary format - Scan for ASCII and UTF-16 strings
+      const buffer = fs.readFileSync(filePath);
+      const strings: string[] = [];
+      
+      // Standard ASCII strings (length >= 4)
+      let currentStr = "";
+      for (let i = 0; i < buffer.length; i++) {
+        const byte = buffer[i];
+        if (byte >= 32 && byte <= 126) {
+          currentStr += String.fromCharCode(byte);
+        } else {
+          if (currentStr.length >= 4) {
+            const trimmed = currentStr.trim();
+            if (/[a-zA-Z]/.test(trimmed) && trimmed.length > 4) {
+              strings.push(trimmed);
+            }
+          }
+          currentStr = "";
+        }
+      }
+      if (currentStr.length >= 4) {
+        const trimmed = currentStr.trim();
+        if (/[a-zA-Z]/.test(trimmed) && trimmed.length > 4) {
+          strings.push(trimmed);
+        }
+      }
+      
+      // Wide-characters (UTF-16 LE)
+      let currentWideStr = "";
+      for (let i = 0; i < buffer.length - 1; i++) {
+        const byte1 = buffer[i];
+        const byte2 = buffer[i + 1];
+        if (byte2 === 0 && byte1 >= 32 && byte1 <= 126) {
+          currentWideStr += String.fromCharCode(byte1);
+          i++; // Skip wide character's high byte (0)
+        } else {
+          if (currentWideStr.length >= 4) {
+            const trimmed = currentWideStr.trim();
+            if (/[a-zA-Z]/.test(trimmed) && trimmed.length > 4) {
+              strings.push(trimmed);
+            }
+          }
+          currentWideStr = "";
+        }
+      }
+      if (currentWideStr.length >= 4) {
+        const trimmed = currentWideStr.trim();
+        if (/[a-zA-Z]/.test(trimmed) && trimmed.length > 4) {
+          strings.push(trimmed);
+        }
+      }
+      
+      const uniqueStrings = Array.from(new Set(strings));
+      return uniqueStrings.slice(0, 2000).join('\n');
+    }
+  } catch (err) {
+    console.error(`[CAD EXTRACTOR] Error parsing CAD file:`, err);
+    return `CAD file analysis fallback (${ext})`;
+  }
+}
+
 export async function checkComplianceTS(housePlanPath: string) {
   const fileExt = path.extname(housePlanPath).toLowerCase();
   let housePlanText = "";
@@ -32,6 +110,9 @@ export async function checkComplianceTS(housePlanPath: string) {
     const dataBuffer = fs.readFileSync(housePlanPath);
     const data = await pdfParse(dataBuffer);
     housePlanText = data.text;
+  } else if (fileExt === ".dwg" || fileExt === ".dxf") {
+    console.log(`[RAG] CAD file detected (${fileExt}), extracting text content...`);
+    housePlanText = extractTextFromCAD(housePlanPath, fileExt);
   } else {
     // For images, we prepare for VISION
     console.log(`[RAG] Image detected, preparing for Llama 90B Vision...`);
