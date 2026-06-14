@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { apiLimiter, authLimiter } from './middleware/rateLimit.middleware';
@@ -19,6 +20,9 @@ const app = express();
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// Compress all responses to prevent ERR_CONTENT_LENGTH_MISMATCH through Nginx
+app.use(compression());
 
 const allowedOrigins = [
   'https://nyccodes.codealgo.live',

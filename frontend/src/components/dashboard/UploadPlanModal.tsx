@@ -40,7 +40,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
   useEffect(() => {
     if (status === 'analyzing' && activePlanId) {
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://cofuncion.com/nyc-house-code-backend");
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.codealgo.live");
 
       socket.on('analysis-status', (data) => {
         if (data.planId !== activePlanId) return;
