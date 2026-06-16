@@ -2,14 +2,7 @@ import mysql from 'mysql2/promise';
 
 // Create a MySQL connection pool using either DATABASE_URL or component variables
 const pool = process.env.DATABASE_URL
-  ? mysql.createPool({
-      uri: process.env.DATABASE_URL,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 10000
-    })
+  ? mysql.createPool(process.env.DATABASE_URL)
   : mysql.createPool({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,

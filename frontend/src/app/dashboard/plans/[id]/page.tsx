@@ -3,8 +3,8 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
-import { 
-  ArrowLeft, Download, Share2, CheckCircle2, AlertTriangle, 
+import {
+  ArrowLeft, Download, Share2, CheckCircle2, AlertTriangle,
   ShieldCheck, Zap, Lightbulb, FileText, Activity
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-hot-toast";
+import { buildPdfFilename, downloadPdfDocument } from "@/lib/pdfDownload";
 
 export default function PlanDetailPage() {
   const { id } = useParams();
@@ -19,13 +20,14 @@ export default function PlanDetailPage() {
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPlan = async () => {
       try {
         const res = await api.get(`/plans/${id}`);
         let planData = res.data;
-        
+
         if (planData && planData.analysisResult) {
           let result = planData.analysisResult;
           let depth = 0;
@@ -36,7 +38,7 @@ export default function PlanDetailPage() {
           if (typeof result !== 'object' || result === null) result = {};
           planData.analysisResult = result;
         }
-        
+
         setPlan(planData);
       } catch (err) {
         console.error("Fetch plan failed:", err);
@@ -67,7 +69,7 @@ export default function PlanDetailPage() {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const analysisResult = plan.analysisResult;
-      
+
       const colors = {
         primary: [15, 23, 42],
         secondary: [51, 65, 85],
@@ -112,7 +114,7 @@ export default function PlanDetailPage() {
       doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
       doc.text("Executive Overview", 20, currentY);
-      
+
       const score = analysisResult.score || analysisResult.percentage || 0;
       const scoreBoxW = 70;
       const scoreBoxX = pageWidth - 20 - scoreBoxW;
@@ -120,12 +122,12 @@ export default function PlanDetailPage() {
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
       doc.setLineWidth(0.5);
       doc.roundedRect(scoreBoxX, currentY - 5, scoreBoxW, 50, 5, 5, 'FD');
-      
+
       let scoreColor = colors.compliant;
       let statusText = "PASS";
       if (score < 70) { scoreColor = colors.major; statusText = "REQUIRES REVISION"; }
       if (score < 40) { scoreColor = colors.critical; statusText = "CRITICAL FAIL"; }
-      
+
       doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
       doc.setFontSize(36);
       doc.setFont('helvetica', 'bold');
@@ -151,15 +153,15 @@ export default function PlanDetailPage() {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
         doc.text(label, 20, metaY);
-        
+
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        
+
         // Wrap value to prevent overlapping with the score box
-        const maxWidth = scoreBoxX - 65; 
+        const maxWidth = scoreBoxX - 65;
         const wrappedValue = doc.splitTextToSize(String(value), maxWidth);
         doc.text(wrappedValue, 65, metaY);
-        
+
         // Increase Y based on number of lines in wrapped value
         metaY += (wrappedValue.length * 5) + 3;
       });
@@ -167,7 +169,7 @@ export default function PlanDetailPage() {
       currentY = 135;
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
       doc.line(20, currentY - 5, pageWidth - 20, currentY - 5);
-      
+
       doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
@@ -176,7 +178,7 @@ export default function PlanDetailPage() {
 
       const summary = Array.isArray(analysisResult.summary) ? analysisResult.summary.join('\n') : (analysisResult.summary || "No summary available.");
       const summaryLines = summary.split('\n').map(l => l.trim().replace(/^[-•]\s*/, '')).filter(l => l);
-      
+
       doc.setFontSize(10);
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
       summaryLines.forEach((line) => {
@@ -218,7 +220,7 @@ export default function PlanDetailPage() {
         } else {
           currentY += 15;
         }
-        
+
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.rect(20, currentY, pageWidth - 40, 15, 'F');
         doc.setTextColor(255, 255, 255);
@@ -230,15 +232,15 @@ export default function PlanDetailPage() {
         // Handle appreciation as either string or array
         let rawAppreciation = analysisResult.appreciation || "";
         let appLines: string[] = [];
-        
+
         if (Array.isArray(rawAppreciation)) {
           appLines = rawAppreciation;
         } else {
           // Robust splitting for string blocks: split by bullets, numbers, or double newlines
           appLines = String(rawAppreciation)
-            .split(/(?:^|\n)(?:[•\-\*\d\.]+\s*|✦\s*)/) 
+            .split(/(?:^|\n)(?:[•\-\*\d\.]+\s*|✦\s*)/)
             .filter(l => l.trim().length > 5);
-          
+
           if (appLines.length <= 1) {
             // Fallback for single block text - split by sentences if no bullets found
             appLines = String(rawAppreciation).split(/[.!?]+\s+/).filter(l => l.trim().length > 10);
@@ -260,8 +262,8 @@ export default function PlanDetailPage() {
           head: [],
           body: cleanPoints.map(p => [`- ${p}`]), // Use standard dash for maximum compatibility
           theme: 'plain',
-          styles: { 
-            fontSize: 9.5, 
+          styles: {
+            fontSize: 9.5,
             cellPadding: 6,
             textColor: [44, 62, 80],
             font: 'helvetica',
@@ -305,16 +307,27 @@ export default function PlanDetailPage() {
         doc.setFont('helvetica', 'bold');
         doc.text("Code Compliance Violations", 20, currentY);
         currentY += 10;
-        
+
         autoTableModule.default(doc, {
           startY: currentY + 10,
           margin: { top: 30 }, // Safe margin for multi-page tables
-          head: [['Issue', 'Severity', 'NYC Code Ref.', 'Action Required']],
-          body: analysisResult.issues.map((i: any) => [i.title, i.severity.toUpperCase(), i.rule || i.code || 'N/A', i.recommendation || i.description]),
+          head: [['Issue / Penalty', 'Severity', 'NYC Code Citation', 'Loophole & Required Action']],
+          body: analysisResult.issues.map((i: any) => {
+            const deduction = i.deductionPercentage || i.deduction_percentage || 0;
+            const citation = i.exactPdfCitation || i.exact_pdf_citation || 'N/A';
+            const loophole = i.loopholeDetails || i.loophole_details || 'N/A';
+            const correction = i.suggestion || i.recommendation || i.requiredElements || i.required_elements || 'N/A';
+            return [
+              `${i.title}\nPenalty: -${deduction}%`,
+              i.severity.toUpperCase(),
+              `${i.rule || i.code || 'N/A'}\n\nPDF Ref:\n${citation}`,
+              `Loophole:\n${loophole}\n\nRequired Correction:\n${correction}`
+            ];
+          }),
           theme: 'grid',
           headStyles: { fillColor: colors.primary as [number, number, number], fontSize: 9 },
           styles: { fontSize: 8, cellPadding: 5 },
-          columnStyles: { 1: { cellWidth: 25 }, 2: { cellWidth: 35 } },
+          columnStyles: { 0: { cellWidth: 40 }, 1: { cellWidth: 22 }, 2: { cellWidth: 45 } },
           didDrawCell: (data: any) => {
             if (data.section === 'body' && data.column.index === 1) {
               const severity = data.cell.raw;
@@ -359,7 +372,7 @@ export default function PlanDetailPage() {
         doc.setFont('helvetica', 'bold');
         doc.text("Structural & Mechanical Rooms Detected", 20, currentY);
         currentY += 10;
-        
+
         autoTableModule.default(doc, {
           startY: currentY + 10,
           margin: { top: 30 },
@@ -370,8 +383,7 @@ export default function PlanDetailPage() {
           headStyles: { fillColor: [240, 240, 240], textColor: colors.primary as [number, number, number] }
         });
       }
-
-      doc.save(`Forensic_Audit_${plan.fileName.split('.')[0]}.pdf`);
+      await downloadPdfDocument(doc, buildPdfFilename("Forensic_Audit", plan.fileName));
     });
   };
 
@@ -491,12 +503,12 @@ export default function PlanDetailPage() {
                       points = raw.split(/[.!?]+\s+/).filter(l => l.trim().length > 10);
                     }
                   }
-                  
+
                   // Final clean up of each point
                   const cleanPoints = points.map(p => p.trim().replace(/^['"&✦•\-\*\s]+/, '')).filter(p => p.length > 0);
-                  
+
                   if (cleanPoints.length === 0) return null;
-                  
+
                   return cleanPoints.map((point: string, i: number) => (
                     <li key={i} className="flex items-start gap-3 bg-white dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
                       <CheckCircle2 className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
@@ -512,6 +524,127 @@ export default function PlanDetailPage() {
         {/* Main Content Grid */}
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
+            {/* Step-Wise Compliance Breakdown */}
+            {analysisResult.steps && (
+              <Card className="bg-white dark:bg-slate-800/30 backdrop-blur-lg border-slate-200 dark:border-slate-700/50 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2 text-slate-900 dark:text-white">
+                    <Activity className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+                    Step-Wise Category Audits
+                  </CardTitle>
+                  <CardDescription className="text-slate-500 dark:text-slate-400">
+                    Click on any construction category to filter compliance findings below.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {analysisResult.steps.map((step: any) => {
+                      const isSkipped = step.status === 'skipped';
+                      const isCompliant = step.status === 'compliant';
+                      const isWarning = step.status === 'warning';
+                      const isFailed = step.status === 'failed';
+                      const stepIssues = (analysisResult.issues || []).filter((iss: any) => iss.stepId === step.id);
+                      const stepCompliant = step.compliant_features || [];
+
+                      return (
+                        <div
+                          key={step.id}
+                          className={`relative overflow-hidden cursor-pointer p-4 rounded-xl border transition-all duration-300 ${activeCategoryFilter === step.id
+                            ? 'border-blue-500 ring-2 ring-blue-500/25 bg-blue-50/50 dark:bg-blue-950/20'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 hover:border-slate-300 dark:hover:border-slate-700'
+                            }`}
+                          onClick={() => setActiveCategoryFilter(activeCategoryFilter === step.id ? null : step.id)}
+                        >
+                          <div className="flex items-center justify-between font-bold text-sm text-slate-800 dark:text-white mb-2">
+                            <span>{step.name}</span>
+                            <Badge
+                              className={
+                                isSkipped ? 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20' :
+                                  isCompliant ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
+                                    isWarning ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
+                                      'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                              }
+                              variant="outline"
+                            >
+                              {isSkipped ? 'Skipped' : `${step.score}%`}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">
+                            {step.summary
+                              ? step.summary.replace(/^###.*?\n/, '').substring(0, 95) + (step.summary.length > 95 ? '...' : '')
+                              : 'No overview available.'}
+                          </p>
+
+                          {!isSkipped && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 space-y-3">
+                              {/* Compliant features */}
+                              {stepCompliant.length > 0 && (
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-bold uppercase tracking-wider text-green-600 dark:text-green-400 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                    Compliant (Awarded)
+                                  </div>
+                                  <div className="pl-2 space-y-1 max-h-40 overflow-y-auto pr-1">
+                                    {stepCompliant.map((feat: string, idx: number) => {
+                                      const parts = feat.split(' - ');
+                                      const code = parts[0];
+                                      const desc = parts.slice(1).join(' - ');
+                                      return (
+                                        <div key={idx} className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal flex items-start gap-1">
+                                          <span className="text-green-500 font-bold shrink-0">✓</span>
+                                          <span>
+                                            <strong className="text-slate-700 dark:text-slate-200">{code}</strong>
+                                            {desc ? `: ${desc}` : ''}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Violations */}
+                              {stepIssues.length > 0 && (
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-500 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    Violations (Deducted)
+                                  </div>
+                                  <div className="pl-2 space-y-1 max-h-40 overflow-y-auto pr-1">
+                                    {stepIssues.map((issue: any, idx: number) => (
+                                      <div key={idx} className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal flex items-start gap-1">
+                                        <span className="text-red-500 font-bold shrink-0">✗</span>
+                                        <span>
+                                          <strong className="text-slate-700 dark:text-slate-200">{issue.rule || issue.code}</strong>: {issue.title}
+                                          <span className="text-red-500 font-semibold ml-1 shrink-0">(-{issue.deductionPercentage || issue.deduction_percentage || 0}%)</span>
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {activeCategoryFilter && (
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveCategoryFilter(null)}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                      >
+                        Reset Filter
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Forensic Summary */}
             <Card className="bg-white dark:bg-slate-800/30 backdrop-blur-lg border-slate-200 dark:border-slate-700/50 shadow-sm">
               <CardHeader>
@@ -575,34 +708,87 @@ export default function PlanDetailPage() {
                     <p className="text-lg font-bold text-slate-900 dark:text-white">Zero Violations Detected</p>
                     <p className="text-slate-500 text-sm mt-1">This plan fully adheres to the 2022 NYC Building Code</p>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {analysisResult.issues.map((issue: any, i: number) => (
-                      <Card key={i} className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 border-l-4 border-l-red-500 transition-all hover:shadow-md">
-                        <CardHeader className="py-4">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-slate-900 dark:text-white text-base">{issue.title}</CardTitle>
-                              <Badge variant="outline" className="text-slate-500 dark:text-slate-400 font-mono text-[10px] py-0 border-slate-200 dark:border-slate-700">{issue.rule || issue.code || 'CODE: N/A'}</Badge>
-                            </div>
-                            <Badge variant={issue.severity === 'critical' ? 'destructive' : 'secondary'} className="uppercase text-[10px] tracking-widest">
-                              {issue.severity}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pb-4">
-                          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-4">{issue.description}</p>
-                          {(issue.suggestion || issue.recommendation) && (
-                            <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3">
-                              <p className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Required Correction</p>
-                              <p className="text-slate-600 dark:text-slate-300 text-sm">{issue.suggestion || issue.recommendation}</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                ) : (() => {
+                  const filteredIssues = analysisResult.issues.filter(
+                    (issue: any) => !activeCategoryFilter || issue.stepId === activeCategoryFilter
+                  );
+                  if (filteredIssues.length === 0) {
+                    return (
+                      <div className="text-center py-16 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                        <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500/70" />
+                        <p className="text-lg font-bold text-slate-900 dark:text-white">Zero Violations Found</p>
+                        <p className="text-slate-500 text-sm mt-1">No compliance issues detected in this discipline.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-4">
+                      {filteredIssues.map((issue: any, i: number) => {
+                        const borderColors = {
+                          critical: 'border-l-red-500 dark:border-l-red-600',
+                          major: 'border-l-amber-500 dark:border-l-amber-600',
+                          minor: 'border-l-blue-500 dark:border-l-blue-600',
+                        };
+                        const severityClass = borderColors[issue.severity as 'critical' | 'major' | 'minor'] || 'border-l-slate-500';
+                        const deduction = issue.deductionPercentage || issue.deduction_percentage || 0;
+                        const citation = issue.exactPdfCitation || issue.exact_pdf_citation;
+                        const loophole = issue.loopholeDetails || issue.loophole_details;
+                        const correction = issue.suggestion || issue.recommendation || issue.requiredElements || issue.required_elements;
+
+                        return (
+                          <Card key={i} className={`bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 border-l-4 ${severityClass} transition-all hover:shadow-md`}>
+                            <CardHeader className="py-4">
+                              <div className="flex items-start justify-between">
+                                <div className="space-y-1">
+                                  <CardTitle className="text-slate-900 dark:text-white text-base flex items-center gap-2 flex-wrap">
+                                    <span>{issue.title}</span>
+                                    {deduction > 0 && (
+                                      <Badge variant="destructive" className="bg-red-500/10 text-red-500 dark:text-red-400 border-red-500/20 py-0.5 px-2 text-[10px] font-bold">
+                                        -{deduction}% Penalty
+                                      </Badge>
+                                    )}
+                                  </CardTitle>
+                                  <Badge variant="outline" className="text-slate-500 dark:text-slate-400 font-mono text-[10px] py-0 border-slate-200 dark:border-slate-700">
+                                    {issue.rule || issue.code || 'CODE: N/A'}
+                                  </Badge>
+                                </div>
+                                <Badge variant={issue.severity === 'critical' ? 'destructive' : 'secondary'} className="uppercase text-[10px] tracking-widest font-semibold">
+                                  {issue.severity}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pb-4 space-y-3">
+                              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{issue.description}</p>
+
+                              {loophole && loophole !== 'N/A' && (
+                                <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-3">
+                                  <p className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 mb-1">Identified Loophole</p>
+                                  <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{loophole}</p>
+                                </div>
+                              )}
+
+                              {correction && correction !== 'N/A' && (
+                                <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3">
+                                  <p className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 mb-1">Required Correction & Remedy</p>
+                                  <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{correction}</p>
+                                </div>
+                              )}
+
+                              {citation && citation !== 'N/A' && (
+                                <div className="flex items-start gap-2 bg-slate-100 dark:bg-slate-800/80 rounded-lg p-3 border border-slate-200 dark:border-slate-700/50">
+                                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 shrink-0 mt-0.5">PDF Citation:</span>
+                                  <span className="text-xs font-mono text-slate-700 dark:text-slate-300 select-all leading-normal">
+                                    {citation}
+                                  </span>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
@@ -633,15 +819,15 @@ export default function PlanDetailPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
                   <span className="text-sm text-slate-500 dark:text-slate-400">Critical Hazards</span>
-                  <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">{ (analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length }</Badge>
+                  <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">{(analysisResult.issues || []).filter((i: any) => i.severity === 'critical').length}</Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
                   <span className="text-sm text-slate-500 dark:text-slate-400">Major Violations</span>
-                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{ (analysisResult.issues || []).filter((i: any) => i.severity === 'major').length }</Badge>
+                  <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{(analysisResult.issues || []).filter((i: any) => i.severity === 'major').length}</Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
                   <span className="text-sm text-slate-500 dark:text-slate-400">Minor Adherences</span>
-                  <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">{ (analysisResult.issues || []).filter((i: any) => i.severity === 'minor').length }</Badge>
+                  <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">{(analysisResult.issues || []).filter((i: any) => i.severity === 'minor').length}</Badge>
                 </div>
               </CardContent>
             </Card>

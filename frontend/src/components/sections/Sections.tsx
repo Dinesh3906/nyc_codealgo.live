@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  FileText, Search, Check, ChevronRight, AlertTriangle, 
-  Upload, Database, Shield, ShieldCheck, CheckCircle2, 
-  Layers, Compass, Clock, ArrowRight, BarChart3, Building2, 
+import {
+  FileText, Search, Check, ChevronRight, AlertTriangle,
+  Upload, Database, Shield, ShieldCheck, CheckCircle2,
+  Layers, Compass, Clock, ArrowRight, BarChart3, Building2,
   Users, AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,12 +24,12 @@ export function ProblemSection() {
             {/* Base Grid reference lines */}
             <line x1="0" y1="36" x2="80" y2="36" stroke="rgba(56,116,203,0.1)" strokeWidth="0.5" />
             <line x1="10" y1="36" x2="10" y2="2" stroke="rgba(56,116,203,0.1)" strokeWidth="0.5" />
-            
+
             {/* Book 3 (Bottom) */}
             <path d="M 15,32 L 65,32 L 72,25 L 22,25 Z" fill="#0C0F12" stroke="currentColor" strokeWidth="0.5" />
             <path d="M 65,32 L 65,35 L 72,28 L 72,25 Z" fill="#080A0C" stroke="currentColor" strokeWidth="0.5" />
             <path d="M 15,32 L 15,35 L 65,35 L 65,32 Z" fill="#0E1216" stroke="currentColor" strokeWidth="0.5" />
-            
+
             {/* Book 2 (Middle) */}
             <path d="M 18,24 L 68,24 L 75,17 L 25,17 Z" fill="#0C0F12" stroke="currentColor" strokeWidth="0.5" />
             <path d="M 68,24 L 68,27 L 75,20 L 75,17 Z" fill="#080A0C" stroke="currentColor" strokeWidth="0.5" />
@@ -41,7 +41,7 @@ export function ProblemSection() {
             <path d="M 70,16 L 70,19 L 77,12 L 77,9 Z" fill="#080A0C" stroke="currentColor" strokeWidth="0.5" />
             <path d="M 20,16 L 20,19 L 70,19 L 70,16 Z" fill="#161B22" stroke="currentColor" strokeWidth="0.5" />
             <text x="28" y="15" fontSize="2.5" fill="currentColor" transform="rotate(-6 28 15)" fontWeight="bold" letterSpacing="0.2">2026 NYC BUILDING CODE</text>
-            
+
             {/* Technical annotation lines */}
             <line x1="5" y1="12" x2="19" y2="12" stroke="#3874CB" strokeWidth="0.5" />
             <circle cx="5" cy="12" r="1" fill="#3874CB" />
@@ -59,28 +59,28 @@ export function ProblemSection() {
             {/* Drawing boundaries */}
             <rect x="5" y="2" width="100" height="36" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
             <path d="M 5,20 L 105,20" stroke="rgba(56,116,203,0.15)" strokeWidth="0.5" strokeDasharray="1 1" />
-            
+
             {/* Wall sections */}
             <rect x="15" y="8" width="8" height="24" fill="none" stroke="currentColor" strokeWidth="0.6" />
             <line x1="19" y1="8" x2="19" y2="32" stroke="currentColor" strokeWidth="0.3" strokeDasharray="1 0.5" />
 
             <rect x="50" y="8" width="45" height="6" fill="none" stroke="currentColor" strokeWidth="0.6" />
             <line x1="50" y1="11" x2="95" y2="11" stroke="currentColor" strokeWidth="0.3" strokeDasharray="1 0.5" />
-            
+
             {/* Corridor Egress path */}
             <path d="M 35,8 L 35,32" stroke="currentColor" strokeWidth="0.6" />
             <path d="M 47,8 L 47,32" stroke="currentColor" strokeWidth="0.6" />
-            
+
             {/* Red alert marker on corridor width */}
             <line x1="35" y1="20" x2="47" y2="20" stroke="#EF4444" strokeWidth="0.8" />
             <path d="M 35,17 L 35,23 M 47,17 L 47,23" stroke="#EF4444" strokeWidth="0.6" />
             <circle cx="41" cy="20" r="2" fill="none" stroke="#EF4444" strokeWidth="0.5" />
-            
+
             {/* Dimension Callout text */}
             <rect x="52" y="18" width="44" height="9" rx="0.5" fill="#0C0F12" stroke="#EF4444" strokeWidth="0.5" />
             <text x="54" y="22.5" fill="#EF4444" fontSize="2.2" fontWeight="bold">EGRESS: 32" (36" REQ)</text>
             <text x="54" y="25.5" fill="rgba(255,255,255,0.3)" fontSize="1.8">VIOLATION SEC. 1020.2</text>
-            
+
             <line x1="47" y1="20" x2="52" y2="22" stroke="#EF4444" strokeWidth="0.4" strokeDasharray="1 0.5" />
           </g>
         </svg>
@@ -97,25 +97,25 @@ export function ProblemSection() {
             <line x1="15" y1="16" x2="85" y2="16" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
             <line x1="15" y1="24" x2="85" y2="24" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
             <line x1="15" y1="32" x2="85" y2="32" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
-            
+
             {/* Vertical timeline markings */}
             <line x1="15" y1="5" x2="15" y2="34" stroke="currentColor" strokeWidth="0.5" />
             <line x1="40" y1="5" x2="40" y2="34" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="1 1" />
             <line x1="65" y1="5" x2="65" y2="34" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" strokeDasharray="1 1" />
             <line x1="85" y1="5" x2="85" y2="34" stroke="#EF4444" strokeWidth="0.5" strokeDasharray="1 1" />
-            
+
             {/* Gantt Bar 1: Design Phase */}
             <rect x="15" y="5" width="20" height="4" fill="#3874CB" />
             <text x="17" y="12" fontSize="2" fill="rgba(255,255,255,0.3)">DESIGN (WK 1-2)</text>
-            
+
             {/* Gantt Bar 2: QA Check */}
             <rect x="35" y="13" width="8" height="4" fill="#60A5FA" />
             <text x="37" y="20" fontSize="2" fill="rgba(255,255,255,0.3)">AUDIT (WK 3)</text>
-            
+
             {/* Gantt Bar 3: DOB Queue Wait */}
             <rect x="43" y="21" width="37" height="4" fill="rgba(255,255,255,0.15)" stroke="currentColor" strokeWidth="0.3" strokeDasharray="1 0.5" />
             <text x="45" y="28" fontSize="2" fill="rgba(255,255,255,0.35)">DOB NOW QUEUE (WK 4-7)</text>
-            
+
             {/* Gantt Bar 4: Late Rejection Barrier */}
             <rect x="80" y="29" width="5" height="4" fill="#EF4444" />
             <circle cx="85" cy="31" r="2.5" fill="#EF4444" />
@@ -194,10 +194,10 @@ export function SolutionSection() {
       {/* Background elements */}
       {/* Blueprint Grid backdrop */}
       <div className="absolute inset-0 opacity-[0.20] blueprint-grid pointer-events-none z-0" />
-      
+
       {/* Deep blue glowing spotlight in the center */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/30 rounded-full blur-[180px] pointer-events-none z-0" />
-      
+
       {/* Technical blueprint skyline backdrop - high brightness */}
       <div className="absolute inset-0 bg-[url('/bg-matrix.png')] bg-cover bg-bottom opacity-[0.55] pointer-events-none mix-blend-lighten z-0" />
 
@@ -210,20 +210,20 @@ export function SolutionSection() {
             const x = idx * 10; // 0 to 1200
             return (
               <g key={idx}>
-                <line 
-                  x1={x} 
-                  y1={0} 
-                  x2={x} 
-                  y2={isMajor ? 12 : isMedium ? 8 : 5} 
-                  stroke="currentColor" 
-                  strokeWidth="0.8" 
+                <line
+                  x1={x}
+                  y1={0}
+                  x2={x}
+                  y2={isMajor ? 12 : isMedium ? 8 : 5}
+                  stroke="currentColor"
+                  strokeWidth="0.8"
                 />
                 {isMajor && (
-                  <text 
-                    x={x} 
-                    y={18} 
-                    textAnchor="middle" 
-                    fontSize="6.5" 
+                  <text
+                    x={x}
+                    y={18}
+                    textAnchor="middle"
+                    fontSize="6.5"
                     className="fill-muted-foreground/80 font-bold font-mono"
                   >
                     {idx * 10}'
@@ -244,20 +244,20 @@ export function SolutionSection() {
             const x = idx * 10; // 0 to 1200
             return (
               <g key={idx}>
-                <line 
-                  x1={x} 
-                  y1={20} 
-                  x2={x} 
-                  y2={isMajor ? 8 : isMedium ? 12 : 15} 
-                  stroke="currentColor" 
-                  strokeWidth="0.8" 
+                <line
+                  x1={x}
+                  y1={20}
+                  x2={x}
+                  y2={isMajor ? 8 : isMedium ? 12 : 15}
+                  stroke="currentColor"
+                  strokeWidth="0.8"
                 />
                 {isMajor && (
-                  <text 
-                    x={x} 
-                    y={6} 
-                    textAnchor="middle" 
-                    fontSize="6.5" 
+                  <text
+                    x={x}
+                    y={6}
+                    textAnchor="middle"
+                    fontSize="6.5"
                     className="fill-muted-foreground/80 font-bold font-mono"
                   >
                     {idx * 10}'
@@ -308,7 +308,7 @@ export function SolutionSection() {
               <span className="absolute bottom-1 right-1 font-mono text-[7px] text-muted-foreground/20 font-light select-none">+</span>
 
               <span className="absolute top-1 left-3 font-mono text-[6px] text-muted-foreground/30 select-none">X: {i * 40}</span>
-              <span className="absolute bottom-1 right-3 font-mono text-[6px] text-muted-foreground/30 select-none">REF: S-0{i+1}</span>
+              <span className="absolute bottom-1 right-3 font-mono text-[6px] text-muted-foreground/30 select-none">REF: S-0{i + 1}</span>
 
               {/* Connector line styled as architectural dimension line for large screens */}
               {i < 2 && (
@@ -317,12 +317,12 @@ export function SolutionSection() {
                     {/* Extension lines */}
                     <line x1="2" y1="4" x2="2" y2="20" stroke="currentColor" strokeWidth="0.5" />
                     <line x1="46" y1="4" x2="46" y2="20" stroke="currentColor" strokeWidth="0.5" />
-                    
+
                     {/* Dimension line with architectural ticks (45 deg slash) */}
                     <line x1="2" y1="12" x2="46" y2="12" stroke="currentColor" strokeWidth="0.5" />
                     <line x1="0" y1="14" x2="4" y2="10" stroke="currentColor" strokeWidth="0.8" />
                     <line x1="44" y1="14" x2="48" y2="10" stroke="currentColor" strokeWidth="0.8" />
-                    
+
                     {/* Measurement label */}
                     <rect x="14" y="6" width="20" height="12" fill="currentColor" className="text-white dark:text-[#0C0F12] transition-colors duration-300" rx="0" />
                     <text x="24" y="14" textAnchor="middle" fontSize="6" className="fill-primary font-bold">12'-0"</text>
@@ -411,7 +411,7 @@ export function InteractiveBlueprintScanner() {
     <section id="compliance" className="py-24 bg-[#F8F6F2] dark:bg-[#080A0C] border-b border-border/40 relative transition-colors duration-300">
       <div className="absolute inset-0 pointer-events-none opacity-20 blueprint-grid" />
       <div className="container mx-auto px-6 max-w-7xl relative z-10">
-        
+
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-950/45 border border-primary/30 rounded-sm text-[10px] font-mono tracking-widest uppercase text-primary mb-4">
             <Compass className="w-3.5 h-3.5" />
@@ -424,7 +424,7 @@ export function InteractiveBlueprintScanner() {
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8 items-stretch font-mono">
-          
+
           {/* Left Side: Interactive Plan drawing board */}
           <div className="lg:col-span-7 bg-white dark:bg-[#0C0F12] border border-border rounded-sm relative p-4 flex flex-col h-[400px] transition-colors duration-300">
             <div className="flex items-center justify-between pb-3 border-b border-border text-[10px] text-muted-foreground">
@@ -442,11 +442,11 @@ export function InteractiveBlueprintScanner() {
               <div className="absolute inset-0 opacity-[0.03] blueprint-grid-fine" />
 
               {/* Animated Laser Scanning Line */}
-              <div 
+              <div
                 className="absolute top-0 bottom-0 w-[1.5px] bg-gradient-to-b from-transparent via-primary to-transparent shadow-lg shadow-primary z-20 pointer-events-none"
-                style={{ 
-                  left: `${scanPosition}%`, 
-                  transition: "left 0.15s ease-out" 
+                style={{
+                  left: `${scanPosition}%`,
+                  transition: "left 0.15s ease-out"
                 }}
               />
 
@@ -454,14 +454,14 @@ export function InteractiveBlueprintScanner() {
               <svg className="w-full h-full max-w-[340px] max-h-[300px] z-10" viewBox="0 0 100 100">
                 {/* Structural boundary */}
                 <rect x="10" y="10" width="80" height="80" fill="none" stroke="currentColor" className="text-black/10 dark:text-white/10" strokeWidth="0.6" />
-                
+
                 {/* Internal partitions */}
                 <rect x="18" y="18" width="64" height="64" fill="none" stroke="rgba(56, 116, 203, 0.4)" strokeWidth="0.8" />
                 <line x1="45" y1="18" x2="45" y2="82" stroke="rgba(56, 116, 203, 0.4)" strokeWidth="0.8" />
                 <line x1="18" y1="48" x2="45" y2="48" stroke="rgba(56, 116, 203, 0.4)" strokeWidth="0.8" />
-                
+
                 {/* Hotspot: Egress widths (Violating zone) */}
-                <g 
+                <g
                   onClick={() => { setActiveZone("egress"); setScanPosition(45); }}
                   className="cursor-pointer group"
                 >
@@ -471,7 +471,7 @@ export function InteractiveBlueprintScanner() {
                 </g>
 
                 {/* Hotspot: Zoning restrictions setback (Warning zone) */}
-                <g 
+                <g
                   onClick={() => { setActiveZone("zoning"); setScanPosition(78); }}
                   className="cursor-pointer"
                 >
@@ -481,7 +481,7 @@ export function InteractiveBlueprintScanner() {
                 </g>
 
                 {/* Hotspot: Fire wall partitions (Compliant) */}
-                <g 
+                <g
                   onClick={() => { setActiveZone("fire"); setScanPosition(24); }}
                   className="cursor-pointer"
                 >
@@ -491,7 +491,7 @@ export function InteractiveBlueprintScanner() {
                 </g>
 
                 {/* Hotspot: Bathroom clearances (Accessibility - Compliant) */}
-                <g 
+                <g
                   onClick={() => { setActiveZone("access"); setScanPosition(32); }}
                   className="cursor-pointer"
                 >
@@ -523,11 +523,10 @@ export function InteractiveBlueprintScanner() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-foreground">{zones[activeZone as keyof typeof zones].name}</h3>
-                  <Badge variant="outline" className={`font-mono text-[9px] uppercase border px-2 py-0.5 ${
-                    zones[activeZone as keyof typeof zones].status === "Pass" ? "border-blue-500/30 text-blue-500 bg-blue-500/5" :
-                    zones[activeZone as keyof typeof zones].status === "Warning" ? "border-amber-500/30 text-amber-500 bg-amber-500/5" :
-                    "border-red-500/30 text-red-500 bg-red-500/5"
-                  }`}>
+                  <Badge variant="outline" className={`font-mono text-[9px] uppercase border px-2 py-0.5 ${zones[activeZone as keyof typeof zones].status === "Pass" ? "border-blue-500/30 text-blue-500 bg-blue-500/5" :
+                      zones[activeZone as keyof typeof zones].status === "Warning" ? "border-amber-500/30 text-amber-500 bg-amber-500/5" :
+                        "border-red-500/30 text-red-500 bg-red-500/5"
+                    }`}>
                     {zones[activeZone as keyof typeof zones].status}
                   </Badge>
                 </div>
@@ -561,9 +560,8 @@ export function InteractiveBlueprintScanner() {
                     setActiveZone(z);
                     setScanPosition(z === "egress" ? 45 : z === "zoning" ? 78 : z === "fire" ? 24 : 32);
                   }}
-                  className={`text-[9px] py-2 border rounded-sm transition-colors text-center uppercase ${
-                    activeZone === z ? 'bg-primary/10 border-primary text-primary font-bold' : 'border-border/60 text-muted-foreground hover:bg-muted'
-                  }`}
+                  className={`text-[9px] py-2 border rounded-sm transition-colors text-center uppercase ${activeZone === z ? 'bg-primary/10 border-primary text-primary font-bold' : 'border-border/60 text-muted-foreground hover:bg-muted'
+                    }`}
                 >
                   {z}
                 </button>
@@ -627,9 +625,9 @@ export function NYCRegulationEngine() {
   return (
     <section className="py-24 bg-[#F1EFEA] dark:bg-[#0A0D10] border-b border-border/40 relative transition-colors duration-300">
       <div className="container mx-auto px-6 max-w-7xl">
-        
+
         <div className="grid lg:grid-cols-12 gap-12 items-center">
-          
+
           {/* Left Column: Interactive Code Selection */}
           <div className="lg:col-span-5 space-y-6 font-mono">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 dark:bg-blue-950/45 border border-primary/30 rounded-sm text-[10px] tracking-widest uppercase text-primary">
@@ -647,11 +645,10 @@ export function NYCRegulationEngine() {
                 <button
                   key={k}
                   onClick={() => setSelectedEngine(k)}
-                  className={`flex items-center justify-between p-4 border rounded-sm transition-all text-left group ${
-                    selectedEngine === k 
-                      ? 'bg-primary/5 border-primary text-foreground' 
+                  className={`flex items-center justify-between p-4 border rounded-sm transition-all text-left group ${selectedEngine === k
+                      ? 'bg-primary/5 border-primary text-foreground'
                       : 'border-border/60 text-muted-foreground hover:border-border/80'
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col">
                     <span className="text-xs uppercase font-bold tracking-wider">{engines[k as keyof typeof engines].title}</span>
@@ -670,34 +667,34 @@ export function NYCRegulationEngine() {
             <div className="relative z-10 w-full flex-1 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-6">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Active Engine Ruleset</span>
-                <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-sm uppercase tracking-wider font-semibold border border-primary/10">
-                  {engines[selectedEngine as keyof typeof engines].title}
-                </span>
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Active Engine Ruleset</span>
+                  <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-sm uppercase tracking-wider font-semibold border border-primary/10">
+                    {engines[selectedEngine as keyof typeof engines].title}
+                  </span>
+                </div>
+
+                <div className="space-y-6">
+                  {engines[selectedEngine as keyof typeof engines].rules.map((r, i) => (
+                    <div key={i} className="flex gap-4 items-start group">
+                      <div className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary text-[9px] font-bold shrink-0 mt-0.5">
+                        {i + 1}
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">{r.code}</span>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed font-sans">
+                          {r.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-6">
-                {engines[selectedEngine as keyof typeof engines].rules.map((r, i) => (
-                  <div key={i} className="flex gap-4 items-start group">
-                    <div className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary text-[9px] font-bold shrink-0 mt-0.5">
-                      {i + 1}
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">{r.code}</span>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed font-sans">
-                        {r.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-8 pt-4 border-t border-border/40 text-[9px] text-muted-foreground/60 flex items-center justify-between">
+                <span>DB INTEGRITY VALUE: 0x8FA12B</span>
+                <span>SYNC TIME: LIVE (2026 UPDATE)</span>
               </div>
             </div>
-
-            <div className="mt-8 pt-4 border-t border-border/40 text-[9px] text-muted-foreground/60 flex items-center justify-between">
-              <span>DB INTEGRITY VALUE: 0x8FA12B</span>
-              <span>SYNC TIME: LIVE (2026 UPDATE)</span>
-            </div>
-          </div>
           </div>
 
         </div>
@@ -716,13 +713,13 @@ export function ReportPreview() {
       {/* Blueprint skyline matrix background backdrop */}
       <div className="absolute inset-0 bg-[url('/bg-matrix.png')] bg-cover bg-bottom opacity-[0.05] dark:opacity-[0.12] pointer-events-none mix-blend-multiply dark:mix-blend-lighten transition-opacity" />
       <div className="container mx-auto px-6 max-w-7xl relative z-10">
-        
+
         <div className="grid lg:grid-cols-12 gap-12 items-center">
-          
+
           {/* Left Column: Report Sheet mockup */}
           <div className="lg:col-span-6 space-y-4">
             <div className="relative border border-border/80 bg-white dark:bg-[#0C0F12] rounded-sm p-6 shadow-2xl font-mono text-[10px] flex flex-col gap-4 overflow-hidden transition-colors duration-300">
-              
+
               {/* Technical watermark stamp */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-4 border-dashed border-primary/10 rounded-full w-48 h-48 flex flex-col items-center justify-center uppercase tracking-widest text-[8px] text-primary/10 font-bold rotate-12 pointer-events-none select-none">
                 <span>NYC House Code</span>
@@ -903,7 +900,7 @@ export function TrustSection() {
   return (
     <section className="py-24 bg-[#F1EFEA] dark:bg-[#0A0D10] border-b border-border/40 relative transition-colors duration-300">
       <div className="container mx-auto px-6 max-w-7xl">
-        
+
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 dark:bg-blue-950/45 border border-primary/30 rounded-sm text-[10px] font-mono tracking-widest uppercase text-primary mb-4">
             <Users className="w-3.5 h-3.5" />
@@ -985,7 +982,7 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
     <section id="pricing" className="py-24 bg-[#F8F6F2] dark:bg-[#080A0C] border-b border-border/40 relative overflow-hidden transition-colors duration-300">
       {/* Background blueprint grid */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] blueprint-grid" />
-      
+
       {/* Deep blue spotlight behind cards */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[180px] pointer-events-none z-0" />
 
@@ -1006,14 +1003,13 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
           {plans.map((p, idx) => {
             const isSelected = selectedPlan === idx;
             return (
-              <div 
+              <div
                 key={idx}
                 onClick={() => setSelectedPlan(idx)}
-                className={`relative border cursor-pointer p-6 rounded-sm flex flex-col justify-between transition-all group ${
-                  isSelected 
-                    ? 'border-primary bg-primary/5 dark:bg-primary/5/40 shadow-lg shadow-primary/5' 
+                className={`relative border cursor-pointer p-6 rounded-sm flex flex-col justify-between transition-all group ${isSelected
+                    ? 'border-primary bg-primary/5 dark:bg-primary/5/40 shadow-lg shadow-primary/5'
                     : 'border-border/60 bg-white dark:bg-[#0C0F12] hover:border-border/80'
-                }`}
+                  }`}
               >
                 {/* AutoCAD registration ticks on the corners of the cards */}
                 <span className="absolute top-1 left-1 font-mono text-[7px] text-muted-foreground/20 font-light select-none">+</span>
@@ -1026,7 +1022,7 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
                     {p.badge}
                   </span>
                 )}
-                
+
                 <div className="space-y-4">
                   <div className="border-b border-border/40 pb-3">
                     <h3 className="text-xs uppercase font-bold text-foreground group-hover:text-primary transition-colors">{p.name}</h3>
@@ -1054,9 +1050,8 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
                   <Button
                     onClick={(e) => { e.stopPropagation(); onOpenModal(); }}
                     variant={isSelected ? 'default' : 'outline'}
-                    className={`w-full font-mono text-xs uppercase tracking-wider font-bold py-5 border rounded-sm transition-all ${
-                      isSelected ? 'bg-primary hover:bg-primary/95 text-primary-foreground border-primary/10' : ''
-                    }`}
+                    className={`w-full font-mono text-xs uppercase tracking-wider font-bold py-5 border rounded-sm transition-all ${isSelected ? 'bg-primary hover:bg-primary/95 text-primary-foreground border-primary/10' : ''
+                      }`}
                   >
                     Select Plan
                   </Button>
@@ -1125,7 +1120,7 @@ export function Footer() {
             <ul className="space-y-2 text-muted-foreground">
               <li><a href="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</a></li>
               <li><a href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Ledger</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">NYS Board Disclosures</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">NYC Board Disclosures</a></li>
             </ul>
           </div>
         </div>

@@ -11,11 +11,23 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+import { buildPdfFilename, downloadPdfDocument } from "@/lib/pdfDownload";
 
 interface UploadPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const COMPLIANCE_STEPS = [
+  { id: 'building_code', name: 'NYC Building Code (BC)' },
+  { id: 'plumbing_code', name: 'NYC Plumbing Code (PC)' },
+  { id: 'mechanical_code', name: 'NYC Mechanical Code (MC)' },
+  { id: 'fuel_gas_code', name: 'NYC Fuel Gas Code (FGC)' },
+  { id: 'energy_code', name: 'NYC Energy Conservation Code (ECC)' },
+  { id: 'electrical_code', name: 'NYC Electrical Code (EC)' },
+  { id: 'fire_code', name: 'NYC Fire Code (FC)' },
+  { id: 'zoning_resolution', name: 'NYC Zoning Resolution (ZR)' }
+];
 
 export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -25,6 +37,9 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [selectedSteps, setSelectedSteps] = useState<string[]>(
+    COMPLIANCE_STEPS.map(s => s.id)
+  );
 
   const fetchPlans = usePlanStore(state => state.fetchPlans);
 
@@ -35,12 +50,21 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       setProgress(0);
       setAnalysisResult(null);
       setErrorMessage("");
+      setSelectedSteps(COMPLIANCE_STEPS.map(s => s.id));
     }
   }, [isOpen]);
 
+  const toggleStep = (stepId: string) => {
+    setSelectedSteps(prev =>
+      prev.includes(stepId)
+        ? prev.filter(id => id !== stepId)
+        : [...prev, stepId]
+    );
+  };
+
   useEffect(() => {
     if (status === 'analyzing' && activePlanId) {
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.codealgo.live");
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://cofuncion.com/nyc-house-code-backend");
 
       socket.on('analysis-status', (data) => {
         if (data.planId !== activePlanId) return;
@@ -53,10 +77,18 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           'RETRIEVING_RULES': 'Retrieving 2022 NYC Building Codes...',
           'AI_ANALYZING': 'Performing forensic compliance audit...',
           'CHECKING_COMPLIANCE': 'Verifying safety & egress mandates...',
+          'CHECKING_BC': 'Auditing NYC Building Code (BC)...',
+          'CHECKING_PC': 'Auditing NYC Plumbing Code (PC)...',
+          'CHECKING_MC': 'Auditing NYC Mechanical Code (MC)...',
+          'CHECKING_FGC': 'Auditing NYC Fuel Gas Code (FGC)...',
+          'CHECKING_ECC': 'Auditing NYC Energy Conservation Code (ECC)...',
+          'CHECKING_EC': 'Auditing NYC Electrical Code (EC)...',
+          'CHECKING_FC': 'Auditing NYC Fire Code (FC)...',
+          'CHECKING_ZR': 'Auditing NYC Zoning Resolution (ZR)...',
           'GENERATING_REPORT': 'Compiling final forensic report...',
           'COMPLETE': 'Analysis 100% complete!'
         };
-        
+
         if (data.status && messages[data.status]) {
           setStatusMessage(messages[data.status]);
         }
@@ -102,13 +134,14 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
   });
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || selectedSteps.length === 0) return;
 
     setStatus('uploading');
     setProgress(10);
 
     const formData = new FormData();
     formData.append('plan', file);
+    formData.append('steps', JSON.stringify(selectedSteps));
 
     try {
       const response = await api.post('/plans/upload', formData, {
@@ -136,11 +169,11 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         import('jspdf'),
         import('jspdf-autotable')
       ]);
-      
+
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      
+
       // --- COLOR PALETTE ---
       const colors = {
         primary: [15, 23, 42], // Slate 900 (Main Branding)
@@ -170,18 +203,18 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       };
 
       // --- PAGE 1: COVER & EXECUTIVE SUMMARY ---
-      
+
       // --- PAGE 1: COVER & EXECUTIVE SUMMARY ---
-      
+
       // Top Header Block - Full Page Width
       doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
       doc.rect(0, 0, pageWidth, 55, 'F');
-      
+
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
       doc.text("FORENSIC COMPLIANCE AUDIT", 20, 32);
-      
+
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
@@ -190,14 +223,14 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
       // Project Overview Section
       let currentY = 75;
-      
+
       doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text("Project Overview", 20, currentY);
-      
+
       const score = analysisResult.score || analysisResult.percentage || 0;
-      
+
       // Score Box (Right side)
       const scoreBoxW = 65;
       const scoreBoxX = pageWidth - 20 - scoreBoxW;
@@ -205,7 +238,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
       doc.setLineWidth(0.5);
       doc.roundedRect(scoreBoxX, currentY - 5, scoreBoxW, 45, 4, 4, 'FD');
-      
+
       let scoreColor = colors.compliant;
       let statusText = "PASS";
       if (score < 70) {
@@ -216,17 +249,17 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         scoreColor = colors.critical;
         statusText = "CRITICAL FAIL";
       }
-      
+
       doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
       doc.setFontSize(32);
       doc.setFont('helvetica', 'bold');
       doc.text(`${score}%`, scoreBoxX + (scoreBoxW / 2), currentY + 16, { align: 'center' });
-      
+
       doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.text("COMPLIANCE SCORE", scoreBoxX + (scoreBoxW / 2), currentY + 26, { align: 'center' });
-      
+
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
@@ -248,21 +281,21 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
         doc.text(label, 20, metaY);
-        
+
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        
+
         // Wrap value to prevent overlapping with the score box
         const maxWidth = scoreBoxX - 60; // Leave space between value and box
         const wrappedValue = doc.splitTextToSize(String(value), maxWidth);
         doc.text(wrappedValue, 55, metaY);
-        
+
         // Increase Y based on number of lines in wrapped value
         metaY += (wrappedValue.length * 5) + 2.5;
       });
 
       currentY = 135;
-      
+
       // Divider
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
       doc.setLineWidth(0.5);
@@ -279,19 +312,19 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      
+
       // Clean up raw markdown from summary if present
       const cleanSummary = (analysisResult.summary || "No summary available.")
         .replace(/\*\*(.*?)\*\*/g, '$1')
         .replace(/### (.*?)\n/g, '$1\n');
-      
+
       const splitSummary = doc.splitTextToSize(cleanSummary, pageWidth - 50);
-      
+
       // Draw summary line-by-line with page break checks
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-      
+
       splitSummary.forEach((line: string) => {
         if (currentY > pageHeight - 35) {
           doc.addPage();
@@ -305,16 +338,16 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
         }
-        
+
         // Draw a subtle left-border line for the "card" feel that handles breaks
         doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.2);
         doc.setLineWidth(0.5);
         doc.line(22, currentY - 3, 22, currentY + 2);
-        
+
         doc.text(line, 27, currentY);
         currentY += 5.5;
       });
-      
+
       currentY += 15;
 
       // Compliant Features Section
@@ -324,10 +357,10 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           doc.addPage();
           currentY = 30;
         }
-        
+
         doc.setFillColor(colors.compliantBg[0], colors.compliantBg[1], colors.compliantBg[2]);
         doc.roundedRect(20, currentY, pageWidth - 40, 10, 2, 2, 'F');
-        
+
         doc.setTextColor(colors.compliant[0], colors.compliant[1], colors.compliant[2]);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
@@ -337,7 +370,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setFontSize(9.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-        
+
         analysisResult.compliant_features.forEach((feature: string) => {
           const sf = doc.splitTextToSize(feature, pageWidth - 60);
           const featureHeight = (sf.length * 5) + 4;
@@ -351,7 +384,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           doc.text("•", 25, currentY);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-          
+
           doc.text(sf, 32, currentY);
           currentY += featureHeight;
         });
@@ -377,7 +410,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           head: [['System Description', 'Status', 'Assessment Notes']],
           body: analysisResult.systems_detected.map((s: any) => [s.name || 'System', (s.status || 'unknown').toUpperCase(), s.notes || "No issues identified"]),
           theme: 'striped',
-          headStyles: { 
+          headStyles: {
             fillColor: [241, 245, 249], // Slate 100
             textColor: colors.primary as [number, number, number],
             fontStyle: 'bold',
@@ -387,11 +420,11 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             textColor: colors.text as [number, number, number]
           },
           alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { 
-            fontSize: 9, 
-            cellPadding: 6, 
+          styles: {
+            fontSize: 9,
+            cellPadding: 6,
             lineColor: colors.border as [number, number, number],
-            lineWidth: 0.1 
+            lineWidth: 0.1
           },
           columnStyles: {
             0: { fontStyle: 'bold', cellWidth: 45 },
@@ -402,7 +435,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               const status = data.cell.raw;
               let bgColor = colors.minorBg;
               let txtColor = colors.minor;
-              
+
               if (status === 'PRESENT' || status === 'COMPLIANT') {
                 bgColor = colors.compliantBg;
                 txtColor = colors.compliant;
@@ -417,7 +450,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             }
           }
         });
-        
+
         const lastTable = (doc as any).lastAutoTable;
         if (lastTable && lastTable.finalY) {
           currentY = lastTable.finalY + 15;
@@ -456,16 +489,16 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             issue.recommendation || issue.suggestion || issue.description || "-"
           ]),
           theme: 'grid',
-          headStyles: { 
-            fillColor: colors.primary as [number, number, number], 
+          headStyles: {
+            fillColor: colors.primary as [number, number, number],
             textColor: [255, 255, 255],
             fontStyle: 'bold'
           },
-          styles: { 
-            fontSize: 9, 
+          styles: {
+            fontSize: 9,
             cellPadding: 6,
             lineColor: colors.border as [number, number, number],
-            lineWidth: 0.1 
+            lineWidth: 0.1
           },
           columnStyles: {
             0: { cellWidth: 50, fontStyle: 'bold', textColor: colors.primary as [number, number, number] },
@@ -478,7 +511,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               const severity = data.cell.raw;
               let bgColor = colors.minorBg;
               let txtColor = colors.minor;
-              
+
               if (severity === 'CRITICAL') {
                 bgColor = colors.criticalBg;
                 txtColor = colors.critical;
@@ -493,7 +526,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             }
           }
         });
-        
+
         const lastTable = (doc as any).lastAutoTable;
         if (lastTable && lastTable.finalY) {
           currentY = lastTable.finalY + 15;
@@ -531,7 +564,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         });
         currentY += 10;
       }
-      
+
       // --- CONCLUDING ASSESSMENT & APPRECIATION ---
       if (analysisResult.appreciation) {
         // Only add page if less than 40% space left, otherwise just add spacing
@@ -541,7 +574,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         } else {
           currentY += 15;
         }
-        
+
         doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
         doc.rect(20, currentY, pageWidth - 40, 15, 'F');
         doc.setTextColor(255, 255, 255);
@@ -553,15 +586,15 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         // Handle appreciation as either string or array
         let rawAppreciation = analysisResult.appreciation || "";
         let appLines: string[] = [];
-        
+
         if (Array.isArray(rawAppreciation)) {
           appLines = rawAppreciation;
         } else {
           // Robust splitting for string blocks: split by bullets, numbers, or double newlines
           appLines = String(rawAppreciation)
-            .split(/(?:^|\n)(?:[•\-\*\d\.]+\s*|✦\s*)/) 
+            .split(/(?:^|\n)(?:[•\-\*\d\.]+\s*|✦\s*)/)
             .filter(l => l.trim().length > 5);
-          
+
           if (appLines.length <= 1) {
             // Fallback for single block text - split by sentences if no bullets found
             appLines = String(rawAppreciation).split(/[.!?]+\s+/).filter(l => l.trim().length > 10);
@@ -583,8 +616,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           head: [],
           body: cleanPoints.map(p => [`- ${p}`]), // Use standard dash for maximum compatibility
           theme: 'plain',
-          styles: { 
-            fontSize: 9.5, 
+          styles: {
+            fontSize: 9.5,
             cellPadding: 6,
             textColor: [44, 62, 80],
             font: 'helvetica',
@@ -607,16 +640,16 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           doc.addPage();
           currentY = 30;
         }
-        
+
         const stampX = pageWidth - 75;
         const stampY = currentY + 10;
-        
+
         doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.6);
         doc.setLineWidth(1.2);
         doc.circle(stampX + 20, stampY + 20, 18);
         doc.setLineWidth(0.5);
         doc.circle(stampX + 20, stampY + 20, 15);
-        
+
         doc.setFontSize(5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
@@ -625,7 +658,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.text("PASSED", stampX + 20, stampY + 22, { align: 'center' });
         doc.setFontSize(4);
         doc.text("NYC CODEALGO LIVE", stampX + 20, stampY + 28, { align: 'center' });
-        
+
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
@@ -637,7 +670,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       const totalPages = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
-        
+
         if (i > 1) {
           doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
           doc.rect(0, 0, pageWidth, 15, 'F');
@@ -650,7 +683,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
         doc.setLineWidth(0.5);
         doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
-        
+
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
@@ -658,7 +691,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.text(`Page ${i} of ${totalPages}`, pageWidth - 20, pageHeight - 8, { align: 'right' });
       }
 
-      doc.save(`Forensic_Report_${file.name.split('.')[0]}.pdf`);
+      await downloadPdfDocument(doc, buildPdfFilename("Forensic_Report", file.name));
     } catch (err) {
       console.error("PDF generation error:", err);
       alert("Failed to generate PDF. Please try again.");
@@ -686,9 +719,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
             <>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${
-                  isDragActive ? 'border-primary bg-primary/5' : 'border-slate-600 hover:border-primary/50'
-                }`}
+                className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${isDragActive ? 'border-primary bg-primary/5' : 'border-slate-600 hover:border-primary/50'
+                  }`}
               >
                 <input {...getInputProps()} />
                 <Upload className="w-12 h-12 mx-auto mb-4 text-slate-400" />
@@ -709,6 +741,28 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 )}
               </div>
 
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-slate-300 block">
+                  Select Construction/MEP Disciplines to Analyze:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-950/40 border border-slate-800 rounded-lg">
+                  {COMPLIANCE_STEPS.map((step) => (
+                    <label
+                      key={step.id}
+                      className="flex items-center gap-3 cursor-pointer select-none text-sm text-slate-200 hover:text-white transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSteps.includes(step.id)}
+                        onChange={() => toggleStep(step.id)}
+                        className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 w-4 h-4"
+                      />
+                      {step.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="bg-amber-950/40 border border-amber-700/50 rounded-lg p-4 flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-200">
@@ -716,10 +770,10 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 </p>
               </div>
 
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 size="lg"
-                disabled={!file}
+                disabled={!file || selectedSteps.length === 0}
                 onClick={handleUpload}
               >
                 Start Analysis
@@ -730,8 +784,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           {(status === 'uploading' || status === 'analyzing') && (
             <div className="text-center py-12 space-y-8 relative overflow-hidden">
               {/* Animated Glow Background */}
-              <motion.div 
-                animate={{ 
+              <motion.div
+                animate={{
                   scale: [1, 1.2, 1],
                   opacity: [0.1, 0.2, 0.1]
                 }}
@@ -757,7 +811,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <motion.span 
+                    <motion.span
                       key={progress}
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -782,9 +836,9 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                         {status === 'uploading' ? 'Securing Connection...' : statusMessage}
                       </h3>
                       <p className="text-sm text-slate-300 max-w-[280px] mx-auto mt-1">
-                        {status === 'uploading' 
+                        {status === 'uploading'
                           ? 'Encrypting and uploading your architectural data to our secure servers.'
-                          : 'Our senior AI plan examiner is verifying your designs against 113 NYC Building Code chapters.'}
+                          : 'Our senior AI plan examiners are auditing the selected construction disciplines step-by-step.'}
                       </p>
                     </motion.div>
                   </AnimatePresence>
@@ -793,11 +847,10 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 {/* Progress Steps Visualizer */}
                 <div className="flex justify-center gap-1.5 px-8">
                   {[10, 30, 50, 70, 90, 100].map((step, idx) => (
-                    <motion.div 
+                    <motion.div
                       key={idx}
-                      className={`h-1.5 rounded-full flex-1 transition-colors duration-500 ${
-                        progress >= step ? 'bg-primary' : 'bg-slate-700'
-                      }`}
+                      className={`h-1.5 rounded-full flex-1 transition-colors duration-500 ${progress >= step ? 'bg-primary' : 'bg-slate-700'
+                        }`}
                       animate={progress >= step ? { scaleY: [1, 1.5, 1] } : {}}
                       transition={{ duration: 0.4 }}
                     />
@@ -840,9 +893,8 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   {analysisResult.issues.slice(0, 3).map((issue: any, idx: number) => (
                     <div key={idx} className="flex gap-3 p-4 bg-slate-900 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors cursor-default">
                       <div className={`p-2 rounded-lg shrink-0 ${issue.severity === 'critical' ? 'bg-red-500/20' : 'bg-amber-500/20'}`}>
-                        <AlertCircle className={`w-5 h-5 ${
-                          issue.severity === 'critical' ? 'text-red-400' : 'text-amber-400'
-                        }`} />
+                        <AlertCircle className={`w-5 h-5 ${issue.severity === 'critical' ? 'text-red-400' : 'text-amber-400'
+                          }`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{issue.title || issue.description}</p>
@@ -875,13 +927,13 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div className="max-w-md mx-auto">
                 <h3 className="text-lg font-semibold mb-1 leading-tight text-white">{errorMessage || "Something went wrong"}</h3>
                 <p className="text-sm text-slate-300">
-                  {errorMessage.includes('limit reached') 
-                   ? "You can add more scans to your account immediately from the billing page." 
-                   : "Please try again or contact support"}
+                  {errorMessage.includes('limit reached')
+                    ? "You can add more scans to your account immediately from the billing page."
+                    : "Please try again or contact support"}
                 </p>
               </div>
               {errorMessage.includes('limit reached') ? (
-                <Button 
+                <Button
                   onClick={() => {
                     onClose();
                     window.location.href = '/dashboard/billing';

@@ -50,7 +50,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     const previousPlans = get().plans;
     // Optimistic Update
     set({ plans: previousPlans.filter((p) => p.id !== id) });
-    
+
     try {
       await api.delete(`/plans/${id}`);
       toast.success("Plan deleted successfully");
@@ -67,7 +67,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:5000'
-        : 'https://api.codealgo.live'
+        : 'https://cofuncion.com/nyc-house-code-backend'
     );
 
     const socket = io(socketUrl);
@@ -79,18 +79,18 @@ export const usePlanStore = create<PlanState>((set, get) => ({
 
     socket.on('analysis-status', (data) => {
       console.log('Analysis Status Update:', data);
-      
+
       if (data.status === 'COMPLETE') {
-         toast.success(`Scan Complete: ${data.report.score}% Compliance`, {
-           duration: 5000,
-           position: 'top-right'
-         });
-         get().fetchPlans();
+        toast.success(`Scan Complete: ${data.report.score}% Compliance`, {
+          duration: 5000,
+          position: 'top-right'
+        });
+        get().fetchPlans();
       }
 
       if (data.status === 'FAILED') {
-         toast.error(`Scan Failed for plan: ${data.planId}`);
-         get().fetchPlans();
+        toast.error(`Scan Failed for plan: ${data.planId}`);
+        get().fetchPlans();
       }
     });
 
@@ -99,19 +99,19 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     });
   },
   filteredPlans: () => {
-     const { plans, searchQuery, filter } = get();
-     let results = [...plans];
+    const { plans, searchQuery, filter } = get();
+    let results = [...plans];
 
-     if (searchQuery) {
-        results = results.filter(p => p.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
-     }
+    if (searchQuery) {
+      results = results.filter(p => p.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
 
-     if (filter === 'critical') {
-        results = results.filter(p => p.analysisResult?.issues?.some((i: any) => i.severity === 'critical'));
-     } else if (filter === 'analyzed') {
-        results = results.filter(p => p.status === 'analyzed');
-     }
+    if (filter === 'critical') {
+      results = results.filter(p => p.analysisResult?.issues?.some((i: any) => i.severity === 'critical'));
+    } else if (filter === 'analyzed') {
+      results = results.filter(p => p.status === 'analyzed');
+    }
 
-     return results;
+    return results;
   }
 }));

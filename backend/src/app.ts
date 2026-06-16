@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
-import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { apiLimiter, authLimiter } from './middleware/rateLimit.middleware';
@@ -21,9 +20,6 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Compress all responses to prevent ERR_CONTENT_LENGTH_MISMATCH through Nginx
-app.use(compression());
-
 const allowedOrigins = [
   'https://nyccodes.codealgo.live',
   'https://www.nyccodes.codealgo.live',
@@ -35,10 +31,10 @@ const allowedOrigins = [
 const isOriginAllowed = (origin: string | undefined): boolean => {
   console.log(`[CORS Check] Request Origin: "${origin}" | Allowed Origins List:`, allowedOrigins);
   if (!origin) return true; // Allow mobile apps or server-to-server calls
-  const isAllowed = allowedOrigins.includes(origin) || 
-                    origin.includes('codealgo.live') || 
-                    origin.includes('localhost') || 
-                    origin.includes('127.0.0.1');
+  const isAllowed = allowedOrigins.includes(origin) ||
+    origin.includes('codealgo.live') ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1');
   console.log(`[CORS Result] Origin "${origin}" allowed:`, isAllowed);
   return isAllowed;
 };
@@ -58,7 +54,7 @@ const io = new Server(httpServer, {
   },
 });
 
-app.use(cors({ 
+app.use(cors({
   origin: (origin, callback) => {
     if (isOriginAllowed(origin)) {
       callback(null, true);
@@ -87,7 +83,7 @@ app.use((req, res, next) => {
 // Socket.io for real-time scan progress
 io.on('connection', (socket) => {
   console.log('User connected to socket:', socket.id);
-  
+
   socket.on('disconnect', () => {
     console.log('User disconnected from socket');
   });

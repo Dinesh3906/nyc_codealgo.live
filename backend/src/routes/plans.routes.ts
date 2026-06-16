@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
@@ -57,6 +57,17 @@ const upload = multer({
   }
 });
 
+router.get('/debug-list', async (req, res) => {
+  try {
+    console.log("DEBUG: process.env.JWT_SECRET is:", process.env.JWT_SECRET);
+    console.log("DEBUG: process.env.DATABASE_URL is:", process.env.DATABASE_URL);
+    const [rows]: any = await pool.query('SELECT id, userId, fileName, status, analysisResult, createdAt FROM plan ORDER BY createdAt DESC LIMIT 3');
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 router.post('/upload', protect, (req: any, res: any) => {
   upload.single('plan')(req, res, async (err: any) => {
     if (err instanceof multer.MulterError) {
@@ -78,6 +89,23 @@ router.post('/upload', protect, (req: any, res: any) => {
       const filePath = req.file.path;
       const fileName = req.file.originalname;
 
+      let selectedSteps: string[] | undefined = undefined;
+      console.log("[UPLOAD ROUTE] req.body.steps:", req.body.steps);
+      console.log("[UPLOAD ROUTE] typeof req.body.steps:", typeof req.body.steps);
+      if (req.body.steps) {
+        try {
+          const parsed = JSON.parse(req.body.steps);
+          if (Array.isArray(parsed)) {
+            selectedSteps = parsed.map((s: any) => String(s));
+          }
+        } catch (e) {
+          if (typeof req.body.steps === 'string') {
+            selectedSteps = req.body.steps.split(',').map((s: string) => s.trim()).filter(Boolean);
+          }
+        }
+      }
+      console.log("[UPLOAD ROUTE] parsed selectedSteps:", selectedSteps);
+
       try {
         // Create DB entry (status: processing)
         const planId = uuidv4();
@@ -91,7 +119,7 @@ router.post('/upload', protect, (req: any, res: any) => {
         // START ASYNC BACKGROUND PROCESS
         setImmediate(async () => {
           try {
-            await CompliancePipeline.run(plan.id, filePath, req.file.mimetype);
+            await CompliancePipeline.run(plan.id, filePath, req.file.mimetype, selectedSteps);
           } catch (err) {
             console.error("Pipeline error:", err);
             await pool.query('UPDATE `plan` SET status = ? WHERE id = ?', ['failed', plan.id]);
@@ -99,9 +127,9 @@ router.post('/upload', protect, (req: any, res: any) => {
           }
         });
 
-        res.status(202).json({ 
-          message: 'Plan uploaded successfully. AI analysis started.', 
-          planId: plan.id 
+        res.status(202).json({
+          message: 'Plan uploaded successfully. AI analysis started.',
+          planId: plan.id
         });
 
       } catch (error) {
@@ -121,7 +149,7 @@ router.get('/', protect, async (req: any, res) => {
     let result = p.analysisResult;
     let depth = 0;
     while (typeof result === 'string' && depth < 5) {
-      try { result = JSON.parse(result); } catch(e) { break; }
+      try { result = JSON.parse(result); } catch (e) { break; }
       depth++;
     }
     if (typeof result !== 'object' || result === null) result = {};
@@ -140,13 +168,13 @@ router.get('/:id', protect, async (req: any, res) => {
     const plan = plans[0];
 
     if (!plan || plan.userId !== req.user.id) {
-       return res.status(404).json({ message: 'Plan not found' });
+      return res.status(404).json({ message: 'Plan not found' });
     }
 
     let result = plan.analysisResult;
     let depth = 0;
     while (typeof result === 'string' && depth < 5) {
-      try { result = JSON.parse(result); } catch(e) { break; }
+      try { result = JSON.parse(result); } catch (e) { break; }
       depth++;
     }
     if (typeof result !== 'object' || result === null) result = {};
@@ -168,7 +196,7 @@ router.get('/:id/download', protect, async (req: any, res) => {
     const plan = plans[0];
 
     if (!plan || plan.userId !== req.user.id) {
-       return res.status(404).json({ message: 'Plan not found' });
+      return res.status(404).json({ message: 'Plan not found' });
     }
 
     const absolutePath = path.resolve(plan.fileUrl);
@@ -221,7 +249,7 @@ router.delete('/:id', protect, async (req: any, res) => {
     const plan = plans[0];
 
     if (!plan || plan.userId !== req.user.id) {
-       return res.status(404).json({ message: 'Plan not found' });
+      return res.status(404).json({ message: 'Plan not found' });
     }
 
     // Remove file from disk, but keep the DB row for strict monthly quota accounting.
