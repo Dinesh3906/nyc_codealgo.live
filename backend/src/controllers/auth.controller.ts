@@ -45,7 +45,7 @@ export const registerSendOtp = async (req: Request, res: Response) => {
       const placeholderPassword = await bcrypt.hash(uuidv4(), 10); // temporary password placeholder
       await pool.query(
         'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit, isVerified, emailOtp, emailOtpExpiry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [id, email, placeholderPassword, 'Unverified User', 'architect', 'free', 0, false, otp, expiry]
+        [id, email, placeholderPassword, 'Unverified User', 'architect', 'free', 1, false, otp, expiry]
       );
     }
 
@@ -289,7 +289,7 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
       const randomPassword = await bcrypt.hash(uuidv4(), 10);
       await pool.query(
         'INSERT INTO `user` (id, email, password, name, role, subStatus, scanLimit, isVerified, provider) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [id, email, randomPassword, name || 'Google User', 'architect', 'free', 0, true, 'google']
+        [id, email, randomPassword, name || 'Google User', 'architect', 'free', 1, true, 'google']
       );
       const [newUsers]: any = await pool.query('SELECT * FROM `user` WHERE email = ?', [email]);
       user = newUsers[0];

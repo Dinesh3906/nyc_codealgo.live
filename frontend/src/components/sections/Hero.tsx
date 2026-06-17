@@ -3,6 +3,7 @@
 import { ShieldCheck, AlertTriangle, CheckCircle2, Compass, FileText, Activity, Layers, Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 
 export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
   const [coords, setCoords] = useState({ x: 40.7128, y: -74.0060 });
@@ -68,11 +69,13 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
             {/* Action button with engineering styling */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button 
-                onClick={onOpenModal} 
+                asChild
                 size="lg" 
                 className="font-mono text-xs uppercase tracking-wider bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-8 py-6 border border-primary/20 rounded-sm transition-all shadow-lg shadow-primary/10"
               >
-                Scan your First Plan for Free
+                <Link href="/free-scan">
+                  Scan your First Plan for Free
+                </Link>
               </Button>
             </div>
 
