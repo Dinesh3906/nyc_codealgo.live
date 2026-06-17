@@ -669,7 +669,7 @@ export async function checkComplianceTS(housePlanPath: string, selectedSteps?: s
     document_type: "Architectural Plan",
     building_info: (() => {
       const merged: any = { type: "Mixed Use / Residential", rooms: [] };
-      stepResults.forEach(r => {
+      stepResults.forEach((r: any) => {
         if (r.building_info) {
           if (r.building_info.project_name) merged.project_name = r.building_info.project_name;
           if (r.building_info.occupancy_group) merged.occupancy_group = r.building_info.occupancy_group;

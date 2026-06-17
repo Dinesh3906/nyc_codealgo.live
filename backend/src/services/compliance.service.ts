@@ -170,7 +170,7 @@ export class CompliancePipeline {
         issues: combinedIssues,
         building_info: (() => {
           const merged: any = { type: "Mixed Use / Residential", rooms: [] };
-          checkedSteps.forEach(r => {
+          checkedSteps.forEach((r: any) => {
             if (r.building_info) {
               if (r.building_info.project_name) merged.project_name = r.building_info.project_name;
               if (r.building_info.occupancy_group) merged.occupancy_group = r.building_info.occupancy_group;
