@@ -168,7 +168,21 @@ export class CompliancePipeline {
         issuesCount: combinedIssues.length,
         severity: severity,
         issues: combinedIssues,
-        building_info: { type: "Mixed Use / Residential", rooms: [] },
+        building_info: (() => {
+          const merged: any = { type: "Mixed Use / Residential", rooms: [] };
+          checkedSteps.forEach(r => {
+            if (r.building_info) {
+              if (r.building_info.project_name) merged.project_name = r.building_info.project_name;
+              if (r.building_info.occupancy_group) merged.occupancy_group = r.building_info.occupancy_group;
+              if (r.building_info.construction_type) merged.construction_type = r.building_info.construction_type;
+              if (r.building_info.stories) {
+                merged.stories = r.building_info.stories;
+                merged.type = `${r.building_info.occupancy_group || 'Mixed Use'} / ${r.building_info.construction_type || 'Unknown'}`;
+              }
+            }
+          });
+          return merged;
+        })(),
         systems_detected: checkedSteps.map(r => `${r.name}: ${r.status.toUpperCase()}`),
         appreciation: [
           `Completed plan examiner audit across ${checkedSteps.length} active categories.`,

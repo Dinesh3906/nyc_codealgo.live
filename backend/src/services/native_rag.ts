@@ -376,13 +376,17 @@ CRITICAL MISSION:
    - The final "score" for the step MUST equal exactly 100 minus the sum of the "deduction_percentage" values of all the issues.
    - If there are zero issues, the score MUST be 100%.
    - If the sum of deductions exceeds 100%, the score must be capped at 0.
-2. REQUIRED CODE CHECKS: You MUST evaluate the plan data and context against these specific NYC Code regulations:
+2. REQUIRED CODE CHECKS & RIGOROUS VERIFICATION: You MUST evaluate the plan data and context against these specific NYC Code regulations:
 ${stepCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.description})`).join('\n')}
 
    For EACH regulation in the list above:
+   - Do NOT assume compliance. You MUST verify the actual numbers, text, and conditions.
    - If the plan is compliant or no violation is found, list it in "compliant_features" formatted exactly as: "CODE - TITLE: <specific detail of compliance from plan or reference context>".
    - If the plan violates it or lacks mandatory documentation for it, list it in "issues" with the "code" field set exactly to the code citation (e.g., "${stepCodes[0]?.code || 'BC 1009.3'}"), the "title" set to the check title, and detailed descriptions of the violation.
-3. FORENSIC AUDIT: Scrutinize the plan specifically for ${stepConfig.name} violations. List every violation/loophole as a separate entry in the "issues" array.
+3. CONTRADICTIONS & EQUIPMENT SAFETY logs (STRESS-TESTS):
+   - You MUST analyze the plan for contradictions across different sections (e.g., Section 1 stating 'Fully Sprinklered' but Section 3/4 showing sprinkler shut-off assembly locked closed or FDC Siamese unions stripped). If the main control valve is locked closed, the building is practically UNSPRINKLERED. You must apply the stricter unsprinklered limits (e.g. max egress travel distance 200 feet instead of 300 feet, max dead-end corridor 20 feet instead of 50 feet) and flag all violations as CRITICAL.
+   - Check all inspection logs and records for unresolved failures (e.g. alarm panel ground faults, dead battery backups, binding doors that fail to self-close, generator radiator scale/shutdowns, seized smoke purge fans). Cite and flag them as critical/major issues.
+   - Mathematically verify all claims and dimensions. Reject arbitrary/fabricated formulas (e.g., drywall thickness compartmentation claims) if base physical dimensions (e.g. 32-inch stairwells) violate absolute minimum code thresholds (e.g., 44-inch minimum stairwell exit width).
 4. EXACT CITATIONS: For each issue and compliant feature, you MUST read the reference context very carefully and cite the exact PDF filename and the exact code section/line number.
 5. LOOPHOLES & REQUIRED REMEDIES: For each issue, describe the loophole found (why the plan failed/what was missing or wrong) and the specific required elements to fix it.
 6. CONCISENESS: Keep summaries and descriptions highly technical, professional, and concise.
@@ -408,7 +412,13 @@ Return valid JSON in this exact format:
       "loophole_details": "<what is the exact loophole/non-compliant feature in the plan>",
       "required_elements": "<what is required to fix the loophole / the correction details>"
     }
-  ]
+  ],
+  "building_info": {
+    "project_name": "<project name extracted from document, e.g., Brooklyn Residential, NYC Fire Safety Plan>",
+    "occupancy_group": "<occupancy group / classification, e.g. Group B, Group M, F-1>",
+    "construction_type": "<construction type, e.g. Type I-A, Type II-B>",
+    "stories": "<number of stories>"
+  }
 }`;
 
   const userContent: any[] = [
@@ -445,7 +455,7 @@ Return valid JSON in this exact format:
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
     const parts: any[] = [
-      { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 10000)}` }
+      { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 400000)}` }
     ];
 
     if (planData.base64Image) {
@@ -518,7 +528,7 @@ Return valid JSON in this exact format:
         model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 10000)}` }
+          { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 400000)}` }
         ],
         temperature: 0.1,
         response_format: { type: "json_object" }
@@ -599,7 +609,8 @@ Return valid JSON in this exact format:
     status: finalScore >= 75 ? 'compliant' as const : finalScore >= 40 ? 'warning' as const : 'failed' as const,
     summary: resultJSON.summary || `Analysis completed for ${stepConfig.name}.`,
     compliant_features: finalCompliantFeatures,
-    issues: finalIssues
+    issues: finalIssues,
+    building_info: resultJSON.building_info || null
   };
 }
 
@@ -656,7 +667,21 @@ export async function checkComplianceTS(housePlanPath: string, selectedSteps?: s
     issues: combinedIssues,
     is_valid_plan: true,
     document_type: "Architectural Plan",
-    building_info: { type: "Mixed Use / Residential", rooms: [] },
+    building_info: (() => {
+      const merged: any = { type: "Mixed Use / Residential", rooms: [] };
+      stepResults.forEach(r => {
+        if (r.building_info) {
+          if (r.building_info.project_name) merged.project_name = r.building_info.project_name;
+          if (r.building_info.occupancy_group) merged.occupancy_group = r.building_info.occupancy_group;
+          if (r.building_info.construction_type) merged.construction_type = r.building_info.construction_type;
+          if (r.building_info.stories) {
+            merged.stories = r.building_info.stories;
+            merged.type = `${r.building_info.occupancy_group || 'Mixed Use'} / ${r.building_info.construction_type || 'Unknown'}`;
+          }
+        }
+      });
+      return merged;
+    })(),
     systems_detected: checkedSteps.map(r => `${r.name}: ${r.status.toUpperCase()}`),
     betterments: checkedSteps.map(r => `Enhance detail validation for ${r.name} sub-assemblies.`),
     appreciation: [
