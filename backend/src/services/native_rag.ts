@@ -649,7 +649,7 @@ Return valid JSON in this exact format:
         try {
           const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
           const completion = await groq.chat.completions.create({
-            model: "llama-3.1-8b-instant",
+            model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 300000)}` }
