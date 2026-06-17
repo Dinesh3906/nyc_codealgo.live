@@ -376,17 +376,14 @@ CRITICAL MISSION:
    - The final "score" for the step MUST equal exactly 100 minus the sum of the "deduction_percentage" values of all the issues.
    - If there are zero issues, the score MUST be 100%.
    - If the sum of deductions exceeds 100%, the score must be capped at 0.
-2. REQUIRED CODE CHECKS & RIGOROUS VERIFICATION: You MUST evaluate the plan data and context against these specific NYC Code regulations:
+2. REQUIRED CODE CHECKS: You MUST evaluate the plan data and context against these specific NYC Code regulations:
 ${stepCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.description})`).join('\n')}
 
-   For EACH regulation in the list above:
-   - Do NOT assume compliance. You MUST verify the actual numbers, text, and conditions.
-   - If the plan is compliant or no violation is found, list it in "compliant_features" formatted exactly as: "CODE - TITLE: <specific detail of compliance from plan or reference context>".
-   - If the plan violates it or lacks mandatory documentation for it, list it in "issues" with the "code" field set exactly to the code citation (e.g., "${stepCodes[0]?.code || 'BC 1009.3'}"), the "title" set to the check title, and detailed descriptions of the violation.
+   For EACH code regulation above, you must return a status inside "checklist_evaluations". Do NOT assume compliance. You must verify actual dimensions, parameters, and physical limitations against the code.
 3. CONTRADICTIONS & EQUIPMENT SAFETY logs (STRESS-TESTS):
-   - You MUST analyze the plan for contradictions across different sections (e.g., Section 1 stating 'Fully Sprinklered' but Section 3/4 showing sprinkler shut-off assembly locked closed or FDC Siamese unions stripped). If the main control valve is locked closed, the building is practically UNSPRINKLERED. You must apply the stricter unsprinklered limits (e.g. max egress travel distance 200 feet instead of 300 feet, max dead-end corridor 20 feet instead of 50 feet) and flag all violations as CRITICAL.
-   - Check all inspection logs and records for unresolved failures (e.g. alarm panel ground faults, dead battery backups, binding doors that fail to self-close, generator radiator scale/shutdowns, seized smoke purge fans). Cite and flag them as critical/major issues.
-   - Mathematically verify all claims and dimensions. Reject arbitrary/fabricated formulas (e.g., drywall thickness compartmentation claims) if base physical dimensions (e.g. 32-inch stairwells) violate absolute minimum code thresholds (e.g., 44-inch minimum stairwell exit width).
+   - You MUST analyze the plan for contradictions across different sections (e.g. if one section states a system is fully functional/operational, but details elsewhere show valves locked closed, connections stripped, bypass disabled, or system components missing, you must flag this contradiction). If a fire safety or sprinkler system's control valve is shut off/locked, treat the building as practically UNSPRINKLERED, apply the stricter unsprinklered code limits (such as reduced egress travel distances and dead-end corridor lengths), and flag all violations as CRITICAL.
+   - Check all inspection logs and records for unresolved mechanical/electrical failures (e.g. panel ground faults, dead battery backups, binding doors that fail to self-close, generator radiator scaling/shutdowns, or seized exhaust fan motors). Cite and flag them as critical/major issues.
+   - Mathematically verify all claims, loads, capacities, and ratings. Reject arbitrary/fabricated formulas (e.g., compartmentation drywall calculations) if base physical dimensions (e.g. 32-inch stairwells, 14 AWG wire on 60 Amp loads, 50 kVA transformers on 370 kVA loads) violate absolute minimum code limits.
 4. EXACT CITATIONS: For each issue and compliant feature, you MUST read the reference context very carefully and cite the exact PDF filename and the exact code section/line number.
 5. LOOPHOLES & REQUIRED REMEDIES: For each issue, describe the loophole found (why the plan failed/what was missing or wrong) and the specific required elements to fix it.
 6. CONCISENESS: Keep summaries and descriptions highly technical, professional, and concise.
@@ -399,7 +396,13 @@ Return valid JSON in this exact format:
 {
   "score": <number>,
   "summary": "<A detailed forensic summary of findings for this discipline using newlines and bullet points (- )>",
-  "compliant_features": ["<NYC Code section/reference> - <detailed description of verified compliant feature>"],
+  "checklist_evaluations": [
+    {
+      "code": "<e.g. BC 1009.3>",
+      "status": "compliant" | "violation" | "not_applicable",
+      "details": "<detailed findings from the plan data, e.g. 'Stairwell width is 32 inches, which violates the 44-inch minimum constraint.' or 'Not applicable as this is a subterranean data center with no residential dwelling units.'>"
+    }
+  ],
   "issues": [
     {
       "title": "<short descriptive title of the issue>",
@@ -414,7 +417,7 @@ Return valid JSON in this exact format:
     }
   ],
   "building_info": {
-    "project_name": "<project name extracted from document, e.g., Brooklyn Residential, NYC Fire Safety Plan>",
+    "project_name": "<project name extracted from document, e.g., Project Omega, Midtown Nexus Tower>",
     "occupancy_group": "<occupancy group / classification, e.g. Group B, Group M, F-1>",
     "construction_type": "<construction type, e.g. Type I-A, Type II-B>",
     "stories": "<number of stories>"
@@ -567,35 +570,65 @@ Return valid JSON in this exact format:
   }
 
   const checklist = STEP_CODES_CHECKLIST[stepId] || [];
-  const finalCompliantFeatures = [...(resultJSON.compliant_features || [])];
-  const finalIssues = (resultJSON.issues || []).map((iss: any) => ({
-    title: iss.title || `${stepConfig.name} Issue`,
-    description: iss.description || "Violation detail not provided",
-    severity: iss.severity || 'minor',
-    rule: iss.code || iss.rule || "NYC Building Code 2022",
-    recommendation: iss.recommendation || iss.suggestion || "Review with a licensed professional",
-    deductionPercentage: Number(iss.deduction_percentage || 0),
-    exactPdfCitation: iss.exact_pdf_citation || "N/A",
-    loopholeDetails: iss.loophole_details || "N/A",
-    requiredElements: iss.required_elements || "N/A"
-  }));
+  const finalCompliantFeatures: string[] = [];
+  const finalIssues: any[] = [];
 
-  for (const item of checklist) {
-    const inIssues = finalIssues.some(
-      (iss: any) => 
-        (iss.rule && String(iss.rule).includes(item.code)) || 
-        (iss.title && String(iss.title).includes(item.code)) ||
-        (iss.description && String(iss.description).includes(item.code))
-    );
+  // 1. Process evaluations returned by the AI's checklist_evaluations
+  const evaluations = resultJSON.checklist_evaluations || [];
+  evaluations.forEach((ev: any) => {
+    const matchedItem = checklist.find(item => item.code === ev.code);
+    if (!matchedItem) return;
 
-    const inCompliant = finalCompliantFeatures.some(
-      (feat: string) => String(feat).includes(item.code)
-    );
-
-    if (!inIssues && !inCompliant) {
-      finalCompliantFeatures.push(`${item.code} - ${item.title}: Checked and verified compliant with plan specifications.`);
+    if (ev.status === 'compliant') {
+      finalCompliantFeatures.push(`${ev.code} - ${matchedItem.title}: ${ev.details || 'Checked and verified compliant.'}`);
+    } else if (ev.status === 'violation') {
+      finalIssues.push({
+        title: `${ev.code} Violation`,
+        description: ev.details || "Code violation detected.",
+        severity: 'critical',
+        rule: ev.code,
+        recommendation: "Bring into compliance with NYC Building Code.",
+        deductionPercentage: 15,
+        exactPdfCitation: "Refer to project drawings and code schedules.",
+        loopholeDetails: ev.details || "N/A",
+        requiredElements: "Redesign to meet code minimums."
+      });
     }
-  }
+  });
+
+  // 2. Process other detailed violations returned by the AI's issues array
+  const aiIssues = resultJSON.issues || [];
+  aiIssues.forEach((iss: any) => {
+    // If it's already added from checklist_evaluations, update it with more specific details
+    const existingIdx = finalIssues.findIndex(
+      (f: any) => f.rule && String(f.rule).includes(iss.code || iss.rule)
+    );
+    if (existingIdx !== -1) {
+      finalIssues[existingIdx] = {
+        title: iss.title || finalIssues[existingIdx].title,
+        description: iss.description || finalIssues[existingIdx].description,
+        severity: iss.severity || finalIssues[existingIdx].severity,
+        rule: iss.code || iss.rule || finalIssues[existingIdx].rule,
+        recommendation: iss.recommendation || iss.suggestion || finalIssues[existingIdx].recommendation,
+        deductionPercentage: Number(iss.deduction_percentage || 15),
+        exactPdfCitation: iss.exact_pdf_citation || "N/A",
+        loopholeDetails: iss.loophole_details || finalIssues[existingIdx].description,
+        requiredElements: iss.required_elements || "N/A"
+      };
+    } else {
+      finalIssues.push({
+        title: iss.title || `${stepConfig.name} Issue`,
+        description: iss.description || "Violation detail not provided",
+        severity: iss.severity || 'minor',
+        rule: iss.code || iss.rule || "NYC Building Code 2022",
+        recommendation: iss.recommendation || iss.suggestion || "Review with a licensed professional",
+        deductionPercentage: Number(iss.deduction_percentage || 0),
+        exactPdfCitation: iss.exact_pdf_citation || "N/A",
+        loopholeDetails: iss.loophole_details || "N/A",
+        requiredElements: iss.required_elements || "N/A"
+      });
+    }
+  });
 
   // Recalculate score based on actual finalIssues deductions to be 100% accurate
   const totalDeductions = finalIssues.reduce((sum: number, iss: any) => sum + iss.deductionPercentage, 0);
