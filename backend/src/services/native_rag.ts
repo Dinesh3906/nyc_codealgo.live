@@ -455,7 +455,7 @@ Return valid JSON in this exact format:
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
     const parts: any[] = [
-      { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 400000)}` }
+      { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 6000000)}` }
     ];
 
     if (planData.base64Image) {
@@ -479,7 +479,7 @@ Return valid JSON in this exact format:
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    const timeoutId = setTimeout(() => controller.abort(), 300000);
 
     try {
       response = await fetch(url, {
@@ -528,7 +528,7 @@ Return valid JSON in this exact format:
         model: "llama-3.1-8b-instant",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 400000)}` }
+          { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 300000)}` }
         ],
         temperature: 0.1,
         response_format: { type: "json_object" }
