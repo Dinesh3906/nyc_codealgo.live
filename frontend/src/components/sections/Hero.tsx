@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ShieldCheck, AlertTriangle, CheckCircle2, Compass, FileText, Activity, Layers, Crosshair } from "lucide-react";
+import { ShieldCheck, AlertTriangle, CheckCircle2, Compass, FileText, Activity, Layers, Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 
@@ -61,29 +61,18 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
             </h1>
 
             <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed font-sans">
-              AI-assisted analysis for architects and developers to detect zoning, code, and documentation issues earlier. 
-              Verify plans, drawings, and compliance structures against the 2026 NYC Building Codes.
+              Upload your multi-layer vector PDFs to our sandbox. <br className="hidden md:inline" />
+              Instantly map egress travel distances, identify ADA clearance conflicts, and verify local energy conservation codes with absolute precision before municipal submission.
             </p>
 
-            {/* Action buttons with engineering styling */}
+            {/* Action button with engineering styling */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Button 
                 onClick={onOpenModal} 
                 size="lg" 
                 className="font-mono text-xs uppercase tracking-wider bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-8 py-6 border border-primary/20 rounded-sm transition-all shadow-lg shadow-primary/10"
               >
-                Analyze a Drawing
-              </Button>
-              <Button 
-                variant="outline" 
-                asChild 
-                size="lg" 
-                className="font-mono text-xs uppercase tracking-wider border-border/80 hover:bg-muted text-foreground font-bold px-8 py-6 rounded-sm transition-all"
-              >
-                <a href="#workflow">
-                  View Compliance Workflow
-                  <ArrowRight className="w-3.5 h-3.5 ml-2 text-muted-foreground" />
-                </a>
+                Scan your First Plan for Free
               </Button>
             </div>
 
