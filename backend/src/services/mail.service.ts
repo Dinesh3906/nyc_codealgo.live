@@ -139,30 +139,30 @@ export const sendAdminOtpEmail = async (email: string, otp: string) => {
   return transporter.sendMail(mailOptions);
 };
 
-export const sendGiftCreditsEmail = async (email: string, credits: number) => {
+export const sendGiftPagesEmail = async (email: string, pages: number) => {
   // Fallback if SMTP not configured
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    console.warn(`⚠️ SMTP not configured. Gift Credits email for ${email}: ${credits} credits`);
+    console.warn(`⚠️ SMTP not configured. Gift Pages email for ${email}: ${pages} pages`);
     return { messageId: 'mock-id-dev-mode' };
   }
 
   const mailOptions = {
-    from: `"CodeAlgo Credits" <${process.env.SMTP_USER}>`,
+    from: `"CodeAlgo Pages" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: `🎁 You've received ${credits} free scan credits!`,
+    subject: `🎁 You've received ${pages} free pages!`,
     html: `
       <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="background-color: #10b981; padding: 40px 30px; text-align: center; color: white;">
           <div style="font-size: 48px; margin-bottom: 16px;">🎁</div>
-          <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.025em;">Credits Gifted!</h1>
+          <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.025em;">Pages Gifted!</h1>
         </div>
         <div style="padding: 40px 30px; text-align: center;">
-          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">CodeAlgo has gifted you credits</h2>
+          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">CodeAlgo has gifted you pages</h2>
           <p style="color: #64748b; font-size: 15px; line-height: 24px; margin-bottom: 30px;">
-            We've successfully credited <strong>${credits} scans</strong> to your account! You can now use these to scan and analyze your design blueprints against NYC Building Codes.
+            We've successfully credited <strong>${pages} pages</strong> to your account! You can now use these to scan and analyze your design blueprints against NYC Building Codes.
           </p>
           <div style="background-color: #f0fdf4; padding: 16px 24px; border-radius: 9999px; display: inline-block; border: 1px solid #bbf7d0;">
-            <span style="font-size: 18px; font-weight: 800; color: #15803d;">+${credits} Free Scan Credits</span>
+            <span style="font-size: 18px; font-weight: 800; color: #15803d;">+${pages} Free Pages</span>
           </div>
           <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
             Head over to your dashboard to start scanning right away.

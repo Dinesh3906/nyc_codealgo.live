@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../db';
 import { protect } from '../middleware/auth.middleware';
-import { sendAdminOtpEmail, sendGiftCreditsEmail } from '../services/mail.service';
+import { sendAdminOtpEmail, sendGiftPagesEmail } from '../services/mail.service';
 
 const router = Router();
 const ADMIN_EMAILS = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
@@ -127,7 +127,7 @@ router.get('/users', protect, requireAdmin, verifyAdminSession, async (req: any,
         COALESCE(u.provider, 'email') as provider, 
         u.scanLimit, 
         u.createdAt,
-        (SELECT COUNT(*) FROM \`plan\` p WHERE p.userId = u.id AND p.status IN ('analyzed', 'processing')) AS scansUsed
+        u.pagesUsed AS pagesUsed
       FROM \`user\` u
       ORDER BY u.createdAt DESC
     `);
@@ -139,19 +139,19 @@ router.get('/users', protect, requireAdmin, verifyAdminSession, async (req: any,
   }
 });
 
-// @route   POST /api/admin/gift-credits
-// @desc    Add scan credits to a user and trigger notification email
+// @route   POST /api/admin/gift-pages
+// @desc    Add page limit to a user and trigger notification email
 // @access  Private (Admins Only + Verified Session)
-router.post('/gift-credits', protect, requireAdmin, verifyAdminSession, async (req: any, res: Response) => {
-  const { email, credits } = req.body;
+router.post('/gift-pages', protect, requireAdmin, verifyAdminSession, async (req: any, res: Response) => {
+  const { email, pages } = req.body;
 
-  if (!email || credits === undefined || credits === null) {
-    return res.status(400).json({ message: 'User email and credits count are required.' });
+  if (!email || pages === undefined || pages === null) {
+    return res.status(400).json({ message: 'User email and pages count are required.' });
   }
 
-  const creditsNum = Number(credits);
-  if (isNaN(creditsNum) || creditsNum <= 0) {
-    return res.status(400).json({ message: 'Gift credits must be a positive number.' });
+  const pagesNum = Number(pages);
+  if (isNaN(pagesNum) || pagesNum <= 0) {
+    return res.status(400).json({ message: 'Gift pages must be a positive number.' });
   }
 
   try {
@@ -167,10 +167,10 @@ router.post('/gift-credits', protect, requireAdmin, verifyAdminSession, async (r
 
     const user = targetUsers[0];
 
-    // Update credits
+    // Update pages limit (scanLimit column)
     await pool.query(
       'UPDATE `user` SET scanLimit = scanLimit + ? WHERE id = ?',
-      [creditsNum, user.id]
+      [pagesNum, user.id]
     );
 
     // Insert web notification for the gifted user
@@ -179,22 +179,22 @@ router.post('/gift-credits', protect, requireAdmin, verifyAdminSession, async (r
       [
         uuidv4(), 
         user.id, 
-        'Scan Credits Gifted', 
-        `You have been gifted ${creditsNum} scan credits by CodeAlgo!`, 
+        'Pages Gifted', 
+        `You have been gifted ${pagesNum} pages by CodeAlgo!`, 
         'gift'
       ]
     );
 
-    // Send automated gifted credit notification email
-    await sendGiftCreditsEmail(user.email, creditsNum);
+    // Send automated gifted pages notification email
+    await sendGiftPagesEmail(user.email, pagesNum);
 
     res.json({ 
-      message: `Successfully gifted ${creditsNum} scan credits to ${email}.`,
-      newLimit: user.scanLimit + creditsNum 
+      message: `Successfully gifted ${pagesNum} pages to ${email}.`,
+      newLimit: user.scanLimit + pagesNum 
     });
   } catch (error) {
-    console.error('Gift Credits Error:', error);
-    res.status(500).json({ message: 'Failed to allocate gifted credits.' });
+    console.error('Gift Pages Error:', error);
+    res.status(500).json({ message: 'Failed to allocate gifted pages.' });
   }
 });
 

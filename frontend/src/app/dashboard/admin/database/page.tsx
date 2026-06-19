@@ -41,7 +41,7 @@ interface UserRecord {
   email: string;
   provider: string;
   scanLimit: number;
-  scansUsed: number;
+  pagesUsed: number;
   createdAt: string;
 }
 
@@ -63,7 +63,7 @@ export default function AdminDatabasePage() {
   
   // Gifting Dialog States
   const [giftingUser, setGiftingUser] = useState<UserRecord | null>(null);
-  const [giftCreditsAmount, setGiftCreditsAmount] = useState<string>("10");
+  const [giftPagesAmount, setGiftPagesAmount] = useState<string>("10");
   const [giftingInProgress, setGiftingInProgress] = useState(false);
 
   // Broadcast Announcement States
@@ -170,30 +170,30 @@ export default function AdminDatabasePage() {
     }
   };
 
-  const handleGiftCreditsSubmit = async (e: React.FormEvent) => {
+  const handleGiftPagesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!giftingUser || giftingInProgress || !adminToken) return;
 
-    const creditsNum = parseInt(giftCreditsAmount);
-    if (isNaN(creditsNum) || creditsNum <= 0) {
-      toast.error("Please enter a valid credit amount.");
+    const pagesNum = parseInt(giftPagesAmount);
+    if (isNaN(pagesNum) || pagesNum <= 0) {
+      toast.error("Please enter a valid page amount.");
       return;
     }
 
     setGiftingInProgress(true);
     try {
       const res = await api.post(
-        "/admin/gift-credits",
-        { email: giftingUser.email, credits: creditsNum },
+        "/admin/gift-pages",
+        { email: giftingUser.email, pages: pagesNum },
         { headers: { "X-Admin-Token": adminToken } }
       );
       
-      toast.success(res.data.message || "Credits allocated successfully!");
+      toast.success(res.data.message || "Pages allocated successfully!");
       setGiftingUser(null);
-      setGiftCreditsAmount("10");
+      setGiftPagesAmount("10");
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to allocate credits.");
+      toast.error(err.response?.data?.message || "Failed to allocate pages.");
     } finally {
       setGiftingInProgress(false);
     }
@@ -230,7 +230,7 @@ export default function AdminDatabasePage() {
   // Totals calculations
   const totalUsers = usersList.length;
   const totalAllocated = usersList.reduce((acc, curr) => acc + curr.scanLimit, 0);
-  const totalUsed = usersList.reduce((acc, curr) => acc + curr.scansUsed, 0);
+  const totalUsed = usersList.reduce((acc, curr) => acc + curr.pagesUsed, 0);
 
   // Render Skeleton Loader for auth validation or list loading
   if (!hasHydrated) {
@@ -352,7 +352,7 @@ export default function AdminDatabasePage() {
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-1.5 text-indigo-500 font-semibold uppercase tracking-wider text-xs">
                 <Coins className="w-4 h-4" />
-                Total Credits Allocated
+                Total Pages Allocated
               </CardDescription>
               <CardTitle className="text-4xl font-extrabold tracking-tight mt-1">{totalAllocated}</CardTitle>
             </CardHeader>
@@ -361,7 +361,7 @@ export default function AdminDatabasePage() {
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-1.5 text-emerald-500 font-semibold uppercase tracking-wider text-xs">
                 <TrendingUp className="w-4 h-4" />
-                Total Credits Used
+                Total Pages Used
               </CardDescription>
               <CardTitle className="text-4xl font-extrabold tracking-tight mt-1">{totalUsed}</CardTitle>
             </CardHeader>
@@ -472,8 +472,8 @@ export default function AdminDatabasePage() {
                   <TableHead className="w-[280px]">User Info</TableHead>
                   <TableHead>Joined Date</TableHead>
                   <TableHead>Signup Provider</TableHead>
-                  <TableHead className="text-center">Credits Total</TableHead>
-                  <TableHead className="text-center">Credits Used</TableHead>
+                  <TableHead className="text-center">Pages Limit</TableHead>
+                  <TableHead className="text-center">Pages Used</TableHead>
                   <TableHead className="text-right pr-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -530,7 +530,7 @@ export default function AdminDatabasePage() {
                         {item.scanLimit}
                       </TableCell>
                       <TableCell className="text-center font-bold font-mono text-muted-foreground">
-                        {item.scansUsed}
+                        {item.pagesUsed}
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <Button
@@ -539,7 +539,7 @@ export default function AdminDatabasePage() {
                           className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold text-xs rounded-xl h-8 gap-1 transition-all"
                         >
                           <Gift className="w-3.5 h-3.5" />
-                          Gift Credits
+                          Gift Pages
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -561,28 +561,28 @@ export default function AdminDatabasePage() {
               <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
                 <Gift className="w-6 h-6 text-emerald-500" />
               </div>
-              <CardTitle className="text-xl font-bold text-center">Gift Scan Credits</CardTitle>
+              <CardTitle className="text-xl font-bold text-center">Gift Free Pages</CardTitle>
               <CardDescription className="text-sm text-muted-foreground text-center mt-1">
-                You are gifting free scans to <span className="text-foreground font-semibold font-mono">{giftingUser.email}</span>.
+                You are gifting free pages to <span className="text-foreground font-semibold font-mono">{giftingUser.email}</span>.
               </CardDescription>
             </CardHeader>
 
-            <form onSubmit={handleGiftCreditsSubmit}>
+            <form onSubmit={handleGiftPagesSubmit}>
               <CardContent className="space-y-4 pb-6">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Number of credits
+                    Number of pages
                   </label>
                   <input
                     type="number"
                     min="1"
-                    value={giftCreditsAmount}
-                    onChange={(e) => setGiftCreditsAmount(e.target.value.replace(/\D/g, ""))}
+                    value={giftPagesAmount}
+                    onChange={(e) => setGiftPagesAmount(e.target.value.replace(/\D/g, ""))}
                     className="w-full bg-background border border-border/80 rounded-xl px-4 py-2.5 text-center text-lg font-bold font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     required
                   />
                   <p className="text-[11px] text-muted-foreground text-center leading-normal">
-                    This user currently has <span className="font-bold text-foreground font-mono">{giftingUser.scanLimit}</span> credits. After allocation, they will have <span className="font-bold text-foreground font-mono">{giftingUser.scanLimit + (parseInt(giftCreditsAmount) || 0)}</span> credits.
+                    This user currently has <span className="font-bold text-foreground font-mono">{giftingUser.scanLimit}</span> pages. After allocation, they will have <span className="font-bold text-foreground font-mono">{giftingUser.scanLimit + (parseInt(giftPagesAmount) || 0)}</span> pages.
                   </p>
                 </div>
 
@@ -597,7 +597,7 @@ export default function AdminDatabasePage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={giftingInProgress || !giftCreditsAmount}
+                    disabled={giftingInProgress || !giftPagesAmount}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold flex items-center justify-center gap-1.5"
                   >
                     {giftingInProgress ? (
