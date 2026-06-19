@@ -3,22 +3,21 @@
 import { useState, useEffect } from "react";
 import Script from "next/script";
 import api from "@/lib/api";
-import { CreditCard, CheckCircle2, Loader2, TrendingUp } from "lucide-react";
+import { CreditCard, CheckCircle2, Loader2, TrendingUp, Sparkles, Coins, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-
 export default function BillingPage() {
   const [usage, setUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState(1);
   const [step, setStep] = useState<'plans' | 'checkout'>('plans');
   const [checkoutPlan, setCheckoutPlan] = useState<any>(null);
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [customPagesInput, setCustomPagesInput] = useState<number>(500);
 
   useEffect(() => {
     const fetchUsage = async () => {
@@ -26,7 +25,7 @@ export default function BillingPage() {
         const res = await api.get("/billing/usage");
         setUsage(res.data);
       } catch (err) {
-        setUsage({ status: 'Free', used: 0, limit: 1 });
+        setUsage({ status: 'Free', used: 0, limit: 0 });
       } finally {
         setLoading(false);
       }
@@ -37,10 +36,16 @@ export default function BillingPage() {
   const handleUpgrade = async (planId: string) => {
     try {
       setLoading(true);
-      const res = await api.post("/billing/create-checkout", { 
+      const payload: any = { 
         plan: planId,
         couponCode: discount > 0 ? couponCode : null 
-      });
+      };
+
+      if (planId === 'custom-topup') {
+        payload.pages = checkoutPlan.customPages;
+      }
+
+      const res = await api.post("/billing/create-checkout", payload);
       const { orderId, amount, currency, keyId } = res.data;
 
       const options = {
@@ -60,7 +65,7 @@ export default function BillingPage() {
             });
             const usageRes = await api.get("/billing/usage");
             setUsage(usageRes.data);
-            alert("Payment successful! Scan pack added.");
+            alert("Payment successful! Pages added to your balance.");
             setStep('plans');
           } catch (err: any) {
             console.error(err);
@@ -75,7 +80,7 @@ export default function BillingPage() {
           email: usage?.email || ""
         },
         theme: {
-          color: "#10b981" // Blue primary
+          color: "#3b82f6" // Vibrant Blue primary
         }
       };
 
@@ -115,7 +120,7 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 p-6">
         <div>
           <Skeleton className="h-10 w-48 mb-2" />
           <Skeleton className="h-4 w-64" />
@@ -126,8 +131,7 @@ export default function BillingPage() {
         </div>
         <div className="space-y-6">
           <Skeleton className="h-8 w-48" />
-          <div className="grid gap-6 md:grid-cols-3">
-            <Skeleton className="h-[400px] w-full" />
+          <div className="grid gap-6 md:grid-cols-2">
             <Skeleton className="h-[400px] w-full" />
             <Skeleton className="h-[400px] w-full" />
           </div>
@@ -137,174 +141,229 @@ export default function BillingPage() {
   }
 
   const progressPercent = Math.min((usage.used / (usage.limit === 0 ? 1 : usage.limit)) * 100, 100);
+  const pagesRemaining = Math.max(0, usage.limit - usage.used);
+  
+  // Custom Topup Cost logic ($0.05 per page)
+  const topupCost = customPagesInput * 0.05;
 
-  const plans = [
-    {
-      id: 'pack-1',
-      name: "Single Scan",
-      description: "Perfect for a quick check",
-      originalPrice: "$3",
-      price: "$2",
-      period: "pack",
-      features: [
-        "1 Full AI Plan Scan",
-        "OCR Extraction",
-        "Detailed Report PDF",
-        "Immediate Analysis"
-      ],
-      badge: "Anniversary Offer"
-    },
-    {
-      id: 'pack-12',
-      name: "Pro Pack",
-      description: "Best for smaller projects",
-      originalPrice: "$30",
-      price: "$20",
-      period: "pack",
-      features: [
-        "12 AI Scans (Buy 10, Get 2 Free)",
-        "Priority Processing",
-        "Expert Code Mapping",
-        "Full Compliance Check"
-      ],
-      badge: "Anniversary Offer"
-    },
-    {
-      id: 'pack-65',
-      name: "Enterprise Pack",
-      description: "Bulk compliance checking",
-      originalPrice: "$130",
-      price: "$100",
-      period: "pack",
-      features: [
-        "65 AI Scans (Buy 50, Get 15 Free)",
-        "Lifetime Credits",
-        "Priority Support",
-        "Bulk Processing"
-      ],
-      badge: "Anniversary Offer"
-    }
-  ];
+  const monthlyPlanInfo = {
+    id: 'monthly-15k',
+    name: "Monthly Subscription",
+    description: "Best for ongoing compliance audits",
+    price: "$500",
+    period: "month",
+    features: [
+      "15,000 AI Page Scans included",
+      "Full OCR Data Extraction",
+      "Interactive Code Compliance Checklist",
+      "Downloadable Forensic Report PDFs",
+      "Resets and reloads every billing cycle"
+    ]
+  };
 
   return (
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       {step === 'plans' ? (
-        <div className="space-y-8">
+        <div className="space-y-8 max-w-6xl mx-auto p-4 sm:p-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Billing & Credits</h1>
-            <p className="text-muted-foreground mt-1">Manage your scan credits and usage</p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Billing & Page Credits
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">
+              Manage your subscription, purchase page credits, and monitor compliance scanning usage.
+            </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md shadow-sm">
+            {/* Usage Progress Card */}
+            <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative group transition-all duration-300 hover:shadow-2xl">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent pointer-events-none rounded-bl-full" />
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                   <TrendingUp className="w-5 h-5 text-blue-500" />
-                  Scan Credits
+                  Monthly Page Usage
                 </CardTitle>
                 <CardDescription className="text-slate-500 dark:text-slate-400">
-                  {usage.used} of {usage.limit} lifetime scans used
+                  {usage.used.toLocaleString()} of {usage.limit.toLocaleString()} pages scanned
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full overflow-hidden">
+              <CardContent className="space-y-6">
+                <div className="h-3 w-full bg-slate-100 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-700 ${progressPercent > 80 ? 'bg-red-500' : 'bg-blue-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}
+                    className={`h-full transition-all duration-700 rounded-full ${
+                      progressPercent > 90 
+                        ? 'bg-gradient-to-r from-red-500 to-orange-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]' 
+                        : 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                    }`}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">Credits Remaining</span>
-                  <Badge variant={usage.limit - usage.used > 0 ? "default" : "destructive"} className={usage.limit - usage.used > 0 ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30" : ""}>
-                    {Math.max(0, usage.limit - usage.used)} Scans
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Pages Remaining</span>
+                  <Badge 
+                    variant={pagesRemaining > 0 ? "default" : "destructive"} 
+                    className={pagesRemaining > 0 ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20"}
+                  >
+                    {pagesRemaining.toLocaleString()} Pages
                   </Badge>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-50 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700/50 border-dashed backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">How it works</CardTitle>
+            {/* How it works Card */}
+            <Card className="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800/80 border-dashed relative">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <HelpCircle className="w-4 h-4 text-slate-400" />
+                  Credit Guidelines
+                </CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-slate-500 dark:text-slate-400 space-y-3">
+              <CardContent className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 space-y-3">
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  <p>Credits never expire and stay on your account until used.</p>
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                  <p>Page credits are deducted in real-time based on the size of your uploaded PDF file.</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  <p>Each plan upload and forensic analysis consumes 1 credit.</p>
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                  <p>Standard architectural images (PNG, JPG) and CAD blueprints (DWG, DXF) count as exactly 1 page.</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  <p>Purchase packs at any time to add credits instantly to your balance.</p>
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                  <p>Monthly balances reset at the start of your billing cycle. Top-up credits are for use during the current billing cycle.</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Purchase Scan Packs</h2>
-            <div className="grid gap-6 md:grid-cols-3">
-              {plans.map((plan, index) => {
-                const isSelected = selectedPlan === index;
-                return (
-                  <Card
-                    key={index}
-                    onClick={() => setSelectedPlan(index)}
-                    className={`relative cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 group ${isSelected ? 'border-2 border-blue-500 shadow-lg shadow-blue-500/10 dark:shadow-blue-500/20 bg-blue-50/10 dark:bg-slate-800/60' : 'bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50'}`}
+            <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-indigo-500" />
+              Select a Page Plan
+            </h2>
+            <div className="grid gap-8 md:grid-cols-2">
+              {/* Monthly Plan Card */}
+              <Card className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden rounded-2xl flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-indigo-500/50">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 to-indigo-600" />
+                <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] px-3 py-1 rounded-full shadow font-bold uppercase tracking-wider">
+                  Recommended
+                </div>
+                
+                <CardHeader className="pt-8">
+                  <CardTitle className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                    {monthlyPlanInfo.name}
+                  </CardTitle>
+                  <CardDescription className="text-slate-500 dark:text-slate-400">
+                    {monthlyPlanInfo.description}
+                  </CardDescription>
+                  <div className="mt-6 flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-slate-900 dark:text-white">
+                      {monthlyPlanInfo.price}
+                    </span>
+                    <span className="text-slate-500 text-sm font-medium">/ {monthlyPlanInfo.period}</span>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-8 flex-grow flex flex-col justify-between pt-2">
+                  <ul className="space-y-4">
+                    {monthlyPlanInfo.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+                        <CheckCircle2 className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    className="w-full py-6 font-bold uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg border-none mt-8"
+                    onClick={() => startCheckout(monthlyPlanInfo)}
                   >
-                    {plan.badge === "Anniversary Offer" && (
-                      <div className="absolute top-4 right-4 z-20">
-                        <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[10px] px-3 py-1 rounded-full shadow-lg border border-white/20 font-bold uppercase tracking-wider">
-                          Anniversary Offer
-                        </div>
+                    Subscribe Now
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Custom Top-Up Card */}
+              <Card className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden rounded-2xl flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-blue-500/50">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                
+                <CardHeader className="pt-8">
+                  <CardTitle className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Coins className="w-6 h-6 text-emerald-500" />
+                    Custom Page Top-up
+                  </CardTitle>
+                  <CardDescription className="text-slate-500 dark:text-slate-400">
+                    Add only the page credits you need for this month
+                  </CardDescription>
+                  
+                  {/* Dynamic Pricing display */}
+                  <div className="mt-6 flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-slate-900 dark:text-white">
+                      ${topupCost.toFixed(2)}
+                    </span>
+                    <span className="text-slate-500 text-sm font-medium">one-time payment</span>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-6 flex-grow flex flex-col justify-between pt-2">
+                  <div className="space-y-4">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200/50 dark:border-slate-800/80 space-y-3">
+                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Enter Pages Needed (Min. 100)
+                      </label>
+                      <div className="flex gap-3">
+                        <input
+                          type="number"
+                          min="100"
+                          step="50"
+                          value={customPagesInput}
+                          onChange={(e) => setCustomPagesInput(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-lg font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                    )}
-                    <CardHeader>
-                      <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">{plan.name}</CardTitle>
-                      <CardDescription className="text-slate-500 dark:text-slate-400">{plan.description}</CardDescription>
-                      <div className="mt-4 flex items-baseline gap-2">
-                        {plan.originalPrice && (
-                          <span className="text-lg text-slate-400 dark:text-slate-500 line-through decoration-red-500/50 font-medium">
-                            {plan.originalPrice}
-                          </span>
-                        )}
-                        <span className="text-4xl font-black text-slate-900 dark:text-white">{plan.price}</span>
-                        <span className="text-slate-500 text-sm font-medium">/ {plan.period}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <ul className="space-y-3">
-                        {plan.features.map((feature, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                            <CheckCircle2 className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Button
-                        variant={isSelected ? 'default' : 'outline'}
-                        className={`w-full py-6 font-bold uppercase tracking-widest ${isSelected ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 border-none' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'}`}
-                        onClick={(e) => { e.stopPropagation(); startCheckout(plan); }}
-                      >
-                        Select Pack
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      <p className="text-xs text-slate-400">
+                        Priced at exactly $0.05 per page credit.
+                      </p>
+                    </div>
+
+                    <ul className="space-y-4">
+                      <li className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+                        <span>Instantly credited to your balance</span>
+                      </li>
+                      <li className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+                        <span>Calculated dynamically for your exact blueprints</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full py-6 font-bold uppercase tracking-widest border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 mt-8"
+                    disabled={customPagesInput < 100}
+                    onClick={() => startCheckout({
+                      id: 'custom-topup',
+                      name: `Custom Top-up (${customPagesInput} Pages)`,
+                      price: `$${topupCost.toFixed(2)}`,
+                      customPages: customPagesInput,
+                      period: "one-off"
+                    })}
+                  >
+                    {customPagesInput < 100 ? 'Minimum 100 Pages Required' : 'Purchase Top-up'}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       ) : (
         // --- CHECKOUT VIEW ---
-        <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="w-full max-w-4xl mx-auto space-y-8 p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Order Summary</h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">Review your scan pack selection and complete purchase</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Review your selected page plan and complete purchase</p>
             </div>
             <Button variant="ghost" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" onClick={() => setStep('plans')}>
               Back to Plans
@@ -313,14 +372,14 @@ export default function BillingPage() {
 
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
-              <Card className="bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 shadow-xl">
+              <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-slate-900 dark:text-white">Billing Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase">Account Email</label>
-                    <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-700 dark:text-slate-300 font-mono text-sm">
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-700 dark:text-slate-300 font-mono text-sm">
                       {usage?.email || "user@example.com"}
                     </div>
                   </div>
@@ -331,7 +390,7 @@ export default function BillingPage() {
                       <input 
                         type="text" 
                         placeholder="Enter code" 
-                        className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       />
@@ -347,7 +406,7 @@ export default function BillingPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-500/5 border-blue-500/20">
+              <Card className="bg-blue-500/5 border border-blue-500/20">
                 <CardContent className="py-4 flex items-center gap-3">
                   <div className="p-2 bg-blue-500/10 rounded-full">
                     <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -360,36 +419,40 @@ export default function BillingPage() {
             </div>
 
             <div className="space-y-6">
-              <Card className="bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/50 shadow-2xl sticky top-24">
+              <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl sticky top-24">
                 <CardHeader>
                   <CardTitle className="text-slate-900 dark:text-white">Payment Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
-                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400 text-sm">
+                      <span>Item</span>
+                      <span className="text-slate-950 dark:text-white font-medium">{checkoutPlan?.name}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400 text-sm">
                       <span>Subtotal</span>
-                      <span className="text-slate-900 dark:text-white font-mono">{checkoutPlan?.price}</span>
+                      <span className="text-slate-950 dark:text-white font-mono">{checkoutPlan?.price}</span>
                     </div>
                     {discount > 0 && (
-                      <div className="flex justify-between text-blue-600 dark:text-blue-400 font-medium">
+                      <div className="flex justify-between text-blue-600 dark:text-blue-400 font-medium text-sm">
                         <span>Discount</span>
                         <span>-${discount}.00</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400 text-sm">
                       <span>Tax (included)</span>
                       <span>$0.00</span>
                     </div>
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-baseline">
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-baseline">
                       <span className="text-lg font-bold text-slate-900 dark:text-white">Total Bill</span>
                       <span className="text-3xl font-black text-blue-600 dark:text-blue-400 font-mono">
-                        ${Math.max(0, parseInt(checkoutPlan?.price.replace('$', '')) - discount)}.00
+                        ${Math.max(0, parseFloat(checkoutPlan?.price.replace('$', '')) - discount).toFixed(2)}
                       </span>
                     </div>
                   </div>
 
                   <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-8 text-lg font-black uppercase tracking-widest shadow-lg shadow-blue-600/30"
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-8 text-lg font-black uppercase tracking-widest shadow-lg shadow-blue-600/30 border-none"
                     disabled={loading}
                     onClick={() => handleUpgrade(checkoutPlan.id)}
                   >

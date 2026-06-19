@@ -937,44 +937,47 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
 
   const plans = [
     {
-      name: "Single Scan",
-      desc: "Perfect for single project checkups (1 scan included)",
-      oldPrice: "$3",
-      price: "$2",
+      name: "Custom Top-up",
+      desc: "Add only the page credits you need (Min. 100 pages)",
+      oldPrice: "",
+      price: "$0.05",
+      unit: "/ page credit",
       features: [
-        "1 Comprehensive AI Vector Scan",
-        "Full spatial dimension checks",
-        "Direct PDF report download",
-        "Chapter-mapped NYC code citations"
+        "Buy exactly what your drawing set requires",
+        "Instant credit to active page balance",
+        "Calculated dynamically for your layouts",
+        "Supports PDF, DWG, DXF, and Images"
       ]
     },
     {
-      name: "Pro Pack",
-      desc: "10 Scans + 2 Free Bonus Scans ($24 value)",
-      oldPrice: "$30",
-      price: "$20",
+      name: "Monthly Subscription",
+      desc: "15,000 pages included per month",
+      oldPrice: "$700",
+      price: "$500",
+      unit: "/ month",
       features: [
-        "12 Complete AI plan audits total",
-        "Zoning setback & envelope scans",
-        "Support for both PDF & DWG formats",
-        "Direct PDF compliance report download",
-        "Standard support response within 12h"
+        "15,000 AI page scans included",
+        "Interactive compliance inspector",
+        "Downloadable DOB-grade PDF reports",
+        "Prioritized vector parsing queue",
+        "Resets and reloads every cycle"
       ],
-      badge: "Save 33% - Anniversary Special"
+      badge: "Best Value"
     },
     {
-      name: "Enterprise Pack",
-      desc: "50 Scans + 15 Free Bonus Scans ($130 value)",
-      oldPrice: "$150",
-      price: "$100",
+      name: "Enterprise",
+      desc: "High volume pages & custom integrations",
+      oldPrice: "",
+      price: "Custom",
+      unit: "contact us",
       features: [
-        "65 Complete AI plan audits total",
-        "Dedicated workspace accounts",
-        "Priority processing server queue",
-        "Direct CSV compliance data dumps",
-        "Developer API & webhook integration"
+        "Million+ page scanning limits",
+        "Custom API & webhook integrations",
+        "Dedicated account representative",
+        "SLA guaranteed processing speeds",
+        "Custom administrative resolutions"
       ],
-      badge: "Save 33% - Enterprise"
+      badge: "SLA Guaranteed"
     }
   ];
 
@@ -1032,8 +1035,8 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
                   {/* Pricing Display with strikethroughs for anniversary promotion */}
                   <div className="py-2 flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-foreground tracking-tight">{p.price}</span>
-                    <span className="text-xs text-muted-foreground/50 line-through font-normal">{p.oldPrice}</span>
-                    <span className="text-muted-foreground/60 text-[9px] ml-1">/ scan set</span>
+                    {p.oldPrice && <span className="text-xs text-muted-foreground/50 line-through font-normal">{p.oldPrice}</span>}
+                    <span className="text-muted-foreground/60 text-[9px] ml-1">{p.unit}</span>
                   </div>
 
                   <ul className="space-y-2 pt-2 border-t border-border/40">

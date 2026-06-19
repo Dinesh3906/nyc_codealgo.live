@@ -42,7 +42,8 @@ function AnalyzerContent() {
   };
 
   useEffect(() => {
-    if (searchParams.get('new') === 'true' && usage?.limit > 0) {
+    const remaining = (usage?.limit || 0) - (usage?.used || 0);
+    if (searchParams.get('new') === 'true' && usage?.limit > 0 && remaining > 0) {
       setShowUploadModal(true);
       const current = new URLSearchParams(Array.from(searchParams.entries()));
       current.delete('new');
@@ -56,7 +57,8 @@ function AnalyzerContent() {
 
   const handleNewCheck = () => {
     const isExpired = usage?.expiryDate && new Date(usage.expiryDate) < new Date();
-    if (usage?.limit === 0 || isExpired) {
+    const remaining = (usage?.limit || 0) - (usage?.used || 0);
+    if (usage?.limit === 0 || remaining <= 0 || isExpired) {
       router.push('/dashboard/billing');
       return;
     }
@@ -64,6 +66,8 @@ function AnalyzerContent() {
   };
 
   const isExpired = usage?.expiryDate && new Date(usage.expiryDate) < new Date();
+  const remaining = (usage?.limit || 0) - (usage?.used || 0);
+  const hasNoCredits = !usage || usage.limit === 0 || remaining <= 0;
 
   return (
     <div className="space-y-8">
@@ -75,7 +79,7 @@ function AnalyzerContent() {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-blue-500" />
             <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">AI-Powered Forensic Audit</Badge>
-            {(usage?.limit === 0 || isExpired) && (
+            {(hasNoCredits || isExpired) && (
               <Badge variant="destructive" className="animate-pulse cursor-pointer" onClick={() => router.push('/dashboard/billing')}>
                 {isExpired ? 'Plan Expired' : 'Credits Required'}
               </Badge>
@@ -90,7 +94,7 @@ function AnalyzerContent() {
           <div className="flex gap-4 pt-4">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/20 px-8" onClick={handleNewCheck}>
               <Upload className="w-5 h-5 mr-2" />
-              {usage?.limit === 0 ? 'Buy Credits to Start' : 'New Compliance Check'}
+              {hasNoCredits ? 'Buy Credits to Start' : 'New Compliance Check'}
             </Button>
             <Link href="/dashboard/plans">
               <Button variant="outline" size="lg" className="border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200">

@@ -31,28 +31,12 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.dwg', '.dxf'];
-    const allowedTypes = [
-      'application/pdf',
-      'image/png',
-      'image/jpeg',
-      'image/jpg',
-      'application/acad',
-      'application/x-acad',
-      'application/autocad_dwg',
-      'image/vnd.dwg',
-      'image/x-dwg',
-      'application/dxf',
-      'application/x-dxf',
-      'image/vnd.dxf',
-      'text/x-dxf',
-      'text/dxf',
-      'application/octet-stream'
-    ];
+    const allowedExtensions = ['.pdf'];
+    const allowedTypes = ['application/pdf'];
     if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF, Images (PNG/JPG), and AutoCAD (DWG/DXF) are allowed.'));
+      cb(new Error('Invalid file type. Only PDF files are allowed.'));
     }
   }
 });
@@ -65,6 +49,38 @@ router.get('/debug-list', async (req, res) => {
     res.json(rows);
   } catch (err: any) {
     res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
+router.post('/count-pages', protect, upload.single('plan'), async (req: any, res: any) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  const filePath = req.file.path;
+  const fileExt = path.extname(req.file.originalname).toLowerCase();
+
+  try {
+    let pages = 1;
+    if (fileExt === '.pdf') {
+      const pdfParse = require('pdf-parse');
+      const dataBuffer = fs.readFileSync(filePath);
+      const pdfData = await pdfParse(dataBuffer);
+      pages = Number(pdfData.numpages) || 1;
+    }
+
+    // Clean up file immediately
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.json({ pages });
+  } catch (err) {
+    console.error('Failed to count pages on backend:', err);
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch {}
+    }
+    res.status(500).json({ message: 'Failed to count pages' });
   }
 });
 
@@ -110,8 +126,8 @@ router.post('/upload', protect, (req: any, res: any) => {
         // Create DB entry (status: processing)
         const planId = uuidv4();
         await pool.query(
-          'INSERT INTO `plan` (id, userId, fileName, fileUrl, status) VALUES (?, ?, ?, ?, ?)',
-          [planId, userId, fileName, filePath, 'processing']
+          'INSERT INTO `plan` (id, userId, fileName, fileUrl, status, pages) VALUES (?, ?, ?, ?, ?, ?)',
+          [planId, userId, fileName, filePath, 'processing', req.filePages || 1]
         );
 
         const plan = { id: planId };

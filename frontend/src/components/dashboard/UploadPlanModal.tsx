@@ -43,6 +43,9 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
   const fetchPlans = usePlanStore(state => state.fetchPlans);
 
+  const [pageCount, setPageCount] = useState<number | null>(null);
+  const [countingPages, setCountingPages] = useState(false);
+
   useEffect(() => {
     if (!isOpen) {
       setFile(null);
@@ -51,8 +54,46 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       setAnalysisResult(null);
       setErrorMessage("");
       setSelectedSteps(COMPLIANCE_STEPS.map(s => s.id));
+      setPageCount(null);
+      setCountingPages(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!file) {
+      setPageCount(null);
+      setCountingPages(false);
+      return;
+    }
+
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (fileExt !== '.pdf') {
+      setPageCount(null);
+      setCountingPages(false);
+      return;
+    }
+
+
+    const countPages = async () => {
+      setCountingPages(true);
+      setPageCount(null);
+      try {
+        const formData = new FormData();
+        formData.append('plan', file);
+        const response = await api.post('/plans/count-pages', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setPageCount(response.data.pages || 1);
+      } catch (err) {
+        console.error("Failed to count pages:", err);
+        setPageCount(1); // fallback
+      } finally {
+        setCountingPages(false);
+      }
+    };
+
+    countPages();
+  }, [file]);
 
   const toggleStep = (stepId: string) => {
     setSelectedSteps(prev =>
@@ -123,12 +164,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg'],
-      'image/vnd.dwg': ['.dwg'],
-      'image/vnd.dxf': ['.dxf'],
-      'application/acad': ['.dwg'],
-      'application/dxf': ['.dxf']
+      'application/pdf': ['.pdf']
     },
     multiple: false
   });
@@ -727,16 +763,22 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 {file ? (
                   <div>
                     <p className="font-medium text-white">{file.name}</p>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <p className="text-sm text-slate-400 mt-1 flex items-center justify-center gap-1.5">
                       {file.size < 1024 * 1024
                         ? `${(file.size / 1024).toFixed(2)} KB`
-                        : `${(file.size / 1024 / 1024).toFixed(2)} MB`} • Ready to analyze
+                        : `${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                      {countingPages && (
+                        <span className="inline-flex items-center gap-1 text-xs text-blue-400 font-mono">
+                          • <Loader2 className="w-3.5 h-3.5 animate-spin" /> Calculating pages...
+                        </span>
+                      )}
+                      {pageCount !== null && ` • ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`} • Ready to analyze
                     </p>
                   </div>
                 ) : (
                   <div>
                     <p className="font-medium text-white">Drop your file here or click to browse</p>
-                    <p className="text-sm text-slate-400 mt-1">Supports PDF, CAD (DWG/DXF), and image files</p>
+                    <p className="text-sm text-slate-400 mt-1">Supports PDF files</p>
                   </div>
                 )}
               </div>

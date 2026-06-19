@@ -23,7 +23,6 @@ const getRazorpay = () => {
 
 const router = Router();
 
-type PlanType = 'pack-1' | 'pack-11' | 'pack-12' | 'pack-55' | 'pack-65';
 type UserColumnSet = Set<string>;
 let userColumnCache: UserColumnSet | null = null;
 
@@ -37,40 +36,45 @@ const getUserColumns = async (): Promise<UserColumnSet> => {
   return userColumnCache;
 };
 
-const normalizePlanType = (plan: any): PlanType | null => {
-  if (plan === 'pack-1' || plan === 'pack-11' || plan === 'pack-12' || plan === 'pack-55' || plan === 'pack-65') return plan;
-  return null;
+const getPlanPricing = (planType: string, pages: number = 0) => {
+  if (planType === 'monthly-15k') {
+    return { unitAmount: 50000, productName: 'Monthly Subscription (15,000 Pages)' };
+  }
+  if (planType === 'custom-topup') {
+    // 5 cents per page
+    const amount = pages * 5;
+    return { unitAmount: amount, productName: `Custom Page Top-up (${pages} Pages)` };
+  }
+  return { unitAmount: 0, productName: 'Unknown Plan' };
 };
 
-const getPlanPricing = (planType: PlanType) => {
-  if (planType === 'pack-1') return { unitAmount: 200, productName: '1 Upload Pack' };
-  if (planType === 'pack-11' || planType === 'pack-12') return { unitAmount: 2000, productName: '12 Uploads Pack' };
-  return { unitAmount: 10000, productName: '65 Uploads Pack' };
-};
-
-const getPlanEntitlement = (planType: PlanType) => {
-  if (planType === 'pack-1') return { status: 'active', limit: 1 };
-  if (planType === 'pack-11' || planType === 'pack-12') return { status: 'active', limit: 12 };
-  return { status: 'active', limit: 65 };
-};
-
-const applyPlanUpgrade = async (
+const applyPagesPurchase = async (
   userId: string,
-  planType: PlanType,
+  planType: string,
+  purchasedPages: number,
   sessionId?: string | null
 ) => {
   const userColumns = await getUserColumns();
-  const { status, limit: newLimit } = getPlanEntitlement(planType);
+  const now = new Date();
   
-  const updates: string[] = ['subStatus = ?'];
-  const params: any[] = [status];
+  // Set subscription end date to exactly 1 month from now
+  const subPeriodEnd = new Date();
+  subPeriodEnd.setMonth(subPeriodEnd.getMonth() + 1);
 
-  // Add purchased uploads to their existing limit
-  updates.push('scanLimit = (CASE WHEN subStatus = "free" THEN 0 ELSE scanLimit END) + ?');
-  params.push(newLimit);
+  let query = '';
+  let params: any[] = [];
 
-  let query = `UPDATE \`user\` SET ${updates.join(', ')} WHERE id = ?`;
-  params.push(userId);
+  if (planType === 'monthly-15k') {
+    query = 'UPDATE `user` SET subStatus = ?, scanLimit = 15000, pagesUsed = 0, subPeriodEnd = ? WHERE id = ?';
+    params = ['subscribed', subPeriodEnd, userId];
+  } else if (planType === 'custom-topup') {
+    // For custom top-up: add pages to their scanLimit, do NOT reset pagesUsed.
+    // If they do not have a subPeriodEnd or it has expired, initialize a new 1-month period.
+    query = 'UPDATE `user` SET scanLimit = scanLimit + ?, subPeriodEnd = COALESCE(CASE WHEN subPeriodEnd > NOW() THEN subPeriodEnd ELSE ? END, ?) WHERE id = ?';
+    params = [purchasedPages, subPeriodEnd, subPeriodEnd, userId];
+  } else {
+    throw new Error('Invalid plan type for page purchase');
+  }
 
   // ATOMIC GUARD: If sessionId is present, ensure we only update if it hasn't been handled.
   if (sessionId && userColumns.has('lastHandledSessionId')) {
@@ -82,38 +86,28 @@ const applyPlanUpgrade = async (
 
   const [result]: any = await pool.query(query, params);
 
-  // If already handled (affectedRows = 0), fetch current values to return accurate state
-  if (result.affectedRows === 0) {
-     const [users]: any = await pool.query('SELECT subStatus, scanLimit FROM `user\` WHERE id = ?', [userId]);
-     return { status: users[0]?.subStatus || status, limit: users[0]?.scanLimit || newLimit };
-  }
-
-  return { status, limit: newLimit };
+  const [users]: any = await pool.query('SELECT subStatus, scanLimit, pagesUsed, subPeriodEnd FROM `user` WHERE id = ?', [userId]);
+  return users[0];
 };
 
 // GET billing usage
 router.get('/usage', protect, async (req: any, res) => {
-  const { id: userId, subStatus, scanLimit } = req.user;
+  const { subStatus, scanLimit, pagesUsed, email, name } = req.user;
 
   try {
-    const [rows]: any = await pool.query(
-      "SELECT COUNT(*) as count FROM `plan` WHERE userId = ? AND status IN ('analyzed', 'processing')",
-      [userId]
-    );
-    const used = Number(rows[0]?.count || 0);
-
     res.json({
       status: subStatus,
       limit: Number(scanLimit) || 0,
-      used,
-      email: req.user.email,
-      name: req.user.name
+      used: Number(pagesUsed) || 0,
+      email,
+      name
     });
   } catch (error) {
     console.error('Failed to fetch billing usage:', error);
     res.status(500).json({ message: 'Failed to load billing usage.' });
   }
 });
+
 // POST validate coupon
 router.post('/validate-coupon', protect, async (req: any, res) => {
   const { code, planId } = req.body;
@@ -134,7 +128,7 @@ router.post('/validate-coupon', protect, async (req: any, res) => {
 // POST create checkout session
 router.post('/create-checkout', protect, async (req: any, res) => {
   const { id: userId, email } = req.user;
-  const { plan } = req.body || {};
+  const { plan, pages } = req.body || {};
 
   const razorpay = getRazorpay();
   if (!razorpay) {
@@ -147,15 +141,22 @@ router.post('/create-checkout', protect, async (req: any, res) => {
     return res.status(400).json({ message: 'User email is required for checkout.' });
   }
 
-  const planType = normalizePlanType(plan);
-  console.log(`[RAZORPAY] Received plan: "${plan}", normalized to: "${planType}"`);
-  if (!planType) {
+  if (plan !== 'monthly-15k' && plan !== 'custom-topup') {
     return res.status(400).json({ message: 'Invalid plan selected.' });
   }
+
+  const pagesCount = plan === 'monthly-15k' ? 15000 : parseInt(pages);
+  if (isNaN(pagesCount) || pagesCount <= 0) {
+    return res.status(400).json({ message: 'Invalid page count requested.' });
+  }
+
+  if (plan === 'custom-topup' && pagesCount < 100) {
+    return res.status(400).json({ message: 'Minimum custom top-up is 100 pages.' });
+  }
   
-  console.log(`[RAZORPAY] Creating order for: ${userId} (${email}), plan: ${planType}`);
+  console.log(`[RAZORPAY] Creating order for: ${userId} (${email}), plan: ${plan}, pages: ${pagesCount}`);
   
-  const { unitAmount: baseAmount, productName } = getPlanPricing(planType);
+  const { unitAmount: baseAmount, productName } = getPlanPricing(plan, pagesCount);
   const { couponCode } = req.body || {};
   
   let finalAmount = baseAmount;
@@ -172,7 +173,13 @@ router.post('/create-checkout', protect, async (req: any, res) => {
       amount: finalAmount,
       currency: "USD",
       receipt: `receipt_${userId}_${Date.now()}`.slice(0, 40),
-      notes: { userId, planType, productName, couponCode: couponCode || 'NONE' }
+      notes: { 
+        userId, 
+        planType: plan, 
+        pages: String(pagesCount), 
+        productName, 
+        couponCode: couponCode || 'NONE' 
+      }
     };
 
     const order = await razorpay.orders.create(options);
@@ -232,21 +239,25 @@ router.post('/confirm-session', protect, async (req: any, res) => {
       return res.status(403).json({ message: 'Order does not belong to this user.' });
     }
 
-    const planType = normalizePlanType(order.notes?.planType);
-    if (!planType) {
+    const planType = String(order.notes?.planType || '');
+    const pagesCount = parseInt(String(order.notes?.pages || '0'));
+
+    if (planType !== 'monthly-15k' && planType !== 'custom-topup') {
       return res.status(400).json({ message: 'Could not determine purchased plan.' });
     }
 
-    const updated = await applyPlanUpgrade(
+    const updated = await applyPagesPurchase(
       req.user.id,
       planType,
+      pagesCount,
       razorpay_order_id
     );
 
     return res.json({
       message: 'Plan upgraded successfully.',
-      status: updated.status,
-      limit: updated.limit
+      status: updated.subStatus,
+      limit: updated.scanLimit,
+      used: updated.pagesUsed
     });
   } catch (error) {
     console.error('Failed to confirm payment:', error);
@@ -256,7 +267,6 @@ router.post('/confirm-session', protect, async (req: any, res) => {
 
 // POST RAZORPAY WEBHOOK (Stubbed)
 router.post('/webhook', async (req: Request, res: Response) => {
-  // We rely on frontend signature verification for simplicity in this implementation.
   res.json({ received: true });
 });
 

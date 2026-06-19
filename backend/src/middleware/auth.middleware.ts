@@ -27,7 +27,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
     while (attempts < 2) {
       try {
         const [rows]: any = await pool.query(
-          'SELECT id, name, email, subStatus, scanLimit, subPeriodEnd, introSubscriptionCount, trialClaimed FROM `user` WHERE id = ?',
+          'SELECT id, name, email, subStatus, scanLimit, pagesUsed, subPeriodEnd, introSubscriptionCount, trialClaimed FROM `user` WHERE id = ?',
           [decoded.id]
         );
         users = rows;
@@ -48,6 +48,38 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
     }
 
     const user = users[0];
+
+    // On-Demand Monthly Reset Logic
+    const now = new Date();
+    if (user.subPeriodEnd && now > new Date(user.subPeriodEnd)) {
+      try {
+        const currentPeriodEnd = new Date(user.subPeriodEnd);
+        const nextPeriodEnd = new Date(currentPeriodEnd);
+        while (nextPeriodEnd < now) {
+          nextPeriodEnd.setMonth(nextPeriodEnd.getMonth() + 1);
+        }
+
+        let newScanLimit = user.scanLimit;
+        if (user.subStatus === 'subscribed') {
+          newScanLimit = 15000;
+        } else if (user.subStatus === 'free') {
+          newScanLimit = 0;
+        }
+
+        console.log(`[AUTH MIDDLEWARE] Billing period expired for user ${user.id}. Resetting pagesUsed to 0, setting scanLimit to ${newScanLimit}, nextPeriodEnd to ${nextPeriodEnd}`);
+        await pool.query(
+          'UPDATE `user` SET pagesUsed = 0, scanLimit = ?, subPeriodEnd = ? WHERE id = ?',
+          [newScanLimit, nextPeriodEnd, user.id]
+        );
+        
+        user.pagesUsed = 0;
+        user.scanLimit = newScanLimit;
+        user.subPeriodEnd = nextPeriodEnd;
+      } catch (resetErr) {
+        console.error('[AUTH MIDDLEWARE] Failed to reset monthly pages balance:', resetErr);
+      }
+    }
+
     req.user = user;
     next();
   } catch (error) {
