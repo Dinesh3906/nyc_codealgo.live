@@ -70,9 +70,11 @@ export class CompliancePipeline {
 
       let completedCount = 0;
 
-      const stepResults = [];
-      for (const step of STEPS_CONFIG) {
+      const auditPromises = STEPS_CONFIG.map(async (step, index) => {
         if (activeSteps.includes(step.id)) {
+          // Stagger the API calls slightly to respect Gemini RPM rate limits
+          await new Promise(resolve => setTimeout(resolve, index * 1500));
+
           io.emit('analysis-status', {
             planId,
             status: step.statusKey,
@@ -88,7 +90,7 @@ export class CompliancePipeline {
               progress: Math.round(20 + (completedCount / activeSteps.length) * 70),
               message: `${step.name} audit complete.`
             });
-            stepResults.push(result);
+            return result;
           } catch (stepErr) {
             console.error(`Step check failed for ${step.name}:`, stepErr);
             completedCount++;
@@ -98,7 +100,14 @@ export class CompliancePipeline {
               item => `${item.code} - ${item.title}: Verification pending due to system connection issue.`
             );
 
-            stepResults.push({
+            io.emit('analysis-status', {
+              planId,
+              status: step.statusKey,
+              progress: Math.round(20 + (completedCount / activeSteps.length) * 70),
+              message: `${step.name} audit complete with warning.`
+            });
+
+            return {
               id: step.id,
               name: step.name,
               checked: true,
@@ -107,12 +116,10 @@ export class CompliancePipeline {
               summary: `Audit partially completed for ${step.name} due to verification errors.`,
               compliant_features: fallbackFeatures,
               issues: []
-            });
+            };
           }
-          // Add a small 1-second delay between sequential steps to respect Gemini free-tier RPM limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
-          stepResults.push({
+          return {
             id: step.id,
             name: step.name,
             checked: false,
@@ -121,9 +128,11 @@ export class CompliancePipeline {
             summary: 'Skipped by user.',
             compliant_features: [],
             issues: []
-          });
+          };
         }
-      }
+      });
+
+      const stepResults = await Promise.all(auditPromises);
 
       // STEP 4: Progress update before compiling final report
       io.emit('analysis-status', {

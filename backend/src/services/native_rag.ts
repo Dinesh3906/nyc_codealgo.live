@@ -176,7 +176,24 @@ export async function extractPlanData(housePlanPath: string): Promise<{ housePla
   if (fileExt === ".pdf") {
     const pdfParse = require("pdf-parse");
     const dataBuffer = fs.readFileSync(housePlanPath);
-    const data = await pdfParse(dataBuffer);
+    const options = {
+      pagerender: (pageData: any) => {
+        return pageData.getTextContent().then((textContent: any) => {
+          let lastY: number | undefined;
+          let text = "";
+          for (const item of textContent.items) {
+            if (lastY === undefined || lastY === item.transform[5]) {
+              text += item.str;
+            } else {
+              text += "\n" + item.str;
+            }
+            lastY = item.transform[5];
+          }
+          return `\n\n--- PAGE ${pageData.pageIndex + 1} ---\n\n` + text;
+        });
+      }
+    };
+    const data = await pdfParse(dataBuffer, options);
     housePlanText = data.text;
   } else if (fileExt === ".dwg" || fileExt === ".dxf") {
     console.log(`[RAG] CAD file detected (${fileExt}), extracting text content...`);
@@ -198,6 +215,64 @@ export async function extractPlanData(housePlanPath: string): Promise<{ housePla
 
   console.log(`[RAG] Data prepared. Text: ${housePlanText.length} chars. Image: ${base64Image ? 'PRESENT' : 'NONE'}`);
   return { housePlanText, base64Image };
+}
+
+function filterPagesForDiscipline(fullText: string, stepId: string): string {
+  // 1. Split the text into pages
+  const pages = fullText.split(/--- PAGE \d+ ---/i);
+  if (pages.length <= 1) {
+    // If there's only 1 page or the split didn't find markers, return the full text up to a safe limit
+    return fullText.substring(0, 500000); 
+  }
+
+  // Define keywords for each discipline
+  const disciplineKeywords: Record<string, string[]> = {
+    building_code: ["building", "structural", "egress", "exit", "stair", "corridor", "ceiling", "height", "firewall", "sprinkler", "door", "width"],
+    plumbing_code: ["plumbing", "water", "drain", "sewer", "toilet", "lavatory", "fixture", "vent", "pipe", "spill", "flush"],
+    mechanical_code: ["mechanical", "hvac", "ventilation", "exhaust", "duct", "hood", "cooling", "chimney", "purge", "clean agent"],
+    fuel_gas_code: ["gas", "piping", "appliance", "venting", "combustion", "heater"],
+    energy_code: ["energy", "envelope", "insulation", "thermal", "lighting", "shgc", "u-factor", "r-value"],
+    electrical_code: ["electrical", "wiring", "circuit", "panel", "gfci", "afci", "outlet", "transformer", "load", "amp", "welder"],
+    fire_code: ["fire", "alarm", "sprinkler", "suppression", "egress", "exit", "lock", "valve", "hydrant", "smoke", "evacuation", "life support", "positive alarm"],
+    zoning_resolution: ["zoning", "far", "setback", "yard", "height", "parking", "density", "lot"]
+  };
+
+  const keywords = disciplineKeywords[stepId] || [];
+  const selectedPages: string[] = [];
+
+  // Always keep the first 5 pages and last 3 pages (typically contains indices, general notes, specifications)
+  const prefixPageCount = Math.min(5, pages.length);
+  const suffixPageCount = Math.min(3, pages.length - prefixPageCount);
+
+  for (let i = 0; i < prefixPageCount; i++) {
+    selectedPages.push(`--- PAGE ${i + 1} ---\n` + pages[i]);
+  }
+
+  // For middle pages, check if they contain keywords for this discipline
+  for (let i = prefixPageCount; i < pages.length - suffixPageCount; i++) {
+    const pageTextLower = pages[i].toLowerCase();
+    const matchesKeyword = keywords.some(kw => pageTextLower.includes(kw));
+    if (matchesKeyword) {
+      selectedPages.push(`--- PAGE ${i + 1} ---\n` + pages[i]);
+    }
+  }
+
+  for (let i = pages.length - suffixPageCount; i < pages.length; i++) {
+    if (i >= prefixPageCount) {
+      selectedPages.push(`--- PAGE ${i + 1} ---\n` + pages[i]);
+    }
+  }
+
+  // Join back selected pages
+  let filteredText = selectedPages.join("\n\n");
+  
+  // If the filtered text is still too large (e.g. over 350000 chars), truncate it to prevent token limits
+  if (filteredText.length > 350000) {
+    filteredText = filteredText.substring(0, 350000) + "\n\n[TRUNCATED DUE TO SIZE]";
+  }
+
+  console.log(`[RAG][${stepId}] Filtered plan text: from ${pages.length} pages down to ${selectedPages.length} relevant pages (${filteredText.length} chars).`);
+  return filteredText;
 }
 
 export function getPDFsForStep(stepId: string): string[] {
@@ -410,10 +485,13 @@ export async function checkStepComplianceTS(
 
   console.log(`[RAG] Running step check for "${stepConfig.name}"...`);
 
+  // Filter the plan text for this specific discipline
+  const filteredPlanText = filterPagesForDiscipline(planData.housePlanText, stepId);
+
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
   const index = pc.Index(process.env.PINECONE_INDEX as string);
 
-  const searchQueries = stepConfig.queries.map(q => q + " " + planData.housePlanText.substring(0, 200));
+  const searchQueries = stepConfig.queries.map(q => q + " " + filteredPlanText.substring(0, 200));
   
   // Append NYC General Administrative Provisions (GAP) queries for enforcement and seal checks
   searchQueries.push(
@@ -542,7 +620,7 @@ Return valid JSON in this exact format:
       text: `Analyze this NYC architectural plan specifically for ${stepConfig.name} compliance.
       
       EXTRACTED DATA:
-      ${planData.housePlanText.substring(0, 5000)}`
+      ${filteredPlanText.substring(0, 5000)}`
     }
   ];
 
@@ -571,7 +649,7 @@ Return valid JSON in this exact format:
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
     const parts: any[] = [
-      { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 6000000)}` }
+      { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${filteredPlanText}` }
     ];
 
     if (planData.base64Image) {
@@ -595,7 +673,7 @@ Return valid JSON in this exact format:
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000);
+    const timeoutId = setTimeout(() => controller.abort(), 600000);
 
     try {
       response = await fetch(url, {
@@ -660,7 +738,7 @@ Return valid JSON in this exact format:
             model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${planData.housePlanText.substring(0, 300000)}` }
+              { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${filteredPlanText.substring(0, 300000)}` }
             ],
             temperature: 0.1,
             max_tokens: 4096,
