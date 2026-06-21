@@ -227,13 +227,13 @@ function filterPagesForDiscipline(fullText: string, stepId: string): string {
 
   // Define keywords for each discipline
   const disciplineKeywords: Record<string, string[]> = {
-    building_code: ["building", "structural", "egress", "exit", "stair", "corridor", "ceiling", "height", "firewall", "sprinkler", "door", "width"],
-    plumbing_code: ["plumbing", "water", "drain", "sewer", "toilet", "lavatory", "fixture", "vent", "pipe", "spill", "flush"],
-    mechanical_code: ["mechanical", "hvac", "ventilation", "exhaust", "duct", "hood", "cooling", "chimney", "purge", "clean agent"],
-    fuel_gas_code: ["gas", "piping", "appliance", "venting", "combustion", "heater"],
+    building_code: ["building", "structural", "egress", "exit", "stair", "corridor", "ceiling", "height", "firewall", "sprinkler", "door", "width", "wall", "shaft", "opening", "doorway", "staircase", "partition", "occupancy", "live load", "foundation", "column", "beam", "slab"],
+    plumbing_code: ["plumbing", "water", "drain", "sewer", "toilet", "lavatory", "fixture", "vent", "pipe", "spill", "flush", "effluent", "conveyance", "fluid", "liquid", "sanitary", "discharge", "waste", "trap", "backflow", "interceptor", "sump", "grease"],
+    mechanical_code: ["mechanical", "hvac", "ventilation", "exhaust", "duct", "hood", "cooling", "chimney", "purge", "clean agent", "airflow", "refrigerant", "fan", "damper", "diffuser", "plenum", "furnace", "condenser"],
+    fuel_gas_code: ["gas", "piping", "appliance", "venting", "combustion", "heater", "meter", "regulator", "manifold", "burner", "valve", "propane", "methane", "fuel"],
     energy_code: ["energy", "envelope", "insulation", "thermal", "lighting", "shgc", "u-factor", "r-value"],
-    electrical_code: ["electrical", "wiring", "circuit", "panel", "gfci", "afci", "outlet", "transformer", "load", "amp", "welder"],
-    fire_code: ["fire", "alarm", "sprinkler", "suppression", "egress", "exit", "lock", "valve", "hydrant", "smoke", "evacuation", "life support", "positive alarm"],
+    electrical_code: ["electrical", "wiring", "circuit", "panel", "gfci", "afci", "outlet", "transformer", "load", "amp", "welder", "conductor", "grounding", "bonding", "generator", "breaker", "switchboard", "service", "feeder", "wire", "voltage", "current", "kva", "awg"],
+    fire_code: ["fire", "alarm", "sprinkler", "suppression", "egress", "exit", "lock", "valve", "hydrant", "smoke", "evacuation", "life support", "positive alarm", "extinguisher", "detector", "siren", "annunciator", "emergency", "stairwell", "path", "compartment", "barrier"],
     zoning_resolution: ["zoning", "far", "setback", "yard", "height", "parking", "density", "lot"]
   };
 
