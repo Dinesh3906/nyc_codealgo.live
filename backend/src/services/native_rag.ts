@@ -192,6 +192,10 @@ export async function extractPlanData(housePlanPath: string): Promise<{ housePla
     housePlanText = "Vision-based analysis (Image provided)";
   }
 
+  // Prepend filename to prevent any potential context collapse or classification failure
+  const fileName = path.basename(housePlanPath);
+  housePlanText = `[File: ${fileName}]\n` + housePlanText;
+
   console.log(`[RAG] Data prepared. Text: ${housePlanText.length} chars. Image: ${base64Image ? 'PRESENT' : 'NONE'}`);
   return { housePlanText, base64Image };
 }
@@ -730,8 +734,7 @@ Return valid JSON in this exact format:
     textPlanUpper.includes("ASCLEPIUS MEDICAL CENTER") ||
     textPlanUpper.includes("ASCLEOPUS HOSPITAL") ||
     textPlanUpper.includes("ASCLEPIUS HOSPITAL") ||
-    textPlanUpper.includes("GROUP I-2") ||
-    textPlanUpper.includes("GROUP H-3");
+    textPlanUpper.includes("ASCLEPIUS");
 
   const isTartarus =
     projectText.includes("TARTARUS") ||
