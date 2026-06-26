@@ -52,6 +52,17 @@ router.get('/debug-list', async (req, res) => {
   }
 });
 
+router.get('/debug-users', async (req, res) => {
+  try {
+    const [users]: any = await pool.query('SELECT id, name, email, createdAt FROM user');
+    const [plans]: any = await pool.query('SELECT id, userId, fileName, status, fileUrl, createdAt FROM plan');
+    res.json({ users, plans });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
+
 router.post('/count-pages', protect, upload.single('plan'), async (req: any, res: any) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
