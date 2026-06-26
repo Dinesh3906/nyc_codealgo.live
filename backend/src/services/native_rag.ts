@@ -773,8 +773,8 @@ Return valid JSON in this exact format:
   let rawOut = "";
   let response;
   let retryCount = 0;
-  const maxRetries = 5; // Increased from 3 to handle 429s across 8 concurrent disciplines
-  const models = ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash"];
+  const maxRetries = 8; // Increased from 5 to prevent timeouts under load
+  const models = ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
   const allApiKeys = (process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '').split(',').map((k: string) => k.trim()).filter(Boolean);
 
   while (retryCount <= maxRetries) {
@@ -836,13 +836,13 @@ Return valid JSON in this exact format:
           retryCount++;
           if (statusCode === 429) {
             // Exponential backoff with jitter for rate limits
-            const baseDelay = 5000;
-            const delay = baseDelay * Math.pow(2, retryCount) + Math.random() * 3000;
+            const baseDelay = 10000; // Increased from 5000 to give more time under heavy rate limits
+            const delay = baseDelay * Math.pow(1.5, retryCount) + Math.random() * 3000;
             console.warn(`[RAG][${stepConfig.name}] Rate limited (429). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           } else if (statusCode === 503 || statusCode === 500) {
             // Server overload — longer backoff
-            const delay = 8000 * retryCount + Math.random() * 2000;
+            const delay = 12000 * retryCount + Math.random() * 3000; // Increased from 8000
             console.warn(`[RAG][${stepConfig.name}] Server error (${statusCode}). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
@@ -913,7 +913,7 @@ Return valid JSON in this exact format:
         console.warn(`[RAG][${stepConfig.name}] Attempt ${retryCount + 1} with Gemini failed: ${e.message || e}`);
         retryCount++;
         // Exponential backoff on network/timeout errors too
-        const delay = 3000 * Math.pow(2, retryCount - 1) + Math.random() * 2000;
+        const delay = 5000 * Math.pow(1.5, retryCount - 1) + Math.random() * 3000;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -927,7 +927,7 @@ Return valid JSON in this exact format:
       }
   
       let groqRetry = 0;
-      const groqMaxRetries = 3;
+      const groqMaxRetries = 5;
       while (groqRetry <= groqMaxRetries) {
         try {
           const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -948,7 +948,7 @@ Return valid JSON in this exact format:
           console.warn(`[RAG] Groq fallback attempt ${groqRetry + 1} failed for step ${stepConfig.name}: ${groqErr.message || groqErr}`);
           groqRetry++;
           if (groqRetry <= groqMaxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 3000 * groqRetry));
+            await new Promise(resolve => setTimeout(resolve, 6000 * groqRetry));
           } else {
             console.error(`[RAG] Groq fallback also failed for step ${stepConfig.name} after all retries:`, groqErr);
             throw new Error(`Both Google AI Studio and Groq failed for step ${stepConfig.name}`);
