@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { httpServer } from './app';
+import { QueueWorker } from './services/queue.service';
 
 const PORT = process.env.PORT || 5000;
 
@@ -20,6 +21,11 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   console.log(`NYC House Code Server running on port ${PORT}`);
+  try {
+    await QueueWorker.start();
+  } catch (err) {
+    console.error("Failed to start background queue worker:", err);
+  }
 });

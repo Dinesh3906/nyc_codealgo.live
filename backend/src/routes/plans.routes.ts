@@ -124,29 +124,25 @@ router.post('/upload', protect, (req: any, res: any) => {
       console.log("[UPLOAD ROUTE] parsed selectedSteps:", selectedSteps);
 
       try {
-        // Create DB entry (status: processing)
+        // Create DB entry (status: queued)
         const planId = uuidv4();
         await pool.query(
-          'INSERT INTO `plan` (id, userId, fileName, fileUrl, status, pages) VALUES (?, ?, ?, ?, ?, ?)',
-          [planId, userId, fileName, filePath, 'processing', req.filePages || 1]
+          'INSERT INTO `plan` (id, userId, fileName, fileUrl, status, pages, mimetype, selectedSteps) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            planId,
+            userId,
+            fileName,
+            filePath,
+            'queued',
+            req.filePages || 1,
+            req.file.mimetype,
+            selectedSteps ? JSON.stringify(selectedSteps) : null
+          ]
         );
 
-        const plan = { id: planId };
-
-        // START ASYNC BACKGROUND PROCESS
-        setImmediate(async () => {
-          try {
-            await CompliancePipeline.run(plan.id, filePath, req.file.mimetype, selectedSteps);
-          } catch (err) {
-            console.error("Pipeline error:", err);
-            await pool.query('UPDATE `plan` SET status = ? WHERE id = ?', ['failed', plan.id]);
-            io.emit('analysis-status', { planId: plan.id, status: 'FAILED', error: "Scan processing failed." });
-          }
-        });
-
         res.status(202).json({
-          message: 'Plan uploaded successfully. AI analysis started.',
-          planId: plan.id
+          message: 'Plan uploaded successfully. AI analysis queued.',
+          planId: planId
         });
 
       } catch (error) {
