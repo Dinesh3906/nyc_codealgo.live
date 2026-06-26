@@ -217,63 +217,194 @@ export async function extractPlanData(housePlanPath: string): Promise<{ housePla
   return { housePlanText, base64Image };
 }
 
-function filterPagesForDiscipline(fullText: string, stepId: string): string {
-  // 1. Split the text into pages
-  const pages = fullText.split(/--- PAGE \d+ ---/i);
-  if (pages.length <= 1) {
-    // If there's only 1 page or the split didn't find markers, return the full text up to a safe limit
-    return fullText.substring(0, 500000); 
+export const PLAN_SEARCH_QUERIES: Record<string, string[]> = {
+  building_code: [
+    "exit stairs egress corridors door width occupant load travel distance construction type fire walls partitions shafts",
+    "elevators stairs exit passageways turnstiles building height floor area structural columns beams slabs"
+  ],
+  plumbing_code: [
+    "drinking fountains water supply greywater graywater routing toilets lavatories sewer connection drains waste piping",
+    "plumbing fixtures backflow preventers water tanks traps interceptors sumps"
+  ],
+  mechanical_code: [
+    "HVAC ventilation exhaust ducts dampers fans commercial kitchen hoods fire dampers smoke dampers plenums",
+    "air conditioning refrigeration outdoor air return air ventilation rates"
+  ],
+  fuel_gas_code: [
+    "gas piping gas routing gas meters gas regulators fuel gas gas appliances combustion air vents chimneys gas valves",
+    "methane propane natural gas gas lines elevator shafts piping systems"
+  ],
+  energy_code: [
+    "thermal envelope insulation R-value U-factor SHGC thermal bridging steel beams exterior walls roof insulation",
+    "lighting power density HVAC efficiency energy conservation"
+  ],
+  electrical_code: [
+    "electrical panels wiring grounding bonding circuits GFCI AFCI panel clearance transformers generators service entrance",
+    "conductors ampacity breaker size main switchboard kVA rating"
+  ],
+  fire_code: [
+    "fire alarm systems smoke detectors sprinklers fire suppression standpipes fire pumps emergency generators exit locks",
+    "annunciator panels emergency exits manual pull stations strobe lights sirens"
+  ],
+  zoning_resolution: [
+    "zoning floor area FAR setbacks yards building height open space lot area lot coverage public highway zoning district"
+  ]
+};
+
+export interface PlanChunk {
+  text: string;
+  pageNumber: number;
+  chunkIndex: number;
+  embedding?: number[];
+}
+
+export function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  let dotProduct = 0.0;
+  let normA = 0.0;
+  let normB = 0.0;
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
   }
+  if (normA === 0 || normB === 0) return 0;
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
-  // Define keywords for each discipline
-  const disciplineKeywords: Record<string, string[]> = {
-    building_code: ["building", "structural", "egress", "exit", "stair", "corridor", "ceiling", "height", "firewall", "sprinkler", "door", "width", "wall", "shaft", "opening", "doorway", "staircase", "partition", "occupancy", "live load", "foundation", "column", "beam", "slab"],
-    plumbing_code: ["plumbing", "water", "drain", "sewer", "toilet", "lavatory", "fixture", "vent", "pipe", "spill", "flush", "effluent", "conveyance", "fluid", "liquid", "sanitary", "discharge", "waste", "trap", "backflow", "interceptor", "sump", "grease"],
-    mechanical_code: ["mechanical", "hvac", "ventilation", "exhaust", "duct", "hood", "cooling", "chimney", "purge", "clean agent", "airflow", "refrigerant", "fan", "damper", "diffuser", "plenum", "furnace", "condenser"],
-    fuel_gas_code: ["gas", "piping", "appliance", "venting", "combustion", "heater", "meter", "regulator", "manifold", "burner", "valve", "propane", "methane", "fuel"],
-    energy_code: ["energy", "envelope", "insulation", "thermal", "lighting", "shgc", "u-factor", "r-value"],
-    electrical_code: ["electrical", "wiring", "circuit", "panel", "gfci", "afci", "outlet", "transformer", "load", "amp", "welder", "conductor", "grounding", "bonding", "generator", "breaker", "switchboard", "service", "feeder", "wire", "voltage", "current", "kva", "awg"],
-    fire_code: ["fire", "alarm", "sprinkler", "suppression", "egress", "exit", "lock", "valve", "hydrant", "smoke", "evacuation", "life support", "positive alarm", "extinguisher", "detector", "siren", "annunciator", "emergency", "stairwell", "path", "compartment", "barrier"],
-    zoning_resolution: ["zoning", "far", "setback", "yard", "height", "parking", "density", "lot"]
-  };
-
-  const keywords = disciplineKeywords[stepId] || [];
-  const selectedPages: string[] = [];
-
-  // Always keep the first 5 pages and last 3 pages (typically contains indices, general notes, specifications)
-  const prefixPageCount = Math.min(5, pages.length);
-  const suffixPageCount = Math.min(3, pages.length - prefixPageCount);
-
-  for (let i = 0; i < prefixPageCount; i++) {
-    selectedPages.push(`--- PAGE ${i + 1} ---\n` + pages[i]);
-  }
-
-  // For middle pages, check if they contain keywords for this discipline
-  for (let i = prefixPageCount; i < pages.length - suffixPageCount; i++) {
-    const pageTextLower = pages[i].toLowerCase();
-    const matchesKeyword = keywords.some(kw => pageTextLower.includes(kw));
-    if (matchesKeyword) {
-      selectedPages.push(`--- PAGE ${i + 1} ---\n` + pages[i]);
-    }
-  }
-
-  for (let i = pages.length - suffixPageCount; i < pages.length; i++) {
-    if (i >= prefixPageCount) {
-      selectedPages.push(`--- PAGE ${i + 1} ---\n` + pages[i]);
-    }
-  }
-
-  // Join back selected pages
-  let filteredText = selectedPages.join("\n\n");
+export function chunkPlanText(fullText: string): PlanChunk[] {
+  const pages = fullText.split(/--- PAGE (\d+) ---/i);
+  const chunks: PlanChunk[] = [];
   
-  // If the filtered text is still too large, truncate to prevent token overflow
-  // 150K chars ≈ 37K tokens — well within Gemini's context window with room for code context
-  if (filteredText.length > 150000) {
-    filteredText = filteredText.substring(0, 150000) + "\n\n[TRUNCATED DUE TO SIZE - " + (filteredText.length - 150000) + " chars omitted]";
+  if (pages.length <= 1) {
+    const chunkSize = 1500;
+    const overlap = 300;
+    let idx = 0;
+    for (let i = 0; i < fullText.length; i += (chunkSize - overlap)) {
+      const chunkText = fullText.substring(i, i + chunkSize);
+      chunks.push({
+        text: chunkText,
+        pageNumber: 1,
+        chunkIndex: idx++
+      });
+    }
+    return chunks;
   }
 
-  console.log(`[RAG][${stepId}] Filtered plan text: from ${pages.length} pages down to ${selectedPages.length} relevant pages (${filteredText.length} chars).`);
-  return filteredText;
+  let chunkIdx = 0;
+  if (pages[0] && pages[0].trim().length > 50) {
+    chunks.push({
+      text: pages[0].trim(),
+      pageNumber: 1,
+      chunkIndex: chunkIdx++
+    });
+  }
+
+  for (let i = 1; i < pages.length; i += 2) {
+    const pageNum = parseInt(pages[i], 10) || 1;
+    const pageText = pages[i + 1] || "";
+    const pageTrimmed = pageText.trim();
+    if (pageTrimmed.length === 0) continue;
+    
+    if (pageTrimmed.length > 2000) {
+      const chunkSize = 1500;
+      const overlap = 300;
+      for (let j = 0; j < pageTrimmed.length; j += (chunkSize - overlap)) {
+        const chunkText = pageTrimmed.substring(j, j + chunkSize);
+        if (chunkText.trim().length > 50) {
+          chunks.push({
+            text: chunkText,
+            pageNumber: pageNum,
+            chunkIndex: chunkIdx++
+          });
+        }
+      }
+    } else {
+      chunks.push({
+        text: pageTrimmed,
+        pageNumber: pageNum,
+        chunkIndex: chunkIdx++
+      });
+    }
+  }
+  
+  return chunks;
+}
+
+export async function getOrGeneratePlanChunks(planData: any): Promise<PlanChunk[]> {
+  if (planData.chunks) {
+    return planData.chunks;
+  }
+
+  console.log(`[RAG] Chunking and embedding plan text (${planData.housePlanText.length} chars)...`);
+  const chunks = chunkPlanText(planData.housePlanText);
+  console.log(`[RAG] Created ${chunks.length} plan chunks.`);
+
+  // Generate embeddings using local model in batches
+  const texts = chunks.map(c => c.text);
+  const model = await initEmbeddingModel();
+  
+  const embeddings: number[][] = [];
+  const batchSize = 50;
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const batchTexts = texts.slice(i, i + batchSize);
+    console.log(`[RAG] Embedding plan chunks ${i + 1} to ${Math.min(i + batchSize, texts.length)} of ${texts.length}...`);
+    const promises = batchTexts.map(async (text) => {
+      const output = await model(text, { pooling: "mean", normalize: true });
+      return Array.from(output.data) as number[];
+    });
+    const batchEmbeddings = await Promise.all(promises);
+    embeddings.push(...batchEmbeddings);
+  }
+
+  for (let i = 0; i < chunks.length; i++) {
+    chunks[i].embedding = embeddings[i];
+  }
+
+  planData.chunks = chunks;
+  return chunks;
+}
+
+export async function semanticSearchPlan(planData: any, stepId: string, topK: number = 15): Promise<string> {
+  const chunks = await getOrGeneratePlanChunks(planData);
+  const stepConfig = STEPS_CONFIG.find(s => s.id === stepId);
+  if (!stepConfig) return "";
+
+  const queries = PLAN_SEARCH_QUERIES[stepId] || stepConfig.queries;
+  const scoredChunksMap = new Map<number, { chunk: PlanChunk; maxScore: number }>();
+
+  for (const query of queries) {
+    const queryVector = await generateQueryEmbedding(query);
+    
+    for (const chunk of chunks) {
+      if (!chunk.embedding) continue;
+      const score = cosineSimilarity(queryVector, chunk.embedding);
+      
+      const existing = scoredChunksMap.get(chunk.chunkIndex);
+      if (!existing || score > existing.maxScore) {
+        scoredChunksMap.set(chunk.chunkIndex, { chunk, maxScore: score });
+      }
+    }
+  }
+
+  const sorted = Array.from(scoredChunksMap.values())
+    .sort((a, b) => b.maxScore - a.maxScore)
+    .slice(0, topK);
+
+  console.log(`[RAG][${stepId}] Top 5 semantic matches:`);
+  sorted.slice(0, 5).forEach((match, idx) => {
+    console.log(`  ${idx + 1}. Page ${match.chunk.pageNumber} (score: ${match.maxScore.toFixed(3)}): "${match.chunk.text.substring(0, 80).replace(/\n/g, " ")}..."`);
+  });
+
+  const sortedFlow = sorted
+    .sort((a, b) => {
+      if (a.chunk.pageNumber !== b.chunk.pageNumber) {
+        return a.chunk.pageNumber - b.chunk.pageNumber;
+      }
+      return a.chunk.chunkIndex - b.chunk.chunkIndex;
+    });
+
+  const resultText = sortedFlow.map(m => `[PLAN SECTION: PAGE ${m.chunk.pageNumber}]\n${m.chunk.text}`).join("\n\n---\n\n");
+  return resultText;
 }
 
 export function getPDFsForStep(stepId: string): string[] {
@@ -476,7 +607,7 @@ function repairTruncatedJson(str: string): string {
 }
 
 export async function checkStepComplianceTS(
-  planData: { housePlanText: string, base64Image: string },
+  planData: { housePlanText: string, base64Image: string, chunks?: PlanChunk[] },
   stepId: string
 ) {
   const stepConfig = STEPS_CONFIG.find(s => s.id === stepId);
@@ -486,8 +617,8 @@ export async function checkStepComplianceTS(
 
   console.log(`[RAG] Running step check for "${stepConfig.name}"...`);
 
-  // Filter the plan text for this specific discipline
-  const filteredPlanText = filterPagesForDiscipline(planData.housePlanText, stepId);
+  // Use local semantic vector search to retrieve relevant plan chunks
+  const filteredPlanText = await semanticSearchPlan(planData, stepId);
 
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
   const index = pc.Index(process.env.PINECONE_INDEX as string);
@@ -540,6 +671,7 @@ export async function checkStepComplianceTS(
      - The final "score" for the step MUST equal exactly 100 minus the sum of the "deduction_percentage" values of all the issues.
      - If there are zero issues, the score MUST be 100%.
      - If the sum of deductions exceeds 100%, the score must be capped at 0.
+     - IMPORTANT: If a critical life-safety system is missing entirely from the plan, the score MUST be forced to 0% immediately.
   2. REQUIRED CODE CHECKS: You MUST evaluate the plan data and context against these specific NYC Code regulations:
   ${stepCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.description})`).join('\n')}
   
@@ -579,6 +711,10 @@ export async function checkStepComplianceTS(
   11. LOOPHOLES & REQUIRED REMEDIES: For each issue, describe the loophole found (why the plan failed/what was missing or wrong) and the specific required elements to fix it.
   12. CONCISENESS: Keep summaries and descriptions highly technical, professional, and concise.
   13. If there are no issues found, return an empty array for "issues".
+  14. MISSING LIFE-SAFETY & INFRASTRUCTURE BYPASS LAW:
+      - If a critical engineering or life-safety system (such as Plumbing, Mechanical HVAC, Fuel Gas piping, Electrical power, or Fire Suppression/Alarm systems) is completely missing, has no design details, or is not shown in the provided plan for a major commercial or multi-story structure, this is a CRITICAL OMISSION, NOT a 'not_applicable' scenario.
+      - You MUST score that category 0% and list a CRITICAL violation in the "issues" array.
+      - You MUST NOT mark core building infrastructure (e.g., PC, MC, FGC, EC, FC checks) as 'not_applicable' or 'compliant' simply because design plans are missing or omitted. Doing so is an extreme safety hazard and is strictly prohibited.
  
  REFERENCE CONTEXT (NYC BUILDING CODES):
  ${contexts.substring(0, 40000)}
