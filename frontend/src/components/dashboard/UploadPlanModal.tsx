@@ -157,6 +157,38 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
     }
   }, [status, activePlanId, fetchPlans]);
 
+  // Polling fallback to check job status in case WebSockets fail/disconnect
+  useEffect(() => {
+    if (status !== 'analyzing' || !activePlanId) return;
+
+    let pollInterval: NodeJS.Timeout;
+
+    const checkStatus = async () => {
+      try {
+        const response = await api.get(`/plans/${activePlanId}`);
+        const plan = response.data;
+        
+        if (plan.status === 'analyzed') {
+          setProgress(100);
+          setAnalysisResult(plan.analysisResult);
+          setStatus('completed');
+          fetchPlans();
+        } else if (plan.status === 'failed') {
+          setErrorMessage("Analysis failed.");
+          setStatus('error');
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    };
+
+    pollInterval = setInterval(checkStatus, 5000);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [status, activePlanId, fetchPlans]);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFile(acceptedFiles[0]);
   }, []);
