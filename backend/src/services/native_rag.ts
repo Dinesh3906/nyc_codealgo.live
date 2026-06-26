@@ -266,9 +266,10 @@ function filterPagesForDiscipline(fullText: string, stepId: string): string {
   // Join back selected pages
   let filteredText = selectedPages.join("\n\n");
   
-  // If the filtered text is still too large (e.g. over 350000 chars), truncate it to prevent token limits
-  if (filteredText.length > 350000) {
-    filteredText = filteredText.substring(0, 350000) + "\n\n[TRUNCATED DUE TO SIZE]";
+  // If the filtered text is still too large, truncate to prevent token overflow
+  // 150K chars ≈ 37K tokens — well within Gemini's context window with room for code context
+  if (filteredText.length > 150000) {
+    filteredText = filteredText.substring(0, 150000) + "\n\n[TRUNCATED DUE TO SIZE - " + (filteredText.length - 150000) + " chars omitted]";
   }
 
   console.log(`[RAG][${stepId}] Filtered plan text: from ${pages.length} pages down to ${selectedPages.length} relevant pages (${filteredText.length} chars).`);
@@ -636,8 +637,8 @@ Return valid JSON in this exact format:
   let rawOut = "";
   let response;
   let retryCount = 0;
-  const maxRetries = 3;
-  const models = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash"];
+  const maxRetries = 5; // Increased from 3 to handle 429s across 8 concurrent disciplines
+  const models = ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash"];
   const allApiKeys = (process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '').split(',').map((k: string) => k.trim()).filter(Boolean);
 
   while (retryCount <= maxRetries) {
@@ -646,7 +647,8 @@ Return valid JSON in this exact format:
       throw new Error('GOOGLE_AI_STUDIO_KEY is missing from .env. Add it and restart the server.');
     }
     const apiKey = allApiKeys[retryCount % allApiKeys.length];
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
+    // Use streaming endpoint to keep HTTP connection alive during long generation
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
     const parts: any[] = [
       { text: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${filteredPlanText}` }
@@ -694,30 +696,89 @@ Return valid JSON in this exact format:
         clearTimeout(timeoutId);
   
         if (!response.ok) {
+          const statusCode = response.status;
           retryCount++;
-          if (response.status === 429) {
-            await new Promise(resolve => setTimeout(resolve, 3000 * retryCount));
+          if (statusCode === 429) {
+            // Exponential backoff with jitter for rate limits
+            const baseDelay = 5000;
+            const delay = baseDelay * Math.pow(2, retryCount) + Math.random() * 3000;
+            console.warn(`[RAG][${stepConfig.name}] Rate limited (429). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else if (statusCode === 503 || statusCode === 500) {
+            // Server overload — longer backoff
+            const delay = 8000 * retryCount + Math.random() * 2000;
+            console.warn(`[RAG][${stepConfig.name}] Server error (${statusCode}). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
           continue;
         }
-  
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) {
-          throw new Error("Empty candidates or empty content in Gemini response.");
+
+        // Stream the response: read SSE chunks and accumulate text
+        let accumulatedText = "";
+        try {
+          const reader = response.body?.getReader();
+          if (!reader) {
+            throw new Error("No response body reader available for streaming.");
+          }
+
+          const decoder = new TextDecoder();
+          let sseBuffer = "";
+          let lastLogLength = 0;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            sseBuffer += decoder.decode(value, { stream: true });
+
+            // Parse SSE events from the buffer
+            const lines = sseBuffer.split("\n");
+            sseBuffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const jsonStr = line.substring(6).trim();
+                if (!jsonStr || jsonStr === "[DONE]") continue;
+
+                try {
+                  const chunk = JSON.parse(jsonStr);
+                  const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                  accumulatedText += chunkText;
+
+                  // Log progress every ~2K chars to show the connection is alive
+                  if (accumulatedText.length - lastLogLength > 2000) {
+                    console.log(`[RAG][${stepConfig.name}] Streaming... ${accumulatedText.length} chars received`);
+                    lastLogLength = accumulatedText.length;
+                  }
+                } catch (parseErr) {
+                  // Skip malformed SSE chunks silently
+                }
+              }
+            }
+          }
+
+          console.log(`[RAG][${stepConfig.name}] Stream complete. Total: ${accumulatedText.length} chars`);
+        } catch (streamErr: any) {
+          console.warn(`[RAG][${stepConfig.name}] Stream read error: ${streamErr.message}. Using accumulated text (${accumulatedText.length} chars).`);
+        }
+
+        if (!accumulatedText || accumulatedText.trim().length === 0) {
+          throw new Error("Empty response from Gemini streaming.");
         }
   
-        const trimmedText = text.trim();
+        const trimmedText = accumulatedText.trim();
         if (!trimmedText.startsWith('{') && !trimmedText.includes('{')) {
           throw new Error("Response is not JSON formatted.");
         }
   
-        rawOut = text;
+        rawOut = accumulatedText;
         break;
       } catch (e: any) {
-        console.warn(`[RAG] Attempt ${retryCount + 1} with Gemini failed: ${e.message || e}`);
+        console.warn(`[RAG][${stepConfig.name}] Attempt ${retryCount + 1} with Gemini failed: ${e.message || e}`);
         retryCount++;
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Exponential backoff on network/timeout errors too
+        const delay = 3000 * Math.pow(2, retryCount - 1) + Math.random() * 2000;
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   

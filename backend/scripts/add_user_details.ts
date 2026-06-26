@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
@@ -25,7 +26,7 @@ async function run() {
     for (const col of columns) {
       try {
         console.log(`Adding column '${col.name}'...`);
-        await connection.query(`ALTER TABLE \`user\` ADD COLUMN \`${col.name}\` ${col.type}`);
+        await connection.execute(`ALTER TABLE \`user\` ADD COLUMN \`${col.name}\` ${col.type}`);
         console.log(`✅ Column '${col.name}' added successfully.`);
       } catch (err: any) {
         if (err.code === 'ER_DUP_COLUMN_NAME') {

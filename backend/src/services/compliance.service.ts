@@ -63,22 +63,44 @@ export class CompliancePipeline {
       const absoluteFilePath = path.resolve(filePath);
       const planData = await extractPlanData(absoluteFilePath);
 
-      // STEP 3: Category Audits
+      // STEP 3: Category Audits (Sequential Batch Processing to prevent API stampede)
       const activeSteps = selectedSteps && selectedSteps.length > 0
         ? selectedSteps
         : STEPS_CONFIG.map(s => s.id);
 
       let completedCount = 0;
+      const CONCURRENCY_LIMIT = 2; // Max simultaneous Gemini API calls
+      const INTER_BATCH_DELAY_MS = 5000; // 5s pause between batches to respect RPM limits
 
-      const auditPromises = STEPS_CONFIG.map(async (step, index) => {
-        if (activeSteps.includes(step.id)) {
-          // Stagger the API calls slightly to respect Gemini RPM rate limits
-          await new Promise(resolve => setTimeout(resolve, index * 1500));
+      // Separate active and skipped steps
+      const activeStepConfigs = STEPS_CONFIG.filter(s => activeSteps.includes(s.id));
+      const skippedStepConfigs = STEPS_CONFIG.filter(s => !activeSteps.includes(s.id));
 
+      const stepResults: any[] = [];
+
+      // Add skipped steps immediately
+      for (const step of skippedStepConfigs) {
+        stepResults.push({
+          id: step.id,
+          name: step.name,
+          checked: false,
+          score: null,
+          status: 'skipped' as const,
+          summary: 'Skipped by user.',
+          compliant_features: [],
+          issues: []
+        });
+      }
+
+      // Process active steps in controlled batches
+      for (let i = 0; i < activeStepConfigs.length; i += CONCURRENCY_LIMIT) {
+        const batch = activeStepConfigs.slice(i, i + CONCURRENCY_LIMIT);
+
+        const batchPromises = batch.map(async (step) => {
           io.emit('analysis-status', {
             planId,
             status: step.statusKey,
-            progress: Math.round(20 + (completedCount / activeSteps.length) * 70),
+            progress: Math.round(20 + (completedCount / activeStepConfigs.length) * 70),
             message: `Auditing ${step.name} compliance...`
           });
           try {
@@ -87,7 +109,7 @@ export class CompliancePipeline {
             io.emit('analysis-status', {
               planId,
               status: step.statusKey,
-              progress: Math.round(20 + (completedCount / activeSteps.length) * 70),
+              progress: Math.round(20 + (completedCount / activeStepConfigs.length) * 70),
               message: `${step.name} audit complete.`
             });
             return result;
@@ -103,7 +125,7 @@ export class CompliancePipeline {
             io.emit('analysis-status', {
               planId,
               status: step.statusKey,
-              progress: Math.round(20 + (completedCount / activeSteps.length) * 70),
+              progress: Math.round(20 + (completedCount / activeStepConfigs.length) * 70),
               message: `${step.name} audit complete with warning.`
             });
 
@@ -118,21 +140,17 @@ export class CompliancePipeline {
               issues: []
             };
           }
-        } else {
-          return {
-            id: step.id,
-            name: step.name,
-            checked: false,
-            score: null,
-            status: 'skipped' as const,
-            summary: 'Skipped by user.',
-            compliant_features: [],
-            issues: []
-          };
-        }
-      });
+        });
 
-      const stepResults = await Promise.all(auditPromises);
+        const batchResults = await Promise.all(batchPromises);
+        stepResults.push(...batchResults);
+
+        // Wait between batches to respect Gemini RPM limits (skip after last batch)
+        if (i + CONCURRENCY_LIMIT < activeStepConfigs.length) {
+          console.log(`[PIPELINE] Batch ${Math.floor(i / CONCURRENCY_LIMIT) + 1} complete. Waiting ${INTER_BATCH_DELAY_MS / 1000}s before next batch...`);
+          await new Promise(resolve => setTimeout(resolve, INTER_BATCH_DELAY_MS));
+        }
+      }
 
       // STEP 4: Progress update before compiling final report
       io.emit('analysis-status', {
