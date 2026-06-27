@@ -5,6 +5,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { checkComplianceTS, checkStepComplianceTS, extractPlanData, STEPS_CONFIG, STEP_CODES_CHECKLIST } from './native_rag';
+import { SchedulerService } from './scheduler.service';
 
 export interface ScoreBreakdown {
   critical: number;
@@ -38,6 +39,7 @@ export interface ComplianceResult {
   appreciation?: string | string[];
   betterments?: string[];
   steps?: any[];
+  metrics?: any;
 }
 
 export class CompliancePipeline {
@@ -53,104 +55,17 @@ export class CompliancePipeline {
         message: 'Initializing Vectorless RAG Agent across 114 NYC models...'
       });
 
-      // STEP 2: Data Extraction
-      io.emit('analysis-status', {
-        planId,
-        status: 'EXTRACTING_DATA',
-        progress: 20,
-        message: 'Extracting technical data from building plan...'
-      });
+      // STEP 2 & 3: Run parallel hybrid Gemini pipeline (Page classification -> Smart Escalation -> Concurrent Workers)
       const absoluteFilePath = path.resolve(filePath);
-      const planData = await extractPlanData(absoluteFilePath);
+      const pipelineRun = await SchedulerService.runPipeline(
+        planId,
+        absoluteFilePath,
+        fileType,
+        selectedSteps
+      );
 
-      // STEP 3: Category Audits (Sequential Batch Processing to prevent API stampede)
-      const activeSteps = selectedSteps && selectedSteps.length > 0
-        ? selectedSteps
-        : STEPS_CONFIG.map(s => s.id);
-
-      let completedCount = 0;
-      const CONCURRENCY_LIMIT = 2; // Max simultaneous Gemini API calls
-      const INTER_BATCH_DELAY_MS = 5000; // 5s pause between batches to respect RPM limits
-
-      // Separate active and skipped steps
-      const activeStepConfigs = STEPS_CONFIG.filter(s => activeSteps.includes(s.id));
-      const skippedStepConfigs = STEPS_CONFIG.filter(s => !activeSteps.includes(s.id));
-
-      const stepResults: any[] = [];
-
-      // Add skipped steps immediately
-      for (const step of skippedStepConfigs) {
-        stepResults.push({
-          id: step.id,
-          name: step.name,
-          checked: false,
-          score: null,
-          status: 'skipped' as const,
-          summary: 'Skipped by user.',
-          compliant_features: [],
-          issues: []
-        });
-      }
-
-      // Process active steps in controlled batches
-      for (let i = 0; i < activeStepConfigs.length; i += CONCURRENCY_LIMIT) {
-        const batch = activeStepConfigs.slice(i, i + CONCURRENCY_LIMIT);
-
-        const batchPromises = batch.map(async (step) => {
-          io.emit('analysis-status', {
-            planId,
-            status: step.statusKey,
-            progress: Math.round(20 + (completedCount / activeStepConfigs.length) * 70),
-            message: `Auditing ${step.name} compliance...`
-          });
-          try {
-            const result = await checkStepComplianceTS(planData, step.id);
-            completedCount++;
-            io.emit('analysis-status', {
-              planId,
-              status: step.statusKey,
-              progress: Math.round(20 + (completedCount / activeStepConfigs.length) * 70),
-              message: `${step.name} audit complete.`
-            });
-            return result;
-          } catch (stepErr) {
-            console.error(`Step check failed for ${step.name}:`, stepErr);
-            completedCount++;
-
-            // Generate fallback checklist to ensure UI display is not blank
-            const fallbackFeatures = (STEP_CODES_CHECKLIST[step.id] || []).map(
-              item => `${item.code} - ${item.title}: Verification pending due to system connection issue.`
-            );
-
-            io.emit('analysis-status', {
-              planId,
-              status: step.statusKey,
-              progress: Math.round(20 + (completedCount / activeStepConfigs.length) * 70),
-              message: `${step.name} audit complete with warning.`
-            });
-
-            return {
-              id: step.id,
-              name: step.name,
-              checked: true,
-              score: 70,
-              status: 'warning' as const,
-              summary: `Audit partially completed for ${step.name} due to verification errors.`,
-              compliant_features: fallbackFeatures,
-              issues: []
-            };
-          }
-        });
-
-        const batchResults = await Promise.all(batchPromises);
-        stepResults.push(...batchResults);
-
-        // Wait between batches to respect Gemini RPM limits (skip after last batch)
-        if (i + CONCURRENCY_LIMIT < activeStepConfigs.length) {
-          console.log(`[PIPELINE] Batch ${Math.floor(i / CONCURRENCY_LIMIT) + 1} complete. Waiting ${INTER_BATCH_DELAY_MS / 1000}s before next batch...`);
-          await new Promise(resolve => setTimeout(resolve, INTER_BATCH_DELAY_MS));
-        }
-      }
+      const stepResults = pipelineRun.results;
+      const metrics = pipelineRun.metrics;
 
       // STEP 4: Progress update before compiling final report
       io.emit('analysis-status', {
@@ -160,13 +75,13 @@ export class CompliancePipeline {
         message: 'Compiling final forensic compliance report...'
       });
 
-      const checkedSteps = stepResults.filter(r => r.checked);
+      const checkedSteps: any[] = stepResults.filter((r: any) => r.checked);
       const finalScore = checkedSteps.length > 0
-        ? Math.round(checkedSteps.reduce((acc, r) => acc + r.score!, 0) / checkedSteps.length)
+        ? Math.round(checkedSteps.reduce((acc: number, r: any) => acc + r.score!, 0) / checkedSteps.length)
         : 100;
 
       let severity = { critical: 0, major: 0, minor: 0 };
-      const combinedIssues: AnalysisIssue[] = checkedSteps.flatMap(r =>
+      const combinedIssues: AnalysisIssue[] = checkedSteps.flatMap((r: any) =>
         r.issues.map((iss: any) => ({
           title: iss.title || `${r.name} Compliance Issue`,
           description: iss.description || "Violation detail not provided",
@@ -190,7 +105,7 @@ export class CompliancePipeline {
       const finalResult: ComplianceResult = {
         compliant: finalScore >= 70,
         score: finalScore,
-        summary: checkedSteps.map(r => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
+        summary: checkedSteps.map((r: any) => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
         status: 'complete',
         issuesCount: combinedIssues.length,
         severity: severity,
@@ -210,13 +125,14 @@ export class CompliancePipeline {
           });
           return merged;
         })(),
-        systems_detected: checkedSteps.map(r => `${r.name}: ${r.status.toUpperCase()}`),
+        systems_detected: checkedSteps.map((r: any) => `${r.name}: ${r.status.toUpperCase()}`),
         appreciation: [
           `Completed plan examiner audit across ${checkedSteps.length} active categories.`,
-          ...checkedSteps.flatMap(r => r.compliant_features.map((f: string) => `Compliant feature detected in ${r.name}: ${f}`)).slice(0, 4)
+          ...checkedSteps.flatMap((r: any) => r.compliant_features.map((f: string) => `Compliant feature detected in ${r.name}: ${f}`)).slice(0, 4)
         ],
-        betterments: checkedSteps.map(r => `Enhance detail validation for ${r.name} sub-assemblies.`),
-        steps: stepResults
+        betterments: checkedSteps.map((r: any) => `Enhance detail validation for ${r.name} sub-assemblies.`),
+        steps: stepResults,
+        metrics
       };
 
       // STEP 5: DB Storage & Socket Completion (with retry for AWS stability)

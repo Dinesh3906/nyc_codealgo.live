@@ -813,6 +813,57 @@ export default function PlanDetailPage() {
               </Card>
             )}
 
+            {/* Hybrid Pipeline Metrics */}
+            {analysisResult.metrics && (
+              <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-100 dark:border-slate-800/50 py-4">
+                  <CardTitle className="text-slate-900 dark:text-white text-base flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-500" />
+                    Hybrid Pipeline Metrics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-900/30 rounded-lg border border-slate-100 dark:border-slate-800/50">
+                      <p className="text-[10px] uppercase font-bold text-slate-400">Total Audit Cost</p>
+                      <p className="text-lg font-black text-slate-800 dark:text-white">${analysisResult.metrics.estimatedApiCost}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-900/30 rounded-lg border border-slate-100 dark:border-slate-800/50">
+                      <p className="text-[10px] uppercase font-bold text-slate-400">Cost Per Page</p>
+                      <p className="text-lg font-black text-slate-800 dark:text-white">${analysisResult.metrics.costPerPage}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Upload Savings</span>
+                      <Badge className="bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20 font-mono">
+                        {analysisResult.metrics.uploadReduction}% Saved
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Context Cache Hits</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
+                        {analysisResult.metrics.cacheHits} / {analysisResult.metrics.cacheHits + analysisResult.metrics.cacheMisses}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Cached Input Tokens</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
+                        {analysisResult.metrics.cachedTokens.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500 dark:text-slate-400">Pro Escapes (Tokens)</span>
+                      <span className="font-mono text-slate-700 dark:text-slate-300">
+                        {analysisResult.metrics.proInputTokens.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Issue Breakdown */}
             <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
               <CardHeader><CardTitle className="text-slate-900 dark:text-white text-base">Issue Distribution</CardTitle></CardHeader>

@@ -16,7 +16,7 @@ async function initEmbeddingModel() {
 }
 
 // Function to generate query embedding using local model
-async function generateQueryEmbedding(text: string): Promise<number[]> {
+export async function generateQueryEmbedding(text: string): Promise<number[]> {
   const model = await initEmbeddingModel();
   const output = await model(text, { pooling: "mean", normalize: true });
   return Array.from(output.data);
@@ -525,7 +525,7 @@ export const STEP_CODES_CHECKLIST: Record<string, { code: string; title: string;
   ]
 };
 
-function repairTruncatedJson(str: string): string {
+export function repairTruncatedJson(str: string): string {
   str = str.trim();
   if (!str) return "{}";
 
