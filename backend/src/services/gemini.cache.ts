@@ -1,6 +1,9 @@
 import { PIPELINE_CONFIG } from '../config/pipeline.config';
 import { GeminiClient } from './gemini.client';
 import { MonitoringService } from './monitoring.service';
+import { PDFDocument } from 'pdf-lib';
+import fs from 'fs';
+import path from 'path';
 
 interface CacheEntry {
   fileUri: string;
@@ -53,55 +56,63 @@ export class GeminiCacheManager {
     // Track upload metrics (in this case, first upload, actual bytes uploaded = originalBytes)
     MonitoringService.trackUploadSavings(planId, originalBytes, originalBytes);
 
+    // Estimate tokens and bytes to decide if we should cache
+    const { tokens, bytes } = await this.estimateTokensAndBytes(filePath);
+    const shouldCache = bytes > 2 * 1024 * 1024 || tokens > 2048;
+
     let cacheName: string | undefined;
     let isCached = false;
 
-    // Attempt to create Context Cache
-    try {
-      const ttlSeconds = PIPELINE_CONFIG.cacheTTLMinutes * 60;
-      const model = PIPELINE_CONFIG.models.flash;
-      const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
-      
-      const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
-      const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
-      const apiKey = apiKeys[0] || ''; // Use first key for cache creation
+    if (!shouldCache) {
+      console.log(`[GeminiCacheManager] Skipping Context Cache creation for plan ${planId} (Size: ${(bytes / 1024 / 1024).toFixed(2)}MB, Est. Tokens: ${tokens}). Using direct File API reference.`);
+    } else {
+      // Attempt to create Context Cache
+      try {
+        const ttlSeconds = PIPELINE_CONFIG.cacheTTLMinutes * 60;
+        const model = PIPELINE_CONFIG.models.flash;
+        const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
+        
+        const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
+        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
+        const apiKey = apiKeys[0] || ''; // Use first key for cache creation
 
-      console.log(`[GeminiCacheManager] Creating Context Cache for ${fileResourceName} (model: ${baseModelName}, ttl: ${ttlSeconds}s)...`);
+        console.log(`[GeminiCacheManager] Creating Context Cache for ${fileResourceName} (model: ${baseModelName}, ttl: ${ttlSeconds}s)...`);
 
-      const cacheUrl = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
-      const response = await fetch(cacheUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: baseModelName,
-          display_name: `cache-plan-${planId}`,
-          contents: [
-            {
-              role: 'user',
-              parts: [{
-                fileData: {
-                  fileUri: fileUri,
-                  mimeType: mimeType
-                }
-              }]
-            }
-          ],
-          ttl: `${ttlSeconds}s`
-        })
-      });
+        const cacheUrl = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
+        const response = await fetch(cacheUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: baseModelName,
+            display_name: `cache-plan-${planId}`,
+            contents: [
+              {
+                role: 'user',
+                parts: [{
+                  fileData: {
+                    fileUri: fileUri,
+                    mimeType: mimeType
+                  }
+                }]
+              }
+            ],
+            ttl: `${ttlSeconds}s`
+          })
+        });
 
-      if (response.ok) {
-        const cacheResult: any = await response.json();
-        cacheName = cacheResult.name; // projects/.../locations/.../cachedContents/xxxx
-        isCached = true;
-        console.log(`[GeminiCacheManager] Context Cache created successfully: ${cacheName}`);
-      } else {
-        const errText = await response.text();
-        console.warn(`[GeminiCacheManager] Failed to create Context Cache: ${response.status} ${response.statusText}. ` +
-          `Falling back to non-cached direct file reference. Error: ${errText}`);
+        if (response.ok) {
+          const cacheResult: any = await response.json();
+          cacheName = cacheResult.name; // projects/.../locations/.../cachedContents/xxxx
+          isCached = true;
+          console.log(`[GeminiCacheManager] Context Cache created successfully: ${cacheName}`);
+        } else {
+          const errText = await response.text();
+          console.warn(`[GeminiCacheManager] Failed to create Context Cache: ${response.status} ${response.statusText}. ` +
+            `Falling back to non-cached direct file reference. Error: ${errText}`);
+        }
+      } catch (e: any) {
+        console.warn(`[GeminiCacheManager] Cache creation exception: ${e.message || e}. Falling back to non-cached mode.`);
       }
-    } catch (e: any) {
-      console.warn(`[GeminiCacheManager] Cache creation exception: ${e.message || e}. Falling back to non-cached mode.`);
     }
 
     const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
@@ -182,5 +193,41 @@ export class GeminiCacheManager {
     await GeminiClient.deleteFile(entry.fileResourceName);
 
     this.caches.delete(planId);
+  }
+
+  /**
+   * Estimates total token count (text + visual) and measures file size.
+   */
+  private static async estimateTokensAndBytes(filePath: string): Promise<{ tokens: number; bytes: number }> {
+    const stats = fs.statSync(filePath);
+    const bytes = stats.size;
+
+    let textTokens = 0;
+    try {
+      const pdfParse = require('pdf-parse');
+      const dataBuffer = fs.readFileSync(filePath);
+      const pdfData = await pdfParse(dataBuffer);
+      const text = pdfData.text || "";
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      textTokens = Math.round(words * 1.33);
+    } catch (e) {
+      console.warn("[GeminiCacheManager] Failed to parse PDF text for token estimation:", e);
+    }
+
+    let visualTokens = 0;
+    try {
+      const pdfBytes = fs.readFileSync(filePath);
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const pageCount = pdfDoc.getPageCount();
+      // Assume 258 tokens per page for visual layout reasoning fallback
+      visualTokens = pageCount * 258;
+    } catch (e) {
+      console.warn("[GeminiCacheManager] Failed to count pages for token estimation:", e);
+      const estPages = Math.max(1, Math.round(bytes / 500000));
+      visualTokens = estPages * 258;
+    }
+
+    const tokens = textTokens + visualTokens;
+    return { tokens, bytes };
   }
 }

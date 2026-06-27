@@ -8,7 +8,37 @@ import { MonitoringService } from './monitoring.service';
 import { semanticSearchPlan, STEPS_CONFIG, STEP_CODES_CHECKLIST, generateQueryEmbedding, getPDFsForStep, repairTruncatedJson } from './native_rag';
 import { io } from '../app';
 
+class Semaphore {
+  private permits: number;
+  private queue: (() => void)[] = [];
+
+  constructor(permits: number) {
+    this.permits = permits;
+  }
+
+  async acquire(): Promise<void> {
+    if (this.permits > 0) {
+      this.permits--;
+      return;
+    }
+    return new Promise<void>((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    if (this.queue.length > 0) {
+      const next = this.queue.shift();
+      if (next) next();
+    } else {
+      this.permits++;
+    }
+  }
+}
+
 export class SchedulerService {
+  // Semaphore to limit Gemini Pro calls to a concurrency of exactly 2
+  private static proSemaphore = new Semaphore(2);
   
   // Mapping audit disciplines to relevant page categories
   private static STEP_PAGE_MAPPING: Record<string, string[]> = {
@@ -59,6 +89,34 @@ export class SchedulerService {
 
     const totalPages = pageRoutes.length;
 
+    // Pre-extract and pre-upload unique Pro-escalated pages exactly once
+    const uniqueProPageNumbers = Array.from(new Set(
+      pageRoutes.filter(r => r.route === 'pro').map(r => r.page_number)
+    )).sort((a, b) => a - b);
+
+    const preUploadedPages = new Map<number, { uri: string; name: string }>();
+    if (uniqueProPageNumbers.length > 0) {
+      console.log(`[SchedulerService] Pre-extracting and pre-uploading ${uniqueProPageNumbers.length} Pro pages: ${uniqueProPageNumbers.join(', ')}`);
+      for (const pageNum of uniqueProPageNumbers) {
+        try {
+          const pagePath = await PDFSplitter.extractPage(filePath, pageNum);
+          const originalBytes = require('fs').statSync(pagePath).size;
+          const pageInfo = await GeminiClient.uploadFile(pagePath, 'application/pdf', `plan-page-${pageNum}-${planId}`);
+          
+          MonitoringService.trackUploadSavings(planId, originalBytes, originalBytes);
+          
+          preUploadedPages.set(pageNum, {
+            uri: pageInfo.uri,
+            name: pageInfo.name
+          });
+          
+          PDFSplitter.cleanupPage(pagePath);
+        } catch (e) {
+          console.error(`[SchedulerService] Failed to pre-upload page ${pageNum}:`, e);
+        }
+      }
+    }
+
     // 4. Group steps to check
     const activeSteps = selectedSteps && selectedSteps.length > 0
       ? selectedSteps
@@ -98,7 +156,8 @@ export class SchedulerService {
             step.id,
             pageRoutes,
             cacheResult,
-            mimeType
+            mimeType,
+            preUploadedPages
           );
           completedCount++;
           io.emit('analysis-status', {
@@ -131,13 +190,24 @@ export class SchedulerService {
       };
     });
 
-    // 6. Run tasks in concurrency worker pool
-    console.log(`[SchedulerService] Enrolling ${tasks.length} audits to worker pool with concurrency limit: ${PIPELINE_CONFIG.concurrencyLimit}`);
-    const activeResults = await this.runWithConcurrency(tasks, PIPELINE_CONFIG.concurrencyLimit);
-    results.push(...activeResults);
+    try {
+      // 6. Run tasks in concurrency worker pool
+      console.log(`[SchedulerService] Enrolling ${tasks.length} audits to worker pool with concurrency limit: ${PIPELINE_CONFIG.concurrencyLimit}`);
+      const activeResults = await this.runWithConcurrency(tasks, PIPELINE_CONFIG.concurrencyLimit);
+      results.push(...activeResults);
+    } finally {
+      // 7. Cleanup cached contents and temporary files
+      await GeminiCacheManager.cleanup(planId);
 
-    // 7. Cleanup cached contents and temporary files
-    await GeminiCacheManager.cleanup(planId);
+      // Cleanup pre-uploaded page files on File API
+      for (const pageInfo of preUploadedPages.values()) {
+        try {
+          await GeminiClient.deleteFile(pageInfo.name);
+        } catch (e) {
+          console.warn(`[SchedulerService] Non-critical error deleting page file ${pageInfo.name}:`, e);
+        }
+      }
+    }
 
     // 8. Compile cost and usage metrics
     const metrics = MonitoringService.compileMetrics(planId, totalPages);
@@ -182,7 +252,8 @@ export class SchedulerService {
     stepId: string,
     pageRoutes: PageRouteResult[],
     cacheResult: { cacheName?: string; fileUri: string; fileResourceName: string; isCached: boolean },
-    mimeType: string
+    mimeType: string,
+    preUploadedPages: Map<number, { uri: string; name: string }>
   ): Promise<any> {
     const stepConfig = STEPS_CONFIG.find(s => s.id === stepId)!;
     let isCachedFallback = false;
@@ -306,21 +377,15 @@ export class SchedulerService {
       // Escalated to Gemini Pro!
       console.log(`[SchedulerService][${stepConfig.name}] Escalated to Gemini Pro for pages: ${escalatedPages.map(p => p.page_number).join(', ')}`);
       
-      const tempPageFiles: string[] = [];
       const fileDataList: any[] = [];
 
       try {
-        // Extract escalated pages and upload them
+        // Retrieve pre-uploaded page URIs
         for (const pageObj of escalatedPages) {
-          const pagePath = await PDFSplitter.extractPage(srcPdfPath, pageObj.page_number);
-          tempPageFiles.push(pagePath);
-
-          const originalBytes = require('fs').statSync(pagePath).size;
-          const pageInfo = await GeminiClient.uploadFile(pagePath, 'application/pdf', `plan-page-${pageObj.page_number}-${planId}`);
-          
-          // Track bandwidth upload
-          MonitoringService.trackUploadSavings(planId, originalBytes, originalBytes);
-          
+          const pageInfo = preUploadedPages.get(pageObj.page_number);
+          if (!pageInfo) {
+            throw new Error(`Pre-uploaded page file not found for page ${pageObj.page_number}`);
+          }
           fileDataList.push({
             fileData: {
               fileUri: pageInfo.uri,
@@ -351,23 +416,27 @@ export class SchedulerService {
           }
         };
 
-        // Call Gemini Pro
-        const response = await GeminiClient.requestWithRetry(
-          PIPELINE_CONFIG.models.pro,
-          payload,
-          false,
-          undefined,
-          planId
-        );
+        // Call Gemini Pro (concurrency limit = 2 via Semaphore)
+        await SchedulerService.proSemaphore.acquire();
 
-        resultJSON = this.parseJsonResult(response.text, stepConfig.name);
+        try {
+          console.log(`[SchedulerService][${stepConfig.name}] Acquired Gemini Pro permit. Processing page check...`);
+          const response = await GeminiClient.requestWithRetry(
+            PIPELINE_CONFIG.models.pro,
+            payload,
+            false,
+            undefined,
+            planId
+          );
+          resultJSON = this.parseJsonResult(response.text, stepConfig.name);
+        } finally {
+          SchedulerService.proSemaphore.release();
+          console.log(`[SchedulerService][${stepConfig.name}] Released Gemini Pro permit.`);
+        }
       } catch (err: any) {
         console.warn(`[SchedulerService][${stepConfig.name}] Pro execution failed: ${err.message}. Falling back to Flash...`);
         warningMsg = `[WARN] Pro unavailable, fell back to Flash. Results may have reduced visual reasoning confidence. Error: ${err.message}`;
         isCachedFallback = true;
-      } finally {
-        // Cleanup temp page files
-        tempPageFiles.forEach(f => PDFSplitter.cleanupPage(f));
       }
     }
 

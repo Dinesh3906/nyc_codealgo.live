@@ -168,12 +168,14 @@ export class GeminiClient {
     const maxRetries = PIPELINE_CONFIG.maxRetries;
     let attempt = 0;
     const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
+    let lastErrorDetail = "No request completed successfully";
 
     while (attempt <= maxRetries) {
       attempt++;
       const apiKey = this.getApiKey();
       const action = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
-      const url = `https://generativelanguage.googleapis.com/v1beta/${baseModelName}:${action}&key=${apiKey}`;
+      const separator = action.includes('?') ? '&' : '?';
+      const url = `https://generativelanguage.googleapis.com/v1beta/${baseModelName}:${action}${separator}key=${apiKey}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), PIPELINE_CONFIG.timeoutMs);
@@ -193,6 +195,7 @@ export class GeminiClient {
           const status = response.status;
           const errText = await response.text();
           console.warn(`[GeminiClient] API Error ${status}: ${errText}`);
+          lastErrorDetail = `HTTP ${status} (${response.statusText}): ${errText}`;
 
           if (status === 429) {
             const delay = 6000 * Math.pow(1.5, attempt) + Math.random() * 2000;
@@ -279,11 +282,12 @@ export class GeminiClient {
       } catch (err: any) {
         clearTimeout(timeoutId);
         console.warn(`[GeminiClient] Request exception (Attempt ${attempt}): ${err.message || err}`);
+        lastErrorDetail = `Exception: ${err.message || err}`;
         const delay = 4000 * Math.pow(1.5, attempt - 1);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
-    throw new Error(`Gemini Client failed after ${maxRetries} retries.`);
+    throw new Error(`Gemini Client failed after ${maxRetries + 1} attempts. Last error: ${lastErrorDetail}`);
   }
 }
