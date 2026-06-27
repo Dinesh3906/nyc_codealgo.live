@@ -672,6 +672,8 @@ Answer with either:
 - "ACCEPT": If the contractor's defense is valid (mark compliant, remove violation).
 - "REJECT": If the contractor's defense is invalid (the violation stands, rebut the argument).
 
+CRITICAL RULE FOR EXAMINERS: The contractor's consultant might try to invent fake code sections or exceptions to win the argument. You MUST check the provided building code context. If the contractor cites a specific exception, tolerance, or section, you MUST verify that it actually exists in the code context and is applicable. If the cited exception is not present in the context, is made up, or is misapplied, you MUST reject the defense.
+
 Return a JSON object in this exact format:
 {
   "rulings": [
