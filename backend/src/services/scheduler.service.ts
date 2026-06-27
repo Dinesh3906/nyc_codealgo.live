@@ -492,6 +492,25 @@ export class SchedulerService {
       resultJSON = this.parseJsonResult(response.text, stepConfig.name);
     }
 
+    // Run AI Challenger Debate Loop on failures if issues were found
+    if (resultJSON && Array.isArray(resultJSON.issues) && resultJSON.issues.length > 0) {
+      try {
+        console.log(`[SchedulerService][${stepConfig.name}] Found ${resultJSON.issues.length} potential issues. Initiating AI Challenger Debate Loop...`);
+        resultJSON = await this.runChallengerDebate(
+          stepId,
+          stepConfig,
+          resultJSON,
+          cacheResult,
+          mimeType,
+          pageNumbers,
+          isCachedFallback,
+          planId
+        );
+      } catch (debateErr: any) {
+        console.error(`[SchedulerService][${stepConfig.name}] Challenger Debate Loop failed:`, debateErr.message || debateErr);
+      }
+    }
+
     // Process output and formatting
     const finalResult = {
       id: stepId,
@@ -563,5 +582,207 @@ export class SchedulerService {
         };
       }
     }
+  }
+
+  /**
+   * Run AI Challenger Debate Loop to cross-examine compliance failures.
+   */
+  public static async runChallengerDebate(
+    stepId: string,
+    stepConfig: any,
+    resultJSON: any,
+    cacheResult: any,
+    mimeType: string,
+    pageNumbers: number[],
+    isCachedFallback: boolean,
+    planId?: string
+  ): Promise<any> {
+    const issues = resultJSON.issues;
+    const modelForJudge = isCachedFallback ? PIPELINE_CONFIG.models.flash : PIPELINE_CONFIG.models.pro;
+
+    // --- STEP 1: Challenger Argument (Gemini 2.5 Flash) ---
+    console.log(`[ChallengerDebate][${stepConfig.name}] STEP 1: Challenger preparing defense arguments...`);
+    const challengerPrompt = `You are a licensed contractor and expert NYC plans consultant playing the role of a defense attorney.
+The Plan Auditor has flagged the following code compliance issues in the attached drawings:
+${JSON.stringify(issues, null, 2)}
+
+Your goal is to inspect the drawings and argue why each issue is actually COMPLIANT. Cite specific exceptions in the NYC Building/Plumbing/Mechanical Code, drawing tolerances, occupant loads, or design details from the blueprints that the auditor might have overlooked.
+Argue fiercely but professionally.
+
+Return a JSON object in this exact format:
+{
+  "rebuttals": [
+    {
+      "code": "<matching code e.g. BC 1008.1.1>",
+      "argument": "<your detailed defense argument and citation of exceptions>"
+    }
+  ]
+}`;
+
+    const challengerPayload: any = {
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json"
+      }
+    };
+
+    if (cacheResult.cacheName) {
+      challengerPayload.cached_content = cacheResult.cacheName;
+      challengerPayload.contents = [{
+        role: 'user',
+        parts: [{ text: challengerPrompt }]
+      }];
+    } else {
+      challengerPayload.contents = [{
+        role: 'user',
+        parts: [
+          { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+          { text: challengerPrompt }
+        ]
+      }];
+    }
+
+    const challengerResponse = await GeminiClient.requestWithRetry(
+      PIPELINE_CONFIG.models.flash,
+      challengerPayload,
+      false,
+      undefined,
+      planId
+    );
+
+    const challengerResult = this.parseJsonResult(challengerResponse.text, "Challenger");
+    const rebuttals = challengerResult?.rebuttals || [];
+    console.log(`[ChallengerDebate][${stepConfig.name}] STEP 1 complete. Received ${rebuttals.length} rebuttals.`);
+
+    if (rebuttals.length === 0) {
+      return resultJSON;
+    }
+
+    // --- STEP 2: Rebuttal/Ruling (Gemini Pro/Flash Judge) ---
+    console.log(`[ChallengerDebate][${stepConfig.name}] STEP 2: Judge evaluating defenses...`);
+    const judgePrompt = `You are the Principal NYC Plans Examiner acting as an independent judge.
+The Auditor originally found these issues:
+${JSON.stringify(issues, null, 2)}
+
+The Contractor's Consultant argued these defenses:
+${JSON.stringify(rebuttals, null, 2)}
+
+Review the drawings and make a final ruling for each issue.
+Answer with either:
+- "ACCEPT": If the contractor's defense is valid (mark compliant, remove violation).
+- "REJECT": If the contractor's defense is invalid (the violation stands, rebut the argument).
+
+Return a JSON object in this exact format:
+{
+  "rulings": [
+    {
+      "code": "<matching code>",
+      "verdict": "ACCEPT" | "REJECT",
+      "explanation": "<brief technical explanation of why you accepted or rejected their argument>"
+    }
+  ]
+}`;
+
+    const judgePayload: any = {
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      }
+    };
+
+    if (cacheResult.cacheName) {
+      judgePayload.cached_content = cacheResult.cacheName;
+      judgePayload.contents = [{
+        role: 'user',
+        parts: [{ text: judgePrompt }]
+      }];
+    } else {
+      judgePayload.contents = [{
+        role: 'user',
+        parts: [
+          { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+          { text: judgePrompt }
+        ]
+      }];
+    }
+
+    let judgeResponseText = "";
+    if (modelForJudge === PIPELINE_CONFIG.models.pro) {
+      await SchedulerService.proSemaphore.acquire();
+      try {
+        const response = await GeminiClient.requestWithRetry(
+          modelForJudge,
+          judgePayload,
+          false,
+          undefined,
+          planId
+        );
+        judgeResponseText = response.text;
+      } finally {
+        SchedulerService.proSemaphore.release();
+      }
+    } else {
+      const response = await GeminiClient.requestWithRetry(
+        modelForJudge,
+        judgePayload,
+        false,
+        undefined,
+        planId
+      );
+      judgeResponseText = response.text;
+    }
+
+    const judgeResult = this.parseJsonResult(judgeResponseText, "Judge");
+    const rulings = judgeResult?.rulings || [];
+    console.log(`[ChallengerDebate][${stepConfig.name}] STEP 2 complete. Received ${rulings.length} rulings.`);
+
+    // --- STEP 3: Recompile evaluations based on rulings ---
+    const updatedIssues: any[] = [];
+    let compliantFeatures = resultJSON.compliant_features || [];
+    const evaluations = resultJSON.checklist_evaluations || [];
+
+    for (const issue of issues) {
+      const ruling = rulings.find((r: any) => r && r.code === issue.code);
+      const rebuttal = rebuttals.find((r: any) => r && r.code === issue.code);
+
+      if (ruling && ruling.verdict === 'ACCEPT') {
+        console.log(`[ChallengerDebate][${stepConfig.name}] Violation ACCEPTED/CLEARED for code ${issue.code}.`);
+        const ev = evaluations.find((e: any) => e && e.code === issue.code);
+        if (ev) {
+          ev.status = 'compliant';
+          ev.details = `[CLEARED VIA DEBATE] ${ev.details} (Defense: ${ruling.explanation})`;
+        }
+        compliantFeatures.push(`${issue.code}: Cleared via debate - ${ruling.explanation}`);
+      } else {
+        console.log(`[ChallengerDebate][${stepConfig.name}] Violation REJECTED/CONFIRMED for code ${issue.code}.`);
+        const explanation = ruling?.explanation || "Auditor stood by the violation.";
+        const defenseArg = rebuttal?.argument || "No defense argument provided.";
+        
+        const debateLog = `\n\n--- ⚖️ AI DEBATE LOG ---\n* **Defense Argument:** ${defenseArg}\n* **Judge Ruling (REJECT):** ${explanation}`;
+        issue.description = (issue.description || "") + debateLog;
+
+        const ev = evaluations.find((e: any) => e && e.code === issue.code);
+        if (ev) {
+          ev.details = (ev.details || "") + debateLog;
+        }
+
+        updatedIssues.push(issue);
+      }
+    }
+
+    let finalScore = 100;
+    for (const issue of updatedIssues) {
+      const deduction = issue.deduction_percentage !== undefined ? issue.deduction_percentage : 10;
+      finalScore -= deduction;
+    }
+    if (finalScore < 0) finalScore = 0;
+
+    return {
+      ...resultJSON,
+      score: finalScore,
+      issues: updatedIssues,
+      compliant_features: compliantFeatures,
+      checklist_evaluations: evaluations
+    };
   }
 }

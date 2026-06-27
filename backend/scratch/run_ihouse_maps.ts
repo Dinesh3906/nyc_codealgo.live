@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 async function runMapAnalysis() {
-  const planPath = "C:\\Users\\chala\\Downloads\\I-House-Maps-Public-Spaces.pdf";
+  const planPath = "C:\\Users\\chala\\Downloads\\NYC_Fire_Safety_Plan_AI_Test.pdf";
   const planId = "i-house-maps-test-" + Date.now();
 
   console.log(`Checking if file exists at ${planPath}...`);
@@ -16,7 +16,7 @@ async function runMapAnalysis() {
   console.log(`Running hybrid Gemini pipeline for: ${planPath}`);
   
   try {
-    const result = await CompliancePipeline.run(planId, planPath, 'application/pdf');
+    const result = await CompliancePipeline.run(planId, planPath, 'application/pdf', ['fire_safety']);
     console.log("\n=========================================");
     console.log("          ANALYSIS COMPLETED SUCCESSFULY!");
     console.log("=========================================");
