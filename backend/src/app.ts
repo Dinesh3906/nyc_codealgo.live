@@ -30,7 +30,7 @@ const allowedOrigins = [
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
   console.log(`[CORS Check] Request Origin: "${origin}" | Allowed Origins List:`, allowedOrigins);
-  if (!origin) return true; // Allow mobile apps or server-to-server calls
+  if (!origin || origin === 'undefined' || origin === 'null') return true; // Allow mobile apps, server-to-server, or missing headers
   const isAllowed = allowedOrigins.includes(origin) ||
     origin.includes('codealgo.live') ||
     origin.includes('localhost') ||
