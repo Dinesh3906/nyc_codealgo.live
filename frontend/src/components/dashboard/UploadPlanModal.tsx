@@ -867,19 +867,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                 className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full"
               />
 
-              {/* Desktop Loading Time & Citation Quality Note */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="hidden md:flex absolute top-4 right-4 z-20 max-w-[240px] bg-slate-950/70 border border-slate-800/80 backdrop-blur-md rounded-xl p-3 gap-2.5 text-left shadow-2xl transition-all duration-300 hover:border-slate-700/80 group"
-              >
-                <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5 group-hover:text-blue-300 transition-colors animate-pulse" />
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  <span className="font-semibold text-slate-300 block mb-0.5">Analysis Notice</span>
-                  Analysis can take hours depending on the page count. Verifying high-quality citations takes time.
-                </p>
-              </motion.div>
+
 
               <div className="relative z-10 space-y-6">
                 <div className="relative w-32 h-32 mx-auto">
@@ -945,12 +933,12 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
                   ))}
                 </div>
 
-                {/* Mobile Loading Time & Citation Quality Note */}
+                {/* Unified Loading Time & Citation Quality Note */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
-                  className="flex md:hidden mx-auto max-w-md bg-slate-950/50 border border-slate-800/60 backdrop-blur-md rounded-xl p-3.5 gap-3 text-left shadow-2xl transition-colors hover:border-slate-700/80 group mt-4"
+                  className="flex mx-auto max-w-md bg-slate-950/50 border border-slate-800/60 backdrop-blur-md rounded-xl p-3.5 gap-3 text-left shadow-2xl transition-colors hover:border-slate-700/80 group mt-6"
                 >
                   <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5 group-hover:text-blue-300 transition-colors animate-pulse" />
                   <p className="text-xs text-slate-400 leading-relaxed">
