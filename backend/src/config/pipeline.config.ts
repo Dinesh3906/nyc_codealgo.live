@@ -15,6 +15,7 @@ export interface PipelineConfig {
   proPageLimit: number;
   cacheTTLMinutes: number;
   concurrencyLimit: number;
+  geminiConcurrency: number;
   maxRetries: number;
   timeoutMs: number;
   supportedProDocTypes: string[];
@@ -28,12 +29,19 @@ export interface PipelineConfig {
   };
 }
 
+const parsedWorkerConcurrency = parseInt(process.env.WORKER_CONCURRENCY || '8', 10);
+const validatedWorkerConcurrency = (!isNaN(parsedWorkerConcurrency) && parsedWorkerConcurrency > 0) ? parsedWorkerConcurrency : 8;
+
+const parsedGeminiConcurrency = parseInt(process.env.GEMINI_CONCURRENCY || '5', 10);
+const validatedGeminiConcurrency = (!isNaN(parsedGeminiConcurrency) && parsedGeminiConcurrency > 0) ? parsedGeminiConcurrency : 5;
+
 export const PIPELINE_CONFIG: PipelineConfig = {
   confidenceThreshold: parseFloat(process.env.ROUTER_CONFIDENCE_THRESHOLD || '0.75'),
   complexityThreshold: (process.env.ROUTER_COMPLEXITY_THRESHOLD || 'medium') as 'low' | 'medium' | 'high',
   proPageLimit: parseInt(process.env.ROUTER_PRO_PAGE_LIMIT || '10', 10),
   cacheTTLMinutes: parseInt(process.env.CACHE_TTL_MINUTES || '30', 10),
-  concurrencyLimit: parseInt(process.env.WORKER_CONCURRENCY || '3', 10),
+  concurrencyLimit: validatedWorkerConcurrency,
+  geminiConcurrency: validatedGeminiConcurrency,
   maxRetries: parseInt(process.env.GEMINI_MAX_RETRIES || '5', 10),
   timeoutMs: parseInt(process.env.GEMINI_TIMEOUT_MS || '120000', 10),
   

@@ -1,0 +1,32 @@
+[
+  {
+    "filename": "eab_eliminated_sn.pdf",
+    "category": "electrical",
+    "filePath": "D:\\nyc_algo\\backend\\pdfs\\electrical\\eab_eliminated_sn.pdf",
+    "valid": true,
+    "size": 486379,
+    "magicBytesOk": true,
+    "readable": true,
+    "pages": 1
+  },
+  {
+    "filename": "electrical_code_handbook_2018.pdf",
+    "category": "electrical",
+    "filePath": "D:\\nyc_algo\\backend\\pdfs\\electrical\\electrical_code_handbook_2018.pdf",
+    "valid": true,
+    "size": 285544,
+    "magicBytesOk": true,
+    "readable": true,
+    "pages": 14
+  },
+  {
+    "filename": "oldeabfilings-sn.pdf",
+    "category": "electrical",
+    "filePath": "D:\\nyc_algo\\backend\\pdfs\\electrical\\oldeabfilings-sn.pdf",
+    "valid": true,
+    "size": 84828,
+    "magicBytesOk": true,
+    "readable": true,
+    "pages": 1
+  }
+]

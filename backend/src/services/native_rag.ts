@@ -15,11 +15,20 @@ async function initEmbeddingModel() {
   return embeddingModel;
 }
 
+// Cache for query embeddings to avoid duplicate local model evaluations
+const embeddingCache = new Map<string, number[]>();
+
 // Function to generate query embedding using local model
 export async function generateQueryEmbedding(text: string): Promise<number[]> {
+  const cached = embeddingCache.get(text);
+  if (cached) {
+    return cached;
+  }
   const model = await initEmbeddingModel();
   const output = await model(text, { pooling: "mean", normalize: true });
-  return Array.from(output.data);
+  const result = Array.from(output.data) as number[];
+  embeddingCache.set(text, result);
+  return result;
 }
 
 function extractTextFromCAD(filePath: string, ext: string): string {
@@ -418,6 +427,12 @@ export function getPDFsForStep(stepId: string): string[] {
   }
 
   const gapFiles = allFiles.filter(f => f.startsWith("2022GAP_"));
+  const commonBuildingDocs = allFiles.filter(f => 
+    f === "2022BC_Chapter02_DefinitionsWBwm.pdf" || 
+    f === "2022BC_Chapter03_OccupancyClassWBwm.pdf" || 
+    f === "2022BC_Chapter05_HeightAreaWBwm.pdf" || 
+    f === "2022BC_Chapter06_ConstructionTypeWBwm.pdf"
+  );
 
   switch (stepId) {
     case 'building_code':
@@ -428,38 +443,56 @@ export function getPDFsForStep(stepId: string): string[] {
     case 'plumbing_code':
       return [
         ...allFiles.filter(f => f.startsWith("2022PC_")),
+        ...allFiles.filter(f => f === "2022BC_Chapter29_PlumbingWBwm.pdf"), // Cross-reference BC Chapter 29
+        ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'mechanical_code':
       return [
         ...allFiles.filter(f => f.startsWith("2022MC_")),
+        ...allFiles.filter(f => f === "2022BC_Chapter28_MechanicalWBwm.pdf"), // Cross-reference BC Chapter 28
+        ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'fuel_gas_code':
       return [
         ...allFiles.filter(f => f.startsWith("2022FGC_")),
+        ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'energy_code':
       return [
-        ...allFiles.filter(f => f.startsWith("2022BC_Chapter13_")),
+        ...allFiles.filter(f => 
+          f.startsWith("2022BC_Chapter13_") || 
+          f === "2022BC_Chapter12_InteriorEnvironmentWBwm.pdf" || 
+          f === "2022BC_Chapter14_ExteriorWallsWBwm.pdf" || 
+          f === "2022BC_Chapter15_RoofsRooftopsWBwm.pdf"
+        ),
         ...gapFiles
       ];
     case 'electrical_code':
       return [
         ...allFiles.filter(f => f.startsWith("2022BC_Chapter27_")),
+        ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'fire_code':
       return [
-        ...allFiles.filter(f => f.includes("FireProtection") || f.includes("FireResistance") || f.includes("FireStandards") || f.includes("ExitPath")),
+        // Include egress chapter (Chapter 10) and exit paths to remove critical fire egress blind spot
+        ...allFiles.filter(f => 
+          f.includes("FireProtection") || 
+          f.includes("FireResistance") || 
+          f.includes("FireStandards") || 
+          f.includes("ExitPath") ||
+          f === "2022BC_Chapter10_EgressWBwm.pdf" ||
+          f === "2022BC_AppendixS_ExitPathMarkingsWBwm.pdf"
+        ),
+        ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'zoning_resolution':
-      return [
-        ...allFiles.filter(f => f.includes("Administration") || f.includes("Definitions") || f.includes("AncillaryDwelling")),
-        ...gapFiles
-      ];
+      // Since actual ZR PDFs are missing, allow searching all files so we can pull zoning definitions from BC/PC/etc.
+      return allFiles;
     default:
       return allFiles;
   }
@@ -631,20 +664,31 @@ export async function checkStepComplianceTS(
     "NYC admin code construction documents architect stamp professional seal permit filing"
   );
 
-  const allMatches: any[] = [];
-  const seenTexts = new Set<string>();
   const stepPDFs = getPDFsForStep(stepId);
 
-  for (const query of searchQueries) {
-    const queryVector = await generateQueryEmbedding(query);
-    const queryResponse = await index.query({
-      topK: 15,
-      vector: queryVector,
-      includeMetadata: true,
-      filter: stepPDFs.length > 0 ? { source: { "$in": stepPDFs } } : undefined
-    });
+  const queryPromises = searchQueries.map(async (query) => {
+    try {
+      const queryVector = await generateQueryEmbedding(query);
+      const queryResponse = await index.query({
+        topK: 15,
+        vector: queryVector,
+        includeMetadata: true,
+        filter: stepPDFs.length > 0 ? { source: { "$in": stepPDFs } } : undefined
+      });
+      return queryResponse.matches || [];
+    } catch (err) {
+      console.error(`[RAG][${stepConfig?.name || stepId}] Pinecone search failed for query "${query}":`, err);
+      return [];
+    }
+  });
 
-    for (const match of queryResponse.matches) {
+  const queryResults = await Promise.all(queryPromises);
+
+  const allMatches: any[] = [];
+  const seenTexts = new Set<string>();
+
+  for (const matches of queryResults) {
+    for (const match of matches) {
       const text = String(match.metadata?.text || "");
       if (!seenTexts.has(text.substring(0, 50))) {
         seenTexts.add(text.substring(0, 50));

@@ -5,6 +5,11 @@ import helmet from 'helmet';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { apiLimiter, authLimiter } from './middleware/rateLimit.middleware';
+import { requestIdMiddleware, requestLoggingMiddleware, abuseDetectionMiddleware } from './middleware/security.middleware';
+import { sanitizeRequestBody } from './middleware/input-validation.middleware';
+import { metrics, updateSystemMetrics } from './services/metrics.service';
+import { geminiCircuitBreaker, pineconeCircuitBreaker } from './services/circuit-breaker';
+import { Logger } from './services/logger';
 import authRoutes from './routes/auth.routes';
 import planRoutes from './routes/plans.routes';
 import billingRoutes from './routes/billing.routes';
@@ -13,6 +18,7 @@ import feedbackRoutes from './routes/feedback.routes';
 import adminRoutes from './routes/admin.routes';
 import notificationRoutes from './routes/notification.routes';
 
+const logger = new Logger({ stage: 'app' });
 const app = express();
 
 // Secure HTTP Headers with Helmet
@@ -29,14 +35,11 @@ const allowedOrigins = [
 ].filter(Boolean) as string[];
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
-  console.log(`[CORS Check] Request Origin: "${origin}" | Allowed Origins List:`, allowedOrigins);
   if (!origin || origin === 'undefined' || origin === 'null') return true; // Allow mobile apps, server-to-server, or missing headers
-  const isAllowed = allowedOrigins.includes(origin) ||
+  return allowedOrigins.includes(origin) ||
     origin.includes('codealgo.live') ||
     origin.includes('localhost') ||
     origin.includes('127.0.0.1');
-  console.log(`[CORS Result] Origin "${origin}" allowed:`, isAllowed);
-  return isAllowed;
 };
 
 const httpServer = createServer(app);
@@ -64,35 +67,110 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Admin-Token', 'x-admin-token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Admin-Token', 'x-admin-token', 'X-Request-ID']
 }));
 
+// ─── Production middleware stack ───
+
+// Request ID generation (before everything else)
+app.use(requestIdMiddleware);
+
+// Body parsing
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Apply rate limiting to all API requests
+// Input sanitization
+app.use(sanitizeRequestBody);
+
+// Structured request logging (replaces console.log)
+app.use(requestLoggingMiddleware);
+
+// Abuse detection
+app.use(abuseDetectionMiddleware);
+
+// Rate limiting
 app.use('/api', apiLimiter);
 
-// Request Logging
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+// ─── Health, Readiness & Metrics Endpoints ───
 
-// Socket.io for real-time scan progress
-io.on('connection', (socket) => {
-  console.log('User connected to socket:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected from socket');
+app.get('/health', async (req, res) => {
+  const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
+  const missingBooks = KnowledgeBaseValidationService.getMissingBooks();
+  
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.APP_VERSION || '1.0.0',
+    warnings: missingBooks.length > 0 ? `Missing required code books: ${missingBooks.join(', ')}` : undefined
   });
 });
 
-// Routes - auth gets its own stricter rate limiter
+app.get('/ready', async (req, res) => {
+  try {
+    const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
+    
+    // Check database connectivity
+    const pool = (await import('./db')).default;
+    await pool.query('SELECT 1');
+
+    // Check circuit breaker states
+    const geminiState = geminiCircuitBreaker.getState();
+    const pineconeState = pineconeCircuitBreaker.getState();
+
+    const kbStatus = KnowledgeBaseValidationService.getValidationStatus();
+
+    res.status(200).json({
+      status: 'ready',
+      checks: {
+        database: 'ok',
+        gemini_circuit: geminiState,
+        pinecone_circuit: pineconeState
+      },
+      knowledgeBase: kbStatus
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'not_ready',
+      error: 'Dependency check failed'
+    });
+  }
+});
+
+app.get('/metrics', (req, res) => {
+  updateSystemMetrics();
+
+  // Update circuit breaker gauges
+  const cbStateMap = { 'CLOSED': 0, 'HALF_OPEN': 1, 'OPEN': 2 };
+  metrics.setGauge('nyc_circuit_breaker_state',
+    cbStateMap[geminiCircuitBreaker.getState()] ?? 0,
+    { service: 'gemini' }
+  );
+  metrics.setGauge('nyc_circuit_breaker_state',
+    cbStateMap[pineconeCircuitBreaker.getState()] ?? 0,
+    { service: 'pinecone' }
+  );
+
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(metrics.serialize());
+});
+
+// ─── Socket.io ───
+
+io.on('connection', (socket) => {
+  logger.debug('User connected to socket', { requestId: socket.id });
+
+  socket.on('disconnect', () => {
+    logger.debug('User disconnected from socket', { requestId: socket.id });
+  });
+});
+
+// ─── API Routes ───
+
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/plans', planRoutes);
-app.use('/api/upload-plan', planRoutes); // Convenience alias
+app.use('/api/upload-plan', planRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/feedback', feedbackRoutes);

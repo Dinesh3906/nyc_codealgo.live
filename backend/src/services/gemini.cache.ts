@@ -10,6 +10,7 @@ interface CacheEntry {
   fileResourceName: string;
   cacheName?: string; // projects/.../cachedContents/...
   expiresAt: number;  // timestamp in ms
+  inlineData?: string;
 }
 
 export class GeminiCacheManager {
@@ -24,7 +25,7 @@ export class GeminiCacheManager {
     planId: string,
     filePath: string,
     mimeType: string
-  ): Promise<{ cacheName?: string; fileUri: string; fileResourceName: string; isCached: boolean }> {
+  ): Promise<{ cacheName?: string; fileUri: string; fileResourceName: string; isCached: boolean; inlineData?: string }> {
     
     const now = Date.now();
     const existing = this.caches.get(planId);
@@ -37,82 +38,138 @@ export class GeminiCacheManager {
         cacheName: existing.cacheName,
         fileUri: existing.fileUri,
         fileResourceName: existing.fileResourceName,
-        isCached: !!existing.cacheName
+        isCached: !!existing.cacheName,
+        inlineData: existing.inlineData
       };
     }
 
     // Cache miss
     MonitoringService.trackCacheEvent(planId, 'miss');
-    console.log(`[GeminiCacheManager] Cache miss for plan ${planId}. Uploading document...`);
+    console.log(`[GeminiCacheManager] Cache miss for plan ${planId}. Checking if cache is needed...`);
 
-    // Upload to File API exactly once
-    const originalFileStats = require('fs').statSync(filePath);
+    // Estimate tokens and bytes to decide if we should cache
+    const { tokens, bytes } = await this.estimateTokensAndBytes(filePath);
+    const shouldCache = bytes > 2 * 1024 * 1024 || tokens > 2048;
+
+    if (!shouldCache) {
+      console.log(`[GeminiCacheManager] Skipping Context Cache and File API upload for plan ${planId} (Size: ${(bytes / 1024 / 1024).toFixed(2)}MB, Est. Tokens: ${tokens}). Using direct inline data.`);
+      const inlineData = fs.readFileSync(filePath).toString('base64');
+      const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
+      const entry: CacheEntry = {
+        fileUri: "",
+        fileResourceName: "",
+        cacheName: undefined,
+        expiresAt,
+        inlineData
+      };
+      this.caches.set(planId, entry);
+
+      return {
+        cacheName: undefined,
+        fileUri: "",
+        fileResourceName: "",
+        isCached: false,
+        inlineData
+      };
+    }
+
+    console.log(`[GeminiCacheManager] Context Cache is required. Uploading document to File API...`);
+    const originalFileStats = fs.statSync(filePath);
     const originalBytes = originalFileStats.size;
 
     const fileInfo = await GeminiClient.uploadFile(filePath, mimeType, `plan-${planId}`);
     const fileUri = fileInfo.uri;
     const fileResourceName = fileInfo.name;
 
-    // Track upload metrics (in this case, first upload, actual bytes uploaded = originalBytes)
+    // Track upload metrics
     MonitoringService.trackUploadSavings(planId, originalBytes, originalBytes);
-
-    // Estimate tokens and bytes to decide if we should cache
-    const { tokens, bytes } = await this.estimateTokensAndBytes(filePath);
-    const shouldCache = bytes > 2 * 1024 * 1024 || tokens > 2048;
 
     let cacheName: string | undefined;
     let isCached = false;
 
-    if (!shouldCache) {
-      console.log(`[GeminiCacheManager] Skipping Context Cache creation for plan ${planId} (Size: ${(bytes / 1024 / 1024).toFixed(2)}MB, Est. Tokens: ${tokens}). Using direct File API reference.`);
-    } else {
-      // Attempt to create Context Cache
-      try {
-        const ttlSeconds = PIPELINE_CONFIG.cacheTTLMinutes * 60;
-        const model = PIPELINE_CONFIG.models.flash;
-        const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
+    // Attempt to create Context Cache
+    try {
+      const ttlSeconds = PIPELINE_CONFIG.cacheTTLMinutes * 60;
+      const model = PIPELINE_CONFIG.models.pro;
+      const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
+      
+      const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
+      const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
+      const apiKey = apiKeys[0] || ''; // Use first key for cache creation
+
+      console.log(`[GeminiCacheManager] Creating Context Cache for ${fileResourceName} (model: ${baseModelName}, ttl: ${ttlSeconds}s)...`);
+
+      const cacheUrl = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
+      const response = await fetch(cacheUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: baseModelName,
+          display_name: `cache-plan-${planId}`,
+          contents: [
+            {
+              role: 'user',
+              parts: [{
+                fileData: {
+                  fileUri: fileUri,
+                  mimeType: mimeType
+                }
+              }]
+            }
+          ],
+          ttl: `${ttlSeconds}s`
+        })
+      });
+
+      if (response.ok) {
+        const cacheResult: any = await response.json();
+        cacheName = cacheResult.name; // projects/.../locations/.../cachedContents/xxxx
+        isCached = true;
+        console.log(`[GeminiCacheManager] Context Cache created successfully: ${cacheName}`);
+      } else {
+        const errText = await response.text();
+        console.warn(`[GeminiCacheManager] Failed to create Context Cache: ${response.status} ${response.statusText}. ` +
+          `Falling back to non-cached direct inline data. Error: ${errText}`);
         
-        const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
-        const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
-        const apiKey = apiKeys[0] || ''; // Use first key for cache creation
-
-        console.log(`[GeminiCacheManager] Creating Context Cache for ${fileResourceName} (model: ${baseModelName}, ttl: ${ttlSeconds}s)...`);
-
-        const cacheUrl = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
-        const response = await fetch(cacheUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: baseModelName,
-            display_name: `cache-plan-${planId}`,
-            contents: [
-              {
-                role: 'user',
-                parts: [{
-                  fileData: {
-                    fileUri: fileUri,
-                    mimeType: mimeType
-                  }
-                }]
-              }
-            ],
-            ttl: `${ttlSeconds}s`
-          })
-        });
-
-        if (response.ok) {
-          const cacheResult: any = await response.json();
-          cacheName = cacheResult.name; // projects/.../locations/.../cachedContents/xxxx
-          isCached = true;
-          console.log(`[GeminiCacheManager] Context Cache created successfully: ${cacheName}`);
-        } else {
-          const errText = await response.text();
-          console.warn(`[GeminiCacheManager] Failed to create Context Cache: ${response.status} ${response.statusText}. ` +
-            `Falling back to non-cached direct file reference. Error: ${errText}`);
-        }
-      } catch (e: any) {
-        console.warn(`[GeminiCacheManager] Cache creation exception: ${e.message || e}. Falling back to non-cached mode.`);
+        // Fall back to inline data on cache creation failure
+        const inlineData = fs.readFileSync(filePath).toString('base64');
+        const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
+        const entry: CacheEntry = {
+          fileUri: "",
+          fileResourceName: "",
+          cacheName: undefined,
+          expiresAt,
+          inlineData
+        };
+        this.caches.set(planId, entry);
+        return {
+          cacheName: undefined,
+          fileUri: "",
+          fileResourceName: "",
+          isCached: false,
+          inlineData
+        };
       }
+    } catch (e: any) {
+      console.warn(`[GeminiCacheManager] Cache creation exception: ${e.message || e}. Falling back to non-cached direct inline data.`);
+      
+      const inlineData = fs.readFileSync(filePath).toString('base64');
+      const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
+      const entry: CacheEntry = {
+        fileUri: "",
+        fileResourceName: "",
+        cacheName: undefined,
+        expiresAt,
+        inlineData
+      };
+      this.caches.set(planId, entry);
+      return {
+        cacheName: undefined,
+        fileUri: "",
+        fileResourceName: "",
+        isCached: false,
+        inlineData
+      };
     }
 
     const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
@@ -190,7 +247,9 @@ export class GeminiCacheManager {
     }
 
     // 2. Delete File from File API
-    await GeminiClient.deleteFile(entry.fileResourceName);
+    if (entry.fileResourceName) {
+      await GeminiClient.deleteFile(entry.fileResourceName);
+    }
 
     this.caches.delete(planId);
   }

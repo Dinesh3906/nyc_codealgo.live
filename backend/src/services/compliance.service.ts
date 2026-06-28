@@ -2,10 +2,13 @@ import fs from 'fs';
 import { io } from '../app';
 import pool from '../db';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { checkComplianceTS, checkStepComplianceTS, extractPlanData, STEPS_CONFIG, STEP_CODES_CHECKLIST } from './native_rag';
 import { SchedulerService } from './scheduler.service';
+import { Logger } from './logger';
+import { metrics } from './metrics.service';
+import { VERSIONS } from '../config/versions';
+
+const logger = new Logger({ stage: 'compliance-pipeline' });
 
 export interface ScoreBreakdown {
   critical: number;
@@ -32,7 +35,7 @@ export interface ComplianceResult {
   severity: ScoreBreakdown;
   issues: AnalysisIssue[];
   summary: string;
-  status: 'complete' | 'failed';
+  status: 'complete' | 'failed' | 'partial';
   issuesCount: number;
   building_info?: any;
   systems_detected?: any[];
@@ -40,12 +43,40 @@ export interface ComplianceResult {
   betterments?: string[];
   steps?: any[];
   metrics?: any;
+  profile?: any;
+  versions?: typeof VERSIONS;
+  auditMetadata?: {
+    completedSteps: number;
+    totalSteps: number;
+    degraded: boolean;
+    failedSteps: string[];
+  };
 }
 
 export class CompliancePipeline {
   static async run(planId: string, filePath: string, fileType: string, selectedSteps?: string[]): Promise<ComplianceResult> {
+    const pipelineLogger = logger.child({ auditId: planId });
+
     try {
-      console.log(`[PIPELINE] Starting NYC Vectorless RAG Agent for plan ${planId}`);
+      pipelineLogger.info('Starting NYC compliance pipeline');
+
+      // Idempotency check: skip if already analyzed
+      try {
+        const [statusCheck]: any = await pool.query(
+          "SELECT status FROM `plan` WHERE id = ?", [planId]
+        );
+        if (statusCheck.length > 0 && statusCheck[0].status === 'analyzed') {
+          pipelineLogger.info('Plan already analyzed, returning cached result (idempotent)');
+          const [cached]: any = await pool.query(
+            "SELECT analysisResult FROM `plan` WHERE id = ?", [planId]
+          );
+          if (cached.length > 0 && cached[0].analysisResult) {
+            return JSON.parse(cached[0].analysisResult);
+          }
+        }
+      } catch (idempErr) {
+        pipelineLogger.warn('Idempotency check failed, proceeding with analysis');
+      }
 
       // STEP 1: Initialization progress
       io.emit('analysis-status', {
@@ -55,7 +86,7 @@ export class CompliancePipeline {
         message: 'Initializing Vectorless RAG Agent across 114 NYC models...'
       });
 
-      // STEP 2 & 3: Run parallel hybrid Gemini pipeline (Page classification -> Smart Escalation -> Concurrent Workers)
+      // STEP 2 & 3: Run parallel hybrid Gemini pipeline
       const absoluteFilePath = path.resolve(filePath);
       const pipelineRun = await SchedulerService.runPipeline(
         planId,
@@ -65,9 +96,9 @@ export class CompliancePipeline {
       );
 
       const stepResults = pipelineRun.results;
-      const metrics = pipelineRun.metrics;
+      const pipelineMetrics = pipelineRun.metrics;
 
-      // STEP 4: Progress update before compiling final report
+      // STEP 4: Progress update
       io.emit('analysis-status', {
         planId,
         status: 'GENERATING_REPORT',
@@ -75,7 +106,20 @@ export class CompliancePipeline {
         message: 'Compiling final forensic compliance report...'
       });
 
+      // ─── Partial Report Recovery ───
+      // If some steps failed but others succeeded, generate a partial/degraded report
       const checkedSteps: any[] = stepResults.filter((r: any) => r.checked);
+      const failedSteps: any[] = stepResults.filter((r: any) => !r.checked && r.error);
+      const isDegraded = failedSteps.length > 0 && checkedSteps.length > 0;
+
+      if (isDegraded) {
+        pipelineLogger.warn(`Partial report recovery: ${checkedSteps.length}/${stepResults.length} steps succeeded`, {
+          deterministicRuleCount: checkedSteps.length,
+          aiRuleCount: failedSteps.length
+        });
+        metrics.incrementCounter('nyc_audits_partial_total');
+      }
+
       const finalScore = checkedSteps.length > 0
         ? Math.round(checkedSteps.reduce((acc: number, r: any) => acc + r.score!, 0) / checkedSteps.length)
         : 100;
@@ -106,7 +150,7 @@ export class CompliancePipeline {
         compliant: finalScore >= 70,
         score: finalScore,
         summary: checkedSteps.map((r: any) => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
-        status: 'complete',
+        status: isDegraded ? 'partial' : 'complete',
         issuesCount: combinedIssues.length,
         severity: severity,
         issues: combinedIssues,
@@ -132,22 +176,30 @@ export class CompliancePipeline {
         ],
         betterments: checkedSteps.map((r: any) => `Enhance detail validation for ${r.name} sub-assemblies.`),
         steps: stepResults,
-        metrics
+        metrics: pipelineMetrics,
+        profile: pipelineRun.profile,
+        versions: VERSIONS,
+        auditMetadata: {
+          completedSteps: checkedSteps.length,
+          totalSteps: stepResults.length,
+          degraded: isDegraded,
+          failedSteps: failedSteps.map((r: any) => r.id || r.name)
+        }
       };
 
-      // STEP 5: DB Storage & Socket Completion (with retry for AWS stability)
+      // STEP 5: DB Storage & Socket Completion (with retry)
       let saved = false;
       let saveAttempts = 0;
       while (!saved && saveAttempts < 3) {
         try {
           await pool.query(
             'UPDATE `plan` SET status = ?, analysisResult = ? WHERE id = ?',
-            ['analyzed', JSON.stringify(finalResult), planId]
+            [isDegraded ? 'partial' : 'analyzed', JSON.stringify(finalResult), planId]
           );
           saved = true;
         } catch (saveErr) {
           saveAttempts++;
-          console.error(`[PIPELINE] DB Save attempt ${saveAttempts} failed:`, saveErr);
+          pipelineLogger.error(`DB Save attempt ${saveAttempts} failed`, saveErr, { retryCount: saveAttempts });
           if (saveAttempts >= 3) throw saveErr;
           await new Promise(r => setTimeout(r, 1000));
         }
@@ -160,25 +212,31 @@ export class CompliancePipeline {
         report: finalResult
       });
 
-      console.log(`[PIPELINE] Finished process for plan ${planId}. Score: ${finalResult.score}`);
+      pipelineLogger.info(`Pipeline finished. Score: ${finalResult.score}`, {
+        confidence: finalScore / 100,
+        deterministicRuleCount: checkedSteps.length,
+        aiRuleCount: failedSteps.length
+      });
+
+      metrics.incrementCounter('nyc_audits_total', { status: isDegraded ? 'partial' : 'success' });
 
       // CLEANUP: Remove file from disk after successful analysis
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
-        console.log(`[PIPELINE] Cleaned up file: ${filePath}`);
+        pipelineLogger.debug(`Cleaned up file: ${filePath}`);
       }
 
       return finalResult;
 
     } catch (error: any) {
-      console.error(`[PIPELINE] Fatal error:`, error);
+      pipelineLogger.error('Fatal pipeline error', error);
       io.emit('analysis-status', { planId, status: 'FAILED', error: error.message });
 
       // Update DB to failed
       try {
         await pool.query('UPDATE `plan` SET status = ? WHERE id = ?', ['failed', planId]);
       } catch (dbErr) {
-        console.error("[PIPELINE] Failed to update DB on error", dbErr);
+        pipelineLogger.error('Failed to update DB on error', dbErr);
       }
 
       // CLEANUP: Remove file from disk after failed analysis

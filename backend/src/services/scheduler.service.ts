@@ -7,6 +7,11 @@ import { PDFSplitter } from '../utils/pdf.splitter';
 import { MonitoringService } from './monitoring.service';
 import { semanticSearchPlan, STEPS_CONFIG, STEP_CODES_CHECKLIST, generateQueryEmbedding, getPDFsForStep, repairTruncatedJson } from './native_rag';
 import { io } from '../app';
+import { ProfilerService } from './profiler.service';
+import { DeterministicRuleEngine, ExtractedFacts } from './deterministic.engine';
+import { EvidenceGraph } from './evidence.graph';
+import { RagOptimizerService } from './rag-optimizer.service';
+import { KnowledgeBaseValidationService } from './kb-validation.service';
 
 class Semaphore {
   private permits: number;
@@ -37,8 +42,16 @@ class Semaphore {
 }
 
 export class SchedulerService {
-  // Semaphore to limit Gemini Pro calls to a concurrency of exactly 2
-  private static proSemaphore = new Semaphore(2);
+  // Semaphore to limit Gemini Pro calls to the configured concurrency
+  private static proSemaphore = new Semaphore(PIPELINE_CONFIG.geminiConcurrency);
+  private static pineconeQueryCache = new Map<string, any[]>();
+
+  public static proCallsCount = 0;
+  public static verificationPassesCount = 0;
+  public static challengedFindingsCount = 0;
+  public static correctedFindingsCount = 0;
+  public static citationCorrectionsCount = 0;
+  public static crossInconsistenciesCount = 0;
   
   // Mapping audit disciplines to relevant page categories
   private static STEP_PAGE_MAPPING: Record<string, string[]> = {
@@ -61,6 +74,14 @@ export class SchedulerService {
     mimeType: string,
     selectedSteps?: string[]
   ): Promise<any> {
+    ProfilerService.startPlan(planId);
+    RagOptimizerService.startTrace(planId);
+    SchedulerService.proCallsCount = 0;
+    SchedulerService.verificationPassesCount = 0;
+    SchedulerService.challengedFindingsCount = 0;
+    SchedulerService.correctedFindingsCount = 0;
+    SchedulerService.citationCorrectionsCount = 0;
+    SchedulerService.crossInconsistenciesCount = 0;
     console.log(`[SchedulerService] Starting hybrid Gemini pipeline for plan ${planId}...`);
 
     // 1. Prepare Plan Data object for Pinecone Search backwards compatibility
@@ -68,54 +89,62 @@ export class SchedulerService {
     const path = require('path');
     const pdfParse = require('pdf-parse');
     
+    ProfilerService.startStage(planId, 'pdfRead');
     let housePlanText = "";
+    let totalPages = 1;
     if (filePath.endsWith('.pdf')) {
       const dataBuffer = fs.readFileSync(filePath);
       const pdfData = await pdfParse(dataBuffer);
       housePlanText = pdfData.text || "";
+      totalPages = pdfData.numpages || 1;
     }
     const planData = { housePlanText, base64Image: "" };
+    ProfilerService.endStage(planId, 'pdfRead');
 
     // 2. Upload file to File API and create Context Cache
     const cacheResult = await GeminiCacheManager.getOrCreateCache(planId, filePath, mimeType);
     
     // 3. Page classification & routing
+    ProfilerService.startStage(planId, 'pageRouting');
     const pageRoutes = await RoutingService.routeDocument(
       planId,
       cacheResult.fileUri,
       mimeType,
-      cacheResult.cacheName
+      cacheResult.cacheName,
+      cacheResult.inlineData,
+      totalPages
     );
+    ProfilerService.endStage(planId, 'pageRouting');
 
-    const totalPages = pageRoutes.length;
+    totalPages = pageRoutes.length;
 
     // Pre-extract and pre-upload unique Pro-escalated pages exactly once
     const uniqueProPageNumbers = Array.from(new Set(
       pageRoutes.filter(r => r.route === 'pro').map(r => r.page_number)
     )).sort((a, b) => a - b);
 
-    const preUploadedPages = new Map<number, { uri: string; name: string }>();
+    ProfilerService.startStage(planId, 'pageExtraction');
+    const preUploadedPages = new Map<number, { inlineData: string }>();
     if (uniqueProPageNumbers.length > 0) {
-      console.log(`[SchedulerService] Pre-extracting and pre-uploading ${uniqueProPageNumbers.length} Pro pages: ${uniqueProPageNumbers.join(', ')}`);
-      for (const pageNum of uniqueProPageNumbers) {
-        try {
-          const pagePath = await PDFSplitter.extractPage(filePath, pageNum);
-          const originalBytes = require('fs').statSync(pagePath).size;
-          const pageInfo = await GeminiClient.uploadFile(pagePath, 'application/pdf', `plan-page-${pageNum}-${planId}`);
-          
-          MonitoringService.trackUploadSavings(planId, originalBytes, originalBytes);
-          
-          preUploadedPages.set(pageNum, {
-            uri: pageInfo.uri,
-            name: pageInfo.name
-          });
-          
-          PDFSplitter.cleanupPage(pagePath);
-        } catch (e) {
-          console.error(`[SchedulerService] Failed to pre-upload page ${pageNum}:`, e);
-        }
-      }
+      console.log(`[SchedulerService] Pre-extracting and pre-reading ${uniqueProPageNumbers.length} Pro pages in parallel: ${uniqueProPageNumbers.join(', ')}`);
+      await Promise.all(
+        uniqueProPageNumbers.map(async (pageNum) => {
+          try {
+            const pagePath = await PDFSplitter.extractPage(filePath, pageNum);
+            const base64Data = fs.readFileSync(pagePath).toString('base64');
+            
+            preUploadedPages.set(pageNum, {
+              inlineData: base64Data
+            });
+            
+            PDFSplitter.cleanupPage(pagePath);
+          } catch (e) {
+            console.error(`[SchedulerService] Failed to pre-extract and read page ${pageNum}:`, e);
+          }
+        })
+      );
     }
+    ProfilerService.endStage(planId, 'pageExtraction');
 
     // 4. Group steps to check
     const activeSteps = selectedSteps && selectedSteps.length > 0
@@ -137,6 +166,13 @@ export class SchedulerService {
       issues: []
     }));
 
+    // 4.5. Extract Visual Parameters Facts from the Plan
+    console.log(`[SchedulerService] Extracting structural parameters from drawings...`);
+    const extractionResult = await this.extractPlanFacts(planId, cacheResult, mimeType);
+    console.log(`[SchedulerService] Parameter extraction complete. Vision Confidence: ${extractionResult.visionConfidence}`);
+    const planFacts = extractionResult.facts;
+    const visionConfidence = extractionResult.visionConfidence;
+
     // 5. Build task queue for concurrent execution
     let completedCount = 0;
     const tasks = stepsToRun.map(step => {
@@ -157,7 +193,9 @@ export class SchedulerService {
             pageRoutes,
             cacheResult,
             mimeType,
-            preUploadedPages
+            preUploadedPages,
+            planFacts,
+            visionConfidence
           );
           completedCount++;
           io.emit('analysis-status', {
@@ -195,26 +233,71 @@ export class SchedulerService {
       console.log(`[SchedulerService] Enrolling ${tasks.length} audits to worker pool with concurrency limit: ${PIPELINE_CONFIG.concurrencyLimit}`);
       const activeResults = await this.runWithConcurrency(tasks, PIPELINE_CONFIG.concurrencyLimit);
       results.push(...activeResults);
+
+      // Run Cross-Discipline Consistency Validation
+      console.log(`[SchedulerService] Running Cross-Discipline Consistency Validation...`);
+      try {
+        const crossResult = await this.runCrossDisciplineValidation(planId, results, cacheResult, mimeType);
+        if (crossResult && Array.isArray(crossResult.inconsistencies) && crossResult.inconsistencies.length > 0) {
+          console.log(`[SchedulerService] Found ${crossResult.inconsistencies.length} cross-discipline inconsistencies.`);
+          SchedulerService.crossInconsistenciesCount = crossResult.inconsistencies.length;
+          results.push({
+            id: 'cross_discipline_consistency',
+            name: 'Cross-Discipline Consistency',
+            checked: true,
+            score: Math.max(0, 100 - crossResult.inconsistencies.length * 10),
+            status: 'warning' as const,
+            summary: `Audit completed checking cross-discipline boundary conflicts.`,
+            compliant_features: [],
+            issues: crossResult.inconsistencies.map((inc: any) => ({
+              title: inc.title || 'Cross-Discipline Conflict',
+              description: inc.description || 'Conflict identified between disciplines.',
+              severity: (inc.severity || 'major') as 'critical' | 'major' | 'minor',
+              code: inc.code || 'Cross-Discipline',
+              recommendation: inc.recommendation || 'Resolve design parameters.',
+              deduction_percentage: 10,
+              exact_pdf_citation: inc.exact_pdf_citation || 'Multiple Sections',
+              loophole_details: inc.loophole_details || 'Inconsistent design claims',
+              required_elements: inc.required_elements || 'Align drawings',
+              stepId: 'cross_discipline_consistency'
+            }))
+          });
+        }
+      } catch (err: any) {
+        console.error(`[SchedulerService] Cross-discipline consistency validation failed:`, err.message || err);
+      }
     } finally {
       // 7. Cleanup cached contents and temporary files
-      await GeminiCacheManager.cleanup(planId);
-
-      // Cleanup pre-uploaded page files on File API
-      for (const pageInfo of preUploadedPages.values()) {
-        try {
-          await GeminiClient.deleteFile(pageInfo.name);
-        } catch (e) {
-          console.warn(`[SchedulerService] Non-critical error deleting page file ${pageInfo.name}:`, e);
-        }
-      }
+      ProfilerService.startStage(planId, 'cacheCleanup');
+      await GeminiCacheManager.cleanup(planId).catch((e) => {
+        console.warn(`[SchedulerService] Non-critical error cleaning up cache:`, e);
+      });
+      ProfilerService.endStage(planId, 'cacheCleanup');
     }
 
     // 8. Compile cost and usage metrics
     const metrics = MonitoringService.compileMetrics(planId, totalPages);
+    const profileSummary = ProfilerService.getSummary(planId);
+    if (profileSummary) {
+      (profileSummary as any).correctnessStats = {
+        proCallsCount: SchedulerService.proCallsCount,
+        verificationPassesCount: SchedulerService.verificationPassesCount,
+        challengedFindingsCount: SchedulerService.challengedFindingsCount,
+        correctedFindingsCount: SchedulerService.correctedFindingsCount,
+        citationCorrectionsCount: SchedulerService.citationCorrectionsCount,
+        crossInconsistenciesCount: SchedulerService.crossInconsistenciesCount
+      };
+    }
 
+    // Include explainability traces in the pipeline response
+    const ragTraces = RagOptimizerService.getTraces(planId);
     return {
       results,
-      metrics
+      metrics,
+      profile: {
+        ...profileSummary,
+        ragTraces
+      }
     };
   }
 
@@ -251,15 +334,44 @@ export class SchedulerService {
     planData: any,
     stepId: string,
     pageRoutes: PageRouteResult[],
-    cacheResult: { cacheName?: string; fileUri: string; fileResourceName: string; isCached: boolean },
+    cacheResult: { cacheName?: string; fileUri: string; fileResourceName: string; isCached: boolean; inlineData?: string },
     mimeType: string,
-    preUploadedPages: Map<number, { uri: string; name: string }>
+    preUploadedPages: Map<number, { inlineData: string }>,
+    planFacts: ExtractedFacts,
+    visionConfidence: number
   ): Promise<any> {
     const stepConfig = STEPS_CONFIG.find(s => s.id === stepId)!;
     let isCachedFallback = false;
+    let warningMsg = "";
+
+    if (!KnowledgeBaseValidationService.isDisciplineSupported(stepId)) {
+      console.warn(`[SchedulerService][${stepConfig.name}] Disabling step: Official NYC code reference book is missing.`);
+      return {
+        id: stepId,
+        name: stepConfig.name,
+        checked: false,
+        score: null,
+        status: 'skipped' as const,
+        summary: `Skipped: Official NYC code reference book for ${stepConfig.name} is missing from the database. Live reasoning disabled to prevent fabricated findings.`,
+        compliant_features: [],
+        issues: []
+      };
+    }
     
     // Retrieve Building Code reference materials from Pinecone
     const filteredPlanText = await semanticSearchPlan(planData, stepId);
+
+    // OCR & Vision Parameter Validation
+    let currentVisionConfidence = visionConfidence;
+    if (planFacts.occupant_load !== undefined && planFacts.occupant_load !== null) {
+      const parsedText = planData.housePlanText || '';
+      const numbersInText = parsedText.match(/\d+/g) || [];
+      const matchExists = numbersInText.includes(String(planFacts.occupant_load));
+      if (!matchExists && planFacts.occupant_load > 0) {
+        console.warn(`[SchedulerService][${stepConfig.name}] OCR/Vision validation warning: Extracted occupant_load ${planFacts.occupant_load} not found in plan text OCR!`);
+        currentVisionConfidence = parseFloat((currentVisionConfidence * 0.8).toFixed(2));
+      }
+    }
     
     const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
     const index = pc.Index(process.env.PINECONE_INDEX as string);
@@ -269,92 +381,148 @@ export class SchedulerService {
       "NYC admin code construction documents architect stamp professional seal permit filing"
     );
 
-    const allMatches: any[] = [];
-    const seenTexts = new Set<string>();
     const stepPDFs = getPDFsForStep(stepId);
 
-    for (const query of searchQueries) {
-      const queryVector = await generateQueryEmbedding(query);
-      const queryResponse = await index.query({
-        topK: 15,
-        vector: queryVector,
-        includeMetadata: true,
-        filter: stepPDFs.length > 0 ? { source: { "$in": stepPDFs } } : undefined
-      });
+    const queryPromises = searchQueries.map(async (query) => {
+      try {
+        const cacheKey = `${query}:${stepPDFs.join(",")}`;
+        const cachedMatches = SchedulerService.pineconeQueryCache.get(cacheKey);
+        if (cachedMatches) {
+          return cachedMatches;
+        }
 
-      for (const match of queryResponse.matches) {
-        const text = String(match.metadata?.text || "");
-        if (!seenTexts.has(text.substring(0, 50))) {
-          seenTexts.add(text.substring(0, 50));
+        const queryVector = await generateQueryEmbedding(query);
+        const queryResponse = await index.query({
+          topK: 15,
+          vector: queryVector,
+          includeMetadata: true,
+          filter: stepPDFs.length > 0 ? { source: { "$in": stepPDFs } } : undefined
+        });
+        const matches = queryResponse.matches || [];
+        SchedulerService.pineconeQueryCache.set(cacheKey, matches);
+        return matches;
+      } catch (err) {
+        console.error(`[SchedulerService][${stepConfig.name}] Pinecone search failed for query "${query}":`, err);
+        return [];
+      }
+    });
+
+    const pineconeStart = performance.now();
+    const queryResults = await Promise.all(queryPromises);
+    const pineconeDuration = performance.now() - pineconeStart;
+    ProfilerService.recordDuration(planId, 'pineconeSearch', pineconeDuration);
+
+    const allMatches: any[] = [];
+
+    for (const matches of queryResults) {
+      for (const match of matches) {
+        if (match && match.metadata?.text) {
           allMatches.push(match);
         }
       }
     }
 
-    const contexts = allMatches
-      .sort((a, b) => String(a.metadata?.text || "").localeCompare(String(b.metadata?.text || "")))
+    const stepCodes = STEP_CODES_CHECKLIST[stepId] || [];
+
+    // 1. Deduplicate chunks using Jaccard Similarity and identical metadata
+    const deduplicatedMatches = RagOptimizerService.deduplicateChunks(allMatches.map(m => ({
+      id: m.id,
+      score: m.score,
+      metadata: m.metadata
+    })));
+
+    // 2. Rerank using BM25-like keyword density and exact code section boosts
+    const rerankedMatches = RagOptimizerService.rerankChunks(
+      deduplicatedMatches,
+      searchQueries,
+      stepCodes
+    );
+
+    // 3. Adaptive retrieval: stop gathering chunks once confidence threshold or token budget is reached
+    const maxCharLimit = 25000; // Keep within budget (approx. 5000 tokens)
+    const confidenceThreshold = 0.85;
+    const adaptiveContext = RagOptimizerService.selectAdaptiveContext(
+      rerankedMatches,
+      maxCharLimit,
+      confidenceThreshold
+    );
+
+    const topMatches = adaptiveContext.selected;
+
+    const contexts = topMatches
+      .sort((a, b) => String(a.metadata?.source || "").localeCompare(String(b.metadata?.source || "")))
       .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
       .join("\n\n---\n\n");
 
-    const stepCodes = STEP_CODES_CHECKLIST[stepId] || [];
+    // Evaluate deterministic rules
+    const allDeterministicResults = DeterministicRuleEngine.evaluateRules(planFacts);
+    const stepDeterministicResults = allDeterministicResults.filter(dr => stepCodes.some(sc => sc.code === dr.code));
+    const deterministicCodes = stepDeterministicResults.map(dr => dr.code);
+    const nonDeterministicCodes = stepCodes.filter(c => !deterministicCodes.includes(c.code));
+
+    console.log(`[SchedulerService][${stepConfig.name}] Deterministic codes evaluated: ${deterministicCodes.join(', ')}. Non-deterministic remaining: ${nonDeterministicCodes.map(c => c.code).join(', ')}.`);
 
     // System Prompt setup
     const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner specializing in the ${stepConfig.name} discipline.
  
- CRITICAL MISSION:
-  1. SCORING:
-     - Each step's compliance score starts at 100%.
-     - For each violation/issue listed in "issues", assign a "deduction_percentage" based on its severity (e.g., critical = 15-25%, major = 10-15%, minor = 2-10%).
-     - The final "score" for the step MUST equal exactly 100 minus the sum of the "deduction_percentage" values of all the issues.
-     - If there are zero issues, the score MUST be 100%.
-     - If the sum of deductions exceeds 100%, the score must be capped at 0.
-     - IMPORTANT: If a critical life-safety system is missing entirely from the plan, the score MUST be forced to 0% immediately.
-  2. REQUIRED CODE CHECKS: You MUST evaluate the plan data and context against these specific NYC Code regulations:
-  ${stepCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.description})`).join('\n')}
-  
-     For EACH code regulation above, you must return a status inside "checklist_evaluations". Do NOT assume compliance. You must verify actual dimensions, parameters, and physical limitations against the code.
-  3. CONCEPT OF OPERATIONS (ConOps) & EMERGENCY ACTION PLANS:
-     - You MUST evaluate not only physical dimensions and equipment, but also the documented Emergency Action Plans and human/operational protocols.
-     - Flag any operational or behavioral protocols that violate the standard life-safety practices for the identified occupancy class.
-     - Specifically, classify and cite qualitative operational hazards under **NFPA 101 (Life Safety Code) Operational Violations**.
-  4. OCCUPANCY GOLDEN RULES:
-     - **Group I-2 (Hospitals)**: Enforce horizontal "defend-in-place" evacuation strategies. If the plan includes instructions/protocols to evacuate patients vertically (e.g., carrying them down stairs) or disconnect patients from life support/ventilators during an alarm, you MUST flag this as a CRITICAL violation under **NFPA 101 Section 19.7.1**.
-     - **Group H (High Hazard)**: Enforce zero-delay suppression/notification strategies. Positive alarm sequence delays (e.g., waiting 3 minutes before activating alarms or suppression systems) are strictly prohibited in chemical storage/high-hazard vaults. You MUST flag any delay protocol as a CRITICAL violation under **FC 907.2** or **NFPA 101 Section 7.2**.
-  5. CONTRADICTIONS & EQUIPMENT SAFETY logs (STRESS-TESTS):
-     - You MUST analyze the plan for contradictions across different sections (e.g. if one section states a system is fully functional/operational, but details elsewhere show valves locked closed, connections stripped, bypass disabled, or system components missing, you must flag this contradiction). If a fire safety or sprinkler system's control valve is shut off/locked, treat the building as practically UNSPRINKLERED, apply the stricter unsprinklered code limits (such as reduced egress travel distances and dead-end corridor lengths), and flag all violations as CRITICAL.
-     - Check all inspection logs and records for unresolved mechanical/electrical failures (e.g. panel ground faults, dead battery backups, binding doors that fail to self-close, generator radiator scaling/shutdowns, or seized exhaust fan motors). Cite and flag them as critical/major issues.
-     - Mathematically verify all claims, loads, capacities, and ratings. Reject arbitrary/fabricated formulas (e.g., compartmentation drywall calculations) if base physical dimensions (e.g. 32-inch stairwells, 14 AWG wire on 60 Amp loads, 50 kVA transformers on 370 kVA loads, or polyurethane acoustic foam lining inside 2-hour fire-resistance rated firewalls) violate absolute minimum code limits.
-  6. OCCUPANCY-SPECIFIC APPLICABILITY (PREVENT CONTEXT COLLAPSE):
-     - You MUST first identify the building's occupancy group and classification (e.g., F-1 industrial data center, Group B office, Group R residential, etc.) and verify if there are any habitable dwelling units or bedrooms.
-     - The following checks are STRICTLY RESIDENTIAL-ONLY: EC 210.12 (AFCI), EC 210.52 (Receptacle spacing), ZR 23-22 (Dwelling unit density), BC 1208.2 (Ceiling height for habitable spaces), BC 1208.3 (Room dimensions for habitable rooms), and EC 210.8 (Residential GFCI).
-     - If the building is an industrial, commercial, or non-residential facility (such as an F-1 subterranean data center or Group B office) with 0 habitable spaces/dwelling units/bedrooms, you MUST mark these residential-only checks as "not_applicable" inside "checklist_evaluations", and you MUST NOT list them as violations or include them in the "issues" array.
-     - All other checks (including fire safety access, fire alarm systems, egress travel distances, panel clearances, feeder/wire/transformer load calculations, fire water supply, and standpipes) are UNIVERSAL and MUST be evaluated based on the plan details (they are NOT residential-only, so do NOT mark them as not_applicable!).
-     - Do NOT deduct points or apply any penalization for "not_applicable" evaluations.
-  7. DISCIPLINE SCOPE ISOLATION:
-     - You MUST ONLY check, evaluate, and output violations/issues that belong to the specific code discipline of this audit step (which is: ${stepConfig.name}).
-     - For example, if this step is "NYC Electrical Code (EC)", do NOT evaluate or output violations for egress path width, travel distances, locked doors, or firewalls. Only output issues relating to panels, wiring, loads, and transformer sizing under the EC prefix.
-     - If this step is "NYC Fire Code (FC)" or "NYC Building Code (BC)", only output fire-safety, egress, and building layout violations under those respective prefixes. Do NOT output issues relating to branch wire or panel sizing.
-  8. ZONING RESOLUTION & MISSING DETAILS (INSUFFICIENT INFORMATION TO VERIFY):
-     - If the plan document or extracted text contains absolutely zero zoning dimensions, lot details (such as lot area, lot width, lot coverage, FAR limits, or setback dimensions), or height/setback/sky-exposure limitations, you MUST NOT fail the building under the NYC Zoning Resolution (ZR) checks (ZR 23-14, ZR 23-40, ZR 23-60, etc.).
-     - Instead, for any ZR check where the plan lacks the corresponding zoning data/dimensions, you MUST mark its status as "not_applicable" and set the details to "Incomplete Data / Insufficient Information to Verify".
-     - Do NOT return a "violation" or deduct points for missing parameters that are not specified in the document.
-  9. EVALUATION STATUS ACCURACY:
-     - You MUST align the "status" of each code in "checklist_evaluations" with your actual findings.
-     - If a checklist check contains a violation or failure described in the "details", you MUST mark its status as "violation". Do NOT mark it as "compliant" or "not_applicable" if there are any non-compliant features or violations associated with it!
-     - For example, if fail-secure lock protocols lock egress doors during an alarm, the status for FC 1027.1 MUST be "violation".
-     - If the sprinkler control valve is closed or locked, the status for FC 507.1 MUST be "violation".
-     - If the branch wire is 14 AWG on a 60 Amp load, or the transformer is overloaded, the status for EC 220.1 MUST be "violation".
-  10. EXACT CITATIONS: For each issue and compliant feature, you MUST read the reference context very carefully and cite the exact PDF filename and the exact code section/line number or the NFPA 101 section.
-  11. LOOPHOLES & REQUIRED REMEDIES: For each issue, describe the loophole found (why the plan failed/what was missing or wrong) and the specific required elements to fix it.
-  12. CONCISENESS: Keep summaries and descriptions highly technical, professional, and concise.
-  13. If there are no issues found, return an empty array for "issues".
-  14. MISSING LIFE-SAFETY & INFRASTRUCTURE BYPASS LAW:
-      - If a critical engineering or life-safety system (such as Plumbing, Mechanical HVAC, Fuel Gas piping, Electrical power, or Fire Suppression/Alarm systems) is completely missing, has no design details, or is not shown in the provided plan for a major commercial or multi-story structure, this is a CRITICAL OMISSION, NOT a 'not_applicable' scenario.
-      - You MUST score that category 0% and list a CRITICAL violation in the "issues" array.
-      - You MUST NOT mark core building infrastructure (e.g., PC, MC, FGC, EC, FC checks) as 'not_applicable' or 'compliant' simply because design plans are missing or omitted. Doing so is an extreme safety hazard and is strictly prohibited.
+CRITICAL MISSION:
+1. SCORING:
+   - Compliance score starts at 100%. Deduct percentage based on severity: critical = 15-25%, major = 10-15%, minor = 2-10%.
+   - Score = 100 - sum(deductions). Cap at 0. If critical life-safety system is missing, score is 0.
+2. CODE CHECKS: Evaluate against these regulations:
+${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.description})`).join('\n')}
+   Return status in "checklist_evaluations". Do NOT assume compliance; verify dimensions/parameters.
+3. OPERATIONAL PROTOCOLS (ConOps):
+   - Evaluate Emergency Action Plans. Cite operational violations under NFPA 101.
+4. OCCUPANCY GOLDEN RULES:
+   - Group I-2 (Hospitals): Enforce horizontal defend-in-place. Vertical evacuation or ventilator disconnection protocols are CRITICAL (NFPA 101 Sec 19.7.1).
+   - Group H (High Hazard): delays prohibited (FC 907.2).
+5. STRESS-TESTS:
+   - Check for contradictions. If control valve shut, treat as unsprinklered (reduce egress/dead-ends limits).
+   - Verify loads/capacities. Reject fabricated formulas.
+6. OCCUPACITY APPLICABILITY:
+   - Residential-only checks (AFCI, receptacle spacing, dwelling density, habitable room heights/dimensions, residential GFCI) MUST be marked as "not_applicable" with 0 deduction for non-residential buildings. All other checks are universal.
+7. SCOPE ISOLATION:
+   - Only output violations belonging to ${stepConfig.name}. Do NOT output other disciplines' issues.
+8. MISSING DATA:
+   - If plan lacks zoning info, mark ZR checks as "not_applicable" and details to "Incomplete Data / Insufficient Information". Do NOT deduct points.
+9. MISSING LIFE-SAFETY:
+   - Missing core discipline systems in commercial plans is a CRITICAL omission. Score 0% and list critical violation.
+10. JSON FORMAT INSTRUCTIONS:
+    Return valid JSON in this format:
+    {
+      "score": <number>,
+      "summary": "<Short technical summary (max 3 sentences)>",
+      "checklist_evaluations": [
+        {
+          "code": "<code section>",
+          "status": "compliant" | "violation" | "not_applicable",
+          "details": "<For compliant checks, MUST write exactly 'Compliant' to save output tokens. For violations, write specific measurements and why they failed. For not_applicable, write the reason.>"
+        }
+      ],
+      "issues": [
+        {
+          "title": "<short title>",
+          "description": "<technical description>",
+          "severity": "critical" | "major" | "minor",
+          "code": "<reference code>",
+          "recommendation": "<remedy>",
+          "deduction_percentage": <number>,
+          "exact_pdf_citation": "<PDF name & section>",
+          "loophole_details": "<why it failed>",
+          "required_elements": "<fix requirements>"
+        }
+      ],
+      "building_info": {
+        "project_name": "<name>",
+        "occupancy_group": "<group>",
+        "construction_type": "<type>",
+        "stories": "<stories>"
+      }
+    }
  
  REFERENCE CONTEXT (NYC BUILDING CODES):
- ${contexts.substring(0, 30000)}`;
+ ${contexts.substring(0, 15000)}`;
 
     // Identify pages relevant to this discipline
     const relevantTypes = this.STEP_PAGE_MAPPING[stepId] || ['mixed_content'];
@@ -365,62 +533,206 @@ export class SchedulerService {
     // If no specific pages mapped, consider all pages
     const targetPages = relevantPages.length > 0 ? relevantPages : pageRoutes;
     const pageNumbers = targetPages.map(p => p.page_number);
-
     // Determine if any target pages are routed to Pro
     const escalatedPages = targetPages.filter(p => p.route === 'pro');
     const isEscalated = escalatedPages.length > 0;
 
     let resultJSON: any = null;
-    let warningMsg = "";
 
-    if (isEscalated) {
-      // Escalated to Gemini Pro!
-      console.log(`[SchedulerService][${stepConfig.name}] Escalated to Gemini Pro for pages: ${escalatedPages.map(p => p.page_number).join(', ')}`);
-      
-      const fileDataList: any[] = [];
+    if (nonDeterministicCodes.length === 0) {
+      console.log(`[SchedulerService][${stepConfig.name}] All codes are deterministic. Bypassing Gemini Pro reasoning audits.`);
+      const deterministicIssues = stepDeterministicResults
+        .filter(dr => dr.verdict === 'violation')
+        .map(dr => {
+          const node = EvidenceGraph.buildNode(dr.code, planFacts, dr);
+          return {
+            title: `${dr.code} Violation`,
+            description: dr.explanation,
+            severity: dr.code.startsWith('BC 1006') || dr.code.startsWith('BC 1009') ? 'critical' as const : 'major' as const,
+            code: dr.code,
+            recommendation: `Revise design to meet code requirement.`,
+            deduction_percentage: dr.deduction_percentage,
+            exact_pdf_citation: `Drawings parameter verification`,
+            loophole_details: dr.explanation,
+            required_elements: `Revise drawings`,
+            confidence: 1.0,
+            confidence_metrics: {
+              deterministic: 1.0,
+              vision: currentVisionConfidence,
+              rag: 1.0,
+              reasoning: 1.0,
+              overall: 1.0
+            },
+            evidence_path: node
+          };
+        });
 
-      try {
-        // Retrieve pre-uploaded page URIs
-        for (const pageObj of escalatedPages) {
-          const pageInfo = preUploadedPages.get(pageObj.page_number);
-          if (!pageInfo) {
-            throw new Error(`Pre-uploaded page file not found for page ${pageObj.page_number}`);
-          }
-          fileDataList.push({
-            fileData: {
-              fileUri: pageInfo.uri,
-              mimeType: 'application/pdf'
-            }
-          });
+      let finalScore = 100;
+      for (const issue of deterministicIssues) {
+        finalScore -= issue.deduction_percentage;
+      }
+      if (finalScore < 0) finalScore = 0;
+
+      resultJSON = {
+        score: finalScore,
+        summary: `Audit completed using deterministic rule evaluations.`,
+        checklist_evaluations: stepDeterministicResults.map(dr => ({
+          code: dr.code,
+          status: dr.verdict,
+          details: dr.explanation
+        })),
+        issues: deterministicIssues,
+        building_info: {
+          project_name: "Verification Plan",
+          occupancy_group: "Unknown",
+          construction_type: "Unknown",
+          stories: "Unknown"
         }
+      };
+    } else {
+      // 1. Concurrently run two independent Gemini Pro audits (Analysis A and Analysis B)
+      console.log(`[SchedulerService][${stepConfig.name}] Starting dual independent Gemini Pro analyses...`);
+      const runAnalysis = async (strategy: 'A' | 'B'): Promise<any> => {
+        const strategyPrompt = strategy === 'A'
+          ? "Reasoning Strategy A: Please perform a forward, step-by-step checklist analysis. Evaluate each code check in sequence starting from the first check. For each check, look at the reference drawings to verify constraints."
+          : "Reasoning Strategy B: Please perform a reversed, search-oriented forensic analysis. Start from the last check in the checklist and work backward. Employ a chain-of-thought validation verifying dimensions and drawings content.";
 
-        // Construct payload for Pro
-        const payload = {
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                ...fileDataList,
-                {
-                  text: `Analyze these escalated pages (specifically: ${escalatedPages.map(p => p.page_number).join(', ')}) of the architectural plan ` +
-                    `for compliance with ${stepConfig.name}. Use the referenced NYC building code context.`
-                }
-              ]
-            }
-          ],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
+        const userText = `Analyze the attached plan for compliance with ${stepConfig.name}. Use the referenced NYC building code context.\n` +
+          `Apply the following reasoning strategy:\n${strategyPrompt}`;
+
+        const payload: any = {
           generationConfig: {
-            temperature: 0.1,
+            temperature: 0.15,
             maxOutputTokens: 8192,
             responseMimeType: "application/json"
           }
         };
 
-        // Call Gemini Pro (concurrency limit = 2 via Semaphore)
-        await SchedulerService.proSemaphore.acquire();
+        if (cacheResult.cacheName) {
+          payload.cached_content = cacheResult.cacheName;
+          payload.contents = [{
+            role: 'user',
+            parts: [{ text: `System Instructions:\n${systemPrompt}\n\nUser Request:\n${userText}` }]
+          }];
+        } else if (cacheResult.inlineData) {
+          payload.contents = [{
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType, data: cacheResult.inlineData } },
+              { text: userText }
+            ]
+          }];
+        } else {
+          payload.contents = [{
+            role: 'user',
+            parts: [
+              { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+              { text: userText }
+            ]
+          }];
+        }
 
+        const requestPayload: any = { ...payload };
+        if (!cacheResult.cacheName) {
+          requestPayload.systemInstruction = { parts: [{ text: systemPrompt }] };
+        }
+
+        await SchedulerService.proSemaphore.acquire();
         try {
-          console.log(`[SchedulerService][${stepConfig.name}] Acquired Gemini Pro permit. Processing page check...`);
+          const startProTime = performance.now();
+          const response = await GeminiClient.requestWithRetry(
+            PIPELINE_CONFIG.models.pro,
+            requestPayload,
+            false,
+            undefined,
+            planId
+          );
+          const duration = performance.now() - startProTime;
+          ProfilerService.recordDuration(planId, 'geminiPro', duration);
+          SchedulerService.proCallsCount++;
+          return this.parseJsonResult(response.text, `${stepConfig.name} Analysis ${strategy}`);
+        } finally {
+          SchedulerService.proSemaphore.release();
+        }
+      };
+
+      const [resultA, resultB] = await Promise.all([
+        runAnalysis('A').catch(err => {
+          console.error(`[SchedulerService][${stepConfig.name}] Analysis A failed:`, err);
+          return null;
+        }),
+        runAnalysis('B').catch(err => {
+          console.error(`[SchedulerService][${stepConfig.name}] Analysis B failed:`, err);
+          return null;
+        })
+      ]);
+
+      // Ensure we have at least one valid analysis to proceed
+      if (!resultA && !resultB) {
+        throw new Error(`Both dual Gemini Pro analyses A and B failed to return valid results.`);
+      }
+
+      const issuesA = resultA?.issues || [];
+      const issuesB = resultB?.issues || [];
+      console.log(`[SchedulerService][${stepConfig.name}] Dual analyses complete. Analysis A found ${issuesA.length} issues, Analysis B found ${issuesB.length} issues.`);
+
+      // 2. Launch adversarial Challenger to criticize all findings
+      console.log(`[SchedulerService][${stepConfig.name}] Running adversarial Challenger...`);
+      const challengerPrompt = `You are a licensed contractor and expert NYC plans consultant playing the role of a defense attorney.
+The Plan Examiners have flagged the following code compliance issues in their independent analyses:
+Analysis A Issues:
+${JSON.stringify(issuesA, null, 2)}
+
+Analysis B Issues:
+${JSON.stringify(issuesB, null, 2)}
+
+Your goal is to inspect the drawings and RAG code context, and aggressively criticize these findings. For each issue, argue why it is actually COMPLIANT. Cite specific drawing pages, exceptions in the NYC Building/Plumbing/Mechanical Code, occupant loads, or design tolerances that the examiners might have missed or misinterpreted. Try to find false positives, incorrect deductions, or contradictions.
+
+Return a JSON object in this exact format:
+{
+  "rebuttals": [
+    {
+      "code": "<matching code section, e.g. BC 1008.1.1>",
+      "criticism": "<your defense argument or explanation of how the examiner misapplied the code or misread the drawings. Keep it highly technical and professional.>"
+    }
+  ]
+}`;
+
+      const runChallenger = async (): Promise<any> => {
+        const payload: any = {
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json"
+          }
+        };
+
+        if (cacheResult.cacheName) {
+          payload.cached_content = cacheResult.cacheName;
+          payload.contents = [{
+            role: 'user',
+            parts: [{ text: `System Instructions:\n${challengerPrompt}\n\nUser Request:\nInspect the plan drawings and code context to criticize all findings.` }]
+          }];
+        } else if (cacheResult.inlineData) {
+          payload.contents = [{
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType, data: cacheResult.inlineData } },
+              { text: challengerPrompt }
+            ]
+          }];
+        } else {
+          payload.contents = [{
+            role: 'user',
+            parts: [
+              { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+              { text: challengerPrompt }
+            ]
+          }];
+        }
+
+        await SchedulerService.proSemaphore.acquire();
+        try {
+          const start = performance.now();
           const response = await GeminiClient.requestWithRetry(
             PIPELINE_CONFIG.models.pro,
             payload,
@@ -428,87 +740,434 @@ export class SchedulerService {
             undefined,
             planId
           );
-          resultJSON = this.parseJsonResult(response.text, stepConfig.name);
+          const duration = performance.now() - start;
+          ProfilerService.recordDuration(planId, 'geminiPro', duration);
+          SchedulerService.proCallsCount++;
+          return this.parseJsonResult(response.text, "Challenger");
         } finally {
           SchedulerService.proSemaphore.release();
-          console.log(`[SchedulerService][${stepConfig.name}] Released Gemini Pro permit.`);
-        }
-      } catch (err: any) {
-        console.warn(`[SchedulerService][${stepConfig.name}] Pro execution failed: ${err.message}. Falling back to Flash...`);
-        warningMsg = `[WARN] Pro unavailable, fell back to Flash. Results may have reduced visual reasoning confidence. Error: ${err.message}`;
-        isCachedFallback = true;
-      }
-    }
-
-    // Run on Gemini Flash (either by default or as fallback)
-    if (!resultJSON) {
-      console.log(`[SchedulerService][${stepConfig.name}] Processing via Gemini Flash for pages: ${pageNumbers.join(', ')}`);
-      
-      const payload: any = {
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 8192,
-          responseMimeType: "application/json"
         }
       };
 
-      const userText = `Analyze the attached plan, specifically focusing on pages: ${pageNumbers.join(', ')} ` +
-        `for compliance with ${stepConfig.name}. Use the referenced NYC building code context.`;
+      const challengerResult = await runChallenger().catch(err => {
+        console.error(`[SchedulerService][${stepConfig.name}] Challenger failed:`, err);
+        return { rebuttals: [] };
+      });
 
-      if (cacheResult.cacheName) {
-        payload.cached_content = cacheResult.cacheName;
-        payload.contents = [{
-          role: 'user',
-          parts: [{ text: userText }]
-        }];
-      } else {
-        payload.contents = [{
-          role: 'user',
-          parts: [
-            {
-              fileData: {
-                fileUri: cacheResult.fileUri,
-                mimeType: mimeType
-              }
-            },
-            {
-              text: userText
-            }
-          ]
-        }];
-      }
+      const rebuttals = challengerResult?.rebuttals || [];
+      console.log(`[SchedulerService][${stepConfig.name}] Challenger completed with ${rebuttals.length} rebuttals.`);
 
-      const response = await GeminiClient.requestWithRetry(
-        PIPELINE_CONFIG.models.flash,
-        {
-          ...payload,
-          systemInstruction: { parts: [{ text: systemPrompt }] }
-        },
-        false,
-        undefined,
-        planId
-      );
+      // 3. Launch independent Judge to resolve disagreements and make final ruling
+      console.log(`[SchedulerService][${stepConfig.name}] Running independent Judge...`);
+      const judgePrompt = `You are the Principal NYC Plans Examiner acting as an independent judge.
+You must review two independent plan audits (Analysis A and Analysis B) and the Challenger's defense arguments, and make a final ruling for each compliance check.
 
-      resultJSON = this.parseJsonResult(response.text, stepConfig.name);
+Analysis A Findings:
+${JSON.stringify(resultA || {}, null, 2)}
+
+Analysis B Findings:
+${JSON.stringify(resultB || {}, null, 2)}
+
+Challenger's Defenses:
+${JSON.stringify(rebuttals, null, 2)}
+
+Original Code Context:
+${contexts}
+
+Review each checklist item and violation carefully. Resolve all disagreements between Analysis A and B. For each violation, evaluate the Challenger's defense. You must verify if exceptions or details cited by the Challenger are valid in the code context and drawings.
+
+Return a JSON object in this exact format:
+{
+  "score": <final score, 100 minus sum of deductions>,
+  "summary": "<Forensic summary of final rulings (max 3 sentences)>",
+  "checklist_evaluations": [
+    {
+      "code": "<code section>",
+      "status": "compliant" | "violation" | "not_applicable",
+      "details": "<For compliant checks, MUST write exactly 'Compliant' to save output tokens. For violations, write specific measurements and why they failed. For not_applicable, write the reason.>"
     }
+  ],
+  "issues": [
+    {
+      "title": "<short title>",
+      "description": "<technical description>",
+      "severity": "critical" | "major" | "minor",
+      "code": "<reference code>",
+      "recommendation": "<remedy>",
+      "deduction_percentage": <number>,
+      "exact_pdf_citation": "<PDF name & section>",
+      "loophole_details": "<why it failed>",
+      "required_elements": "<fix requirements>",
+      "confidence": <float, confidence score between 0.0 and 1.0 for this finding>
+    }
+  ],
+  "building_info": {
+    "project_name": "<name>",
+    "occupancy_group": "<group>",
+    "construction_type": "<type>",
+    "stories": "<stories>"
+  }
+}`;
 
-    // Run AI Challenger Debate Loop on failures if issues were found
-    if (resultJSON && Array.isArray(resultJSON.issues) && resultJSON.issues.length > 0) {
-      try {
-        console.log(`[SchedulerService][${stepConfig.name}] Found ${resultJSON.issues.length} potential issues. Initiating AI Challenger Debate Loop...`);
-        resultJSON = await this.runChallengerDebate(
-          stepId,
-          stepConfig,
-          resultJSON,
-          cacheResult,
-          mimeType,
-          pageNumbers,
-          isCachedFallback,
-          planId
-        );
-      } catch (debateErr: any) {
-        console.error(`[SchedulerService][${stepConfig.name}] Challenger Debate Loop failed:`, debateErr.message || debateErr);
+      const runJudge = async (): Promise<any> => {
+        const payload: any = {
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json"
+          }
+        };
+
+        if (cacheResult.cacheName) {
+          payload.cached_content = cacheResult.cacheName;
+          payload.contents = [{
+            role: 'user',
+            parts: [{ text: `System Instructions:\n${judgePrompt}\n\nUser Request:\nMake final rulings and resolve all disagreements.` }]
+          }];
+        } else if (cacheResult.inlineData) {
+          payload.contents = [{
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType, data: cacheResult.inlineData } },
+              { text: judgePrompt }
+            ]
+          }];
+        } else {
+          payload.contents = [{
+            role: 'user',
+            parts: [
+              { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+              { text: judgePrompt }
+            ]
+          }];
+        }
+
+        await SchedulerService.proSemaphore.acquire();
+        try {
+          const start = performance.now();
+          const response = await GeminiClient.requestWithRetry(
+            PIPELINE_CONFIG.models.pro,
+            payload,
+            false,
+            undefined,
+            planId
+          );
+          const duration = performance.now() - start;
+          ProfilerService.recordDuration(planId, 'geminiPro', duration);
+          SchedulerService.proCallsCount++;
+          return this.parseJsonResult(response.text, "Judge");
+        } finally {
+          SchedulerService.proSemaphore.release();
+        }
+      };
+
+      const judgeResult = await runJudge();
+      if (!judgeResult) {
+        throw new Error(`Judge failed to return a valid JSON verdict.`);
       }
+
+      console.log(`[SchedulerService][${stepConfig.name}] Judge completed. Score: ${judgeResult.score}, Issues: ${judgeResult.issues?.length}`);
+
+      // 4. Confidence-Based Verification Gate
+      const finalIssues: any[] = [];
+      const finalEvaluations = judgeResult.checklist_evaluations || [];
+
+      if (Array.isArray(judgeResult.issues)) {
+        for (const issue of judgeResult.issues) {
+          const confidence = issue.confidence !== undefined ? issue.confidence : 1.0;
+          if (confidence < 0.90) {
+            console.log(`[SchedulerService][${stepConfig.name}] Low confidence finding (${confidence}) detected for code ${issue.code}. Running verification pass...`);
+            SchedulerService.verificationPassesCount++;
+            SchedulerService.challengedFindingsCount++;
+
+            const verifierPrompt = `You are a Chief NYC Code Compliance Auditor performing a precision verification check on a low-confidence compliance finding.
+Target Compliance Issue to Verify:
+${JSON.stringify(issue, null, 2)}
+
+Referenced NYC Code Context:
+${contexts}
+
+Verify this specific issue against the drawings. Make a final determination whether this violation should be CONFIRMED or DISMISSED.
+
+Return a JSON object in this exact format:
+{
+  "verdict": "CONFIRMED" | "DISMISSED",
+  "confidence": <float between 0.0 and 1.0>,
+  "explanation": "<detailed explanation of your finding>",
+  "corrected_issue": {
+    "title": "<short title>",
+    "description": "<technical description>",
+    "severity": "critical" | "major" | "minor",
+    "code": "<reference code>",
+    "recommendation": "<remedy>",
+    "deduction_percentage": <number>,
+    "exact_pdf_citation": "<PDF name & section>",
+    "loophole_details": "<why it failed>",
+    "required_elements": "<fix requirements>"
+  }
+}`;
+
+            try {
+              const runVerifier = async (): Promise<any> => {
+                const payload: any = {
+                  generationConfig: {
+                    temperature: 0.1,
+                    responseMimeType: "application/json"
+                  }
+                };
+
+                if (cacheResult.cacheName) {
+                  payload.cached_content = cacheResult.cacheName;
+                  payload.contents = [{
+                    role: 'user',
+                    parts: [{ text: `System Instructions:\n${verifierPrompt}\n\nUser Request:\nVerify the compliance issue.` }]
+                  }];
+                } else if (cacheResult.inlineData) {
+                  payload.contents = [{
+                    role: 'user',
+                    parts: [
+                      { inlineData: { mimeType, data: cacheResult.inlineData } },
+                      { text: verifierPrompt }
+                    ]
+                  }];
+                } else {
+                  payload.contents = [{
+                    role: 'user',
+                    parts: [
+                      { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+                      { text: verifierPrompt }
+                    ]
+                  }];
+                }
+
+                await SchedulerService.proSemaphore.acquire();
+                try {
+                  const response = await GeminiClient.requestWithRetry(
+                    PIPELINE_CONFIG.models.pro,
+                    payload,
+                    false,
+                    undefined,
+                    planId
+                  );
+                  SchedulerService.proCallsCount++;
+                  return this.parseJsonResult(response.text, "Verifier");
+                } finally {
+                  SchedulerService.proSemaphore.release();
+                }
+              };
+
+              const verifierResult = await runVerifier();
+              if (verifierResult && verifierResult.verdict === 'CONFIRMED') {
+                console.log(`[SchedulerService][${stepConfig.name}] Issue CONFIRMED by verifier.`);
+                const corrected = verifierResult.corrected_issue || issue;
+                corrected.confidence = verifierResult.confidence || 0.95;
+                finalIssues.push(corrected);
+                SchedulerService.correctedFindingsCount++;
+              } else {
+                console.log(`[SchedulerService][${stepConfig.name}] Issue DISMISSED by verifier.`);
+                SchedulerService.correctedFindingsCount++;
+                // Dismiss: mark as compliant in checklist_evaluations
+                const ev = finalEvaluations.find((e: any) => e.code === issue.code);
+                if (ev) {
+                  ev.status = 'compliant';
+                  ev.details = `Compliant (Dismissed low-confidence violation: ${verifierResult?.explanation || 'No issue found'})`;
+                }
+              }
+            } catch (verifErr: any) {
+              console.error(`[SchedulerService][${stepConfig.name}] Verification pass failed:`, verifErr.message || verifErr);
+              finalIssues.push(issue); // Keep original if verification fails
+            }
+          } else {
+            finalIssues.push(issue);
+          }
+        }
+      }
+
+      // 5. Evidence Completeness Check & Repair Gate
+      const repairedIssues: any[] = [];
+      for (const issue of finalIssues) {
+        const isMissingField = !issue.code || !issue.exact_pdf_citation || !issue.description || !issue.severity || !issue.recommendation;
+        if (isMissingField) {
+          console.log(`[SchedulerService][${stepConfig.name}] Missing evidence fields detected in issue for code ${issue.code}. Running repair pass...`);
+          SchedulerService.citationCorrectionsCount++;
+
+          const repairPrompt = `You are a Plan Examiner Assistant. The following compliance finding is missing key details.
+Compliance Issue:
+${JSON.stringify(issue, null, 2)}
+
+Code Context:
+${contexts}
+
+Your task is to fill in the missing details. Do NOT change the finding verdict. Only provide the missing fields.
+
+Return a JSON object in this exact format:
+{
+  "code": "<code section>",
+  "exact_pdf_citation": "<drawing name/PDF section>",
+  "description": "<technical reasoning/description>",
+  "severity": "critical" | "major" | "minor",
+  "recommendation": "<remedy>",
+  "loophole_details": "<why it failed>",
+  "required_elements": "<fix requirements>"
+}`;
+
+          try {
+            const runRepair = async (): Promise<any> => {
+              const payload: any = {
+                generationConfig: {
+                  temperature: 0.1,
+                  responseMimeType: "application/json"
+                }
+              };
+
+              if (cacheResult.cacheName) {
+                payload.cached_content = cacheResult.cacheName;
+                payload.contents = [{
+                  role: 'user',
+                  parts: [{ text: `System Instructions:\n${repairPrompt}\n\nUser Request:\nRepair missing fields.` }]
+                }];
+              } else if (cacheResult.inlineData) {
+                payload.contents = [{
+                  role: 'user',
+                  parts: [
+                    { inlineData: { mimeType, data: cacheResult.inlineData } },
+                    { text: repairPrompt }
+                  ]
+                }];
+              } else {
+                payload.contents = [{
+                  role: 'user',
+                  parts: [
+                    { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+                    { text: repairPrompt }
+                  ]
+                }];
+              }
+
+              await SchedulerService.proSemaphore.acquire();
+              try {
+                const response = await GeminiClient.requestWithRetry(
+                  PIPELINE_CONFIG.models.pro,
+                  payload,
+                  false,
+                  undefined,
+                  planId
+                );
+                SchedulerService.proCallsCount++;
+                return this.parseJsonResult(response.text, "Repairer");
+              } finally {
+                SchedulerService.proSemaphore.release();
+              }
+            };
+
+            const repaired = await runRepair();
+            if (repaired) {
+              repairedIssues.push({
+                ...issue,
+                ...repaired
+              });
+              console.log(`[SchedulerService][${stepConfig.name}] Issue repaired successfully.`);
+            } else {
+              repairedIssues.push(issue);
+            }
+          } catch (repairErr: any) {
+            console.error(`[SchedulerService][${stepConfig.name}] Repair pass failed:`, repairErr.message || repairErr);
+            repairedIssues.push(issue);
+          }
+        } else {
+          repairedIssues.push(issue);
+        }
+      }
+
+      // Merge deterministic results
+      const deterministicIssues = stepDeterministicResults
+        .filter(dr => dr.verdict === 'violation')
+        .map(dr => {
+          const node = EvidenceGraph.buildNode(dr.code, planFacts, dr);
+          return {
+            title: `${dr.code} Violation`,
+            description: dr.explanation,
+            severity: dr.code.startsWith('BC 1006') || dr.code.startsWith('BC 1009') ? 'critical' as const : 'major' as const,
+            code: dr.code,
+            recommendation: `Revise design to meet code requirement.`,
+            deduction_percentage: dr.deduction_percentage,
+            exact_pdf_citation: `Drawings parameter verification`,
+            loophole_details: dr.explanation,
+            required_elements: `Revise drawings`,
+            confidence: 1.0,
+            confidence_metrics: {
+              deterministic: 1.0,
+              vision: currentVisionConfidence,
+              rag: 1.0,
+              reasoning: 1.0,
+              overall: 1.0
+            },
+            evidence_path: node
+          };
+        });
+
+      // Map evidence paths and confidence metrics for Pro issues
+      const finalProIssuesMapped = repairedIssues.map((issue: any) => {
+        const node = EvidenceGraph.buildNode(issue.code, planFacts, undefined, issue.description);
+        const overall = parseFloat((currentVisionConfidence * 0.90 * (issue.confidence || 0.95)).toFixed(2));
+        return {
+          ...issue,
+          confidence_metrics: {
+            deterministic: 0.0,
+            vision: currentVisionConfidence,
+            rag: 0.90,
+            reasoning: issue.confidence || 0.95,
+            overall: overall
+          },
+          evidence_path: node
+        };
+      });
+
+      const combinedEvaluations = [...finalEvaluations];
+      for (const dr of stepDeterministicResults) {
+        if (!combinedEvaluations.some(e => e.code === dr.code)) {
+          combinedEvaluations.push({
+            code: dr.code,
+            status: dr.verdict,
+            details: dr.explanation
+          });
+        }
+      }
+
+      const combinedIssues = [...finalProIssuesMapped, ...deterministicIssues];
+
+      // Citation Validation Stage
+      const validatedIssues: any[] = [];
+      for (const issue of combinedIssues) {
+        const codeSection = issue.code || '';
+        const cleanCode = codeSection.toLowerCase().replace(/\s+/g, '');
+        const inContext = contexts.toLowerCase().includes(cleanCode);
+        const inChecklist = stepCodes.some(sc => sc.code.toLowerCase().replace(/\s+/g, '') === cleanCode);
+
+        if (inContext || inChecklist) {
+          validatedIssues.push(issue);
+        } else {
+          console.warn(`[SchedulerService][${stepConfig.name}] Citation Validation REJECTED unverified code citation: ${codeSection}`);
+          const ev = combinedEvaluations.find(e => e.code === codeSection);
+          if (ev) {
+            ev.status = 'compliant';
+            ev.details = `Compliant (Rejected hallucinated citation: ${codeSection})`;
+          }
+        }
+      }
+
+      let finalScore = 100;
+      for (const issue of validatedIssues) {
+        const deduction = issue.deduction_percentage !== undefined ? issue.deduction_percentage : 10;
+        finalScore -= deduction;
+      }
+      if (finalScore < 0) finalScore = 0;
+
+      resultJSON = {
+        ...judgeResult,
+        score: finalScore,
+        issues: validatedIssues,
+        checklist_evaluations: combinedEvaluations
+      };
     }
 
     // Process output and formatting
@@ -546,6 +1205,34 @@ export class SchedulerService {
           stepId
         });
       }
+    }
+
+    // Record RAG trace for explainability
+    try {
+      const validatedCitations = (resultJSON.issues || []).map((iss: any) => iss.code);
+      const rejectedCitations = (resultJSON.checklist_evaluations || [])
+        .filter((e: any) => e.details && e.details.includes("Rejected hallucinated citation"))
+        .map((e: any) => e.code);
+
+      RagOptimizerService.registerTrace(planId, {
+        stepId,
+        rawRetrievalCount: allMatches.length,
+        deduplicatedCount: deduplicatedMatches.length,
+        retrievedChunks: topMatches.map(m => {
+          const reranked = rerankedMatches.find(r => r.match.id === m.id);
+          return {
+            source: m.metadata?.source || "",
+            section: m.metadata?.section || RagOptimizerService.parseFallbackSection(m.metadata?.text || "").section || "",
+            page: m.metadata?.page_number || m.metadata?.pages || 0,
+            score: m.score || 0,
+            rerankScore: reranked ? reranked.rerankScore : (m.score || 0)
+          };
+        }),
+        finalValidatedCitations: validatedCitations,
+        rejectedCitations: rejectedCitations
+      });
+    } catch (e: any) {
+      console.warn(`[SchedulerService] Non-critical error recording RAG trace:`, e.message || e);
     }
 
     return finalResult;
@@ -597,8 +1284,12 @@ export class SchedulerService {
     isCachedFallback: boolean,
     planId?: string
   ): Promise<any> {
+    const debateStart = performance.now();
     const issues = resultJSON.issues;
-    const modelForJudge = isCachedFallback ? PIPELINE_CONFIG.models.flash : PIPELINE_CONFIG.models.pro;
+    // Adaptive Judge Routing: default to Flash, only escalate to Pro if borderline score (65-75)
+    const score = resultJSON.score !== undefined ? resultJSON.score : 100;
+    const isBorderline = score >= 65 && score <= 75;
+    const modelForJudge = (isBorderline && !isCachedFallback) ? PIPELINE_CONFIG.models.pro : PIPELINE_CONFIG.models.flash;
 
     // --- STEP 1: Challenger Argument (Gemini 2.5 Flash) ---
     console.log(`[ChallengerDebate][${stepConfig.name}] STEP 1: Challenger preparing defense arguments...`);
@@ -614,7 +1305,7 @@ Return a JSON object in this exact format:
   "rebuttals": [
     {
       "code": "<matching code e.g. BC 1008.1.1>",
-      "argument": "<your detailed defense argument and citation of exceptions>"
+      "argument": "<your defense argument and exceptions citation. Keep it highly technical, professional, and concise (max 3 sentences) to save output tokens.>"
     }
   ]
 }`;
@@ -631,6 +1322,14 @@ Return a JSON object in this exact format:
       challengerPayload.contents = [{
         role: 'user',
         parts: [{ text: challengerPrompt }]
+      }];
+    } else if (cacheResult.inlineData) {
+      challengerPayload.contents = [{
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType, data: cacheResult.inlineData } },
+          { text: challengerPrompt }
+        ]
       }];
     } else {
       challengerPayload.contents = [{
@@ -655,6 +1354,7 @@ Return a JSON object in this exact format:
     console.log(`[ChallengerDebate][${stepConfig.name}] STEP 1 complete. Received ${rebuttals.length} rebuttals.`);
 
     if (rebuttals.length === 0) {
+      ProfilerService.recordDuration(planId || 'test-plan-id', 'debate', performance.now() - debateStart);
       return resultJSON;
     }
 
@@ -680,7 +1380,7 @@ Return a JSON object in this exact format:
     {
       "code": "<matching code>",
       "verdict": "ACCEPT" | "REJECT",
-      "explanation": "<brief technical explanation of why you accepted or rejected their argument>"
+      "explanation": "<brief technical explanation of why you accepted or rejected their argument. Keep it highly technical, professional, and concise (max 3 sentences) to save output tokens.>"
     }
   ]
 }`;
@@ -692,11 +1392,21 @@ Return a JSON object in this exact format:
       }
     };
 
-    if (cacheResult.cacheName) {
+    const canUseCacheForJudge = cacheResult.cacheName && (modelForJudge === PIPELINE_CONFIG.models.flash);
+
+    if (canUseCacheForJudge) {
       judgePayload.cached_content = cacheResult.cacheName;
       judgePayload.contents = [{
         role: 'user',
         parts: [{ text: judgePrompt }]
+      }];
+    } else if (cacheResult.inlineData) {
+      judgePayload.contents = [{
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType, data: cacheResult.inlineData } },
+          { text: judgePrompt }
+        ]
       }];
     } else {
       judgePayload.contents = [{
@@ -779,6 +1489,9 @@ Return a JSON object in this exact format:
     }
     if (finalScore < 0) finalScore = 0;
 
+    const debateDuration = performance.now() - debateStart;
+    ProfilerService.recordDuration(planId || 'test-plan-id', 'debate', debateDuration);
+
     return {
       ...resultJSON,
       score: finalScore,
@@ -786,5 +1499,179 @@ Return a JSON object in this exact format:
       compliant_features: compliantFeatures,
       checklist_evaluations: evaluations
     };
+  }
+
+  private static async runCrossDisciplineValidation(
+    planId: string,
+    results: any[],
+    cacheResult: any,
+    mimeType: string
+  ): Promise<any> {
+    const checkedSteps = results.filter(r => r.checked);
+    const validatorPrompt = `You are the Chief Building Code Compliance Officer. You must evaluate the plan audit results of multiple engineering disciplines to detect cross-discipline contradictions and inconsistencies.
+
+Active Audited Results:
+${JSON.stringify(checkedSteps, null, 2)}
+
+Analyze the results for:
+1. Occupancy classification consistency: Are all disciplines (Electrical, Mechanical, Building, Fire, etc.) using the exact same occupancy group and construction type?
+2. Plumbing fixtures vs Egress load: Does the plumbing code fixtures count align with the occupant loads in the building code egress drawings?
+3. Mechanical ventilation vs Room usage: Are mechanical air flow rates and ventilation schedules consistent with the room types in architectural floor plans?
+4. Fire barrier ratings vs HVAC duct penetrations: Are the damper locations and wall fire ratings consistent between mechanical duct drawings and fire safety partition plans?
+5. Energy calculations vs building envelope: Do the U-values and envelope thermal areas match the structural/architectural details?
+
+Return a JSON object in this exact format:
+{
+  "inconsistencies": [
+    {
+      "title": "<short descriptive title of conflict>",
+      "description": "<detailed description of the inconsistency, citing both conflicting disciplines>",
+      "severity": "critical" | "major" | "minor",
+      "code": "<NYC Code references involved, e.g. BC 1004.1 / PC 403.1>",
+      "recommendation": "<remedy to align the plans>",
+      "exact_pdf_citation": "<drawing reference/sheet details>",
+      "loophole_details": "<why it contradicts>",
+      "required_elements": "<fix requirements>"
+    }
+  ]
+}`;
+
+    const payload: any = {
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      }
+    };
+
+    if (cacheResult.cacheName) {
+      payload.cached_content = cacheResult.cacheName;
+      payload.contents = [{
+        role: 'user',
+        parts: [{ text: `System Instructions:\n${validatorPrompt}\n\nUser Request:\nValidate cross-discipline consistency.` }]
+      }];
+    } else if (cacheResult.inlineData) {
+      payload.contents = [{
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType, data: cacheResult.inlineData } },
+          { text: validatorPrompt }
+        ]
+      }];
+    } else {
+      payload.contents = [{
+        role: 'user',
+        parts: [
+          { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+          { text: validatorPrompt }
+        ]
+      }];
+    }
+
+    await SchedulerService.proSemaphore.acquire();
+    try {
+      const response = await GeminiClient.requestWithRetry(
+        PIPELINE_CONFIG.models.pro,
+        payload,
+        false,
+        undefined,
+        planId
+      );
+      SchedulerService.proCallsCount++;
+      return this.parseJsonResult(response.text, "Cross-Discipline Validator");
+    } finally {
+      SchedulerService.proSemaphore.release();
+    }
+  }
+
+  private static async extractPlanFacts(
+    planId: string,
+    cacheResult: any,
+    mimeType: string
+  ): Promise<{ facts: ExtractedFacts; visionConfidence: number }> {
+    const prompt = `You are a precision Plan Verification OCR & Vision Assistant.
+Your task is to analyze the drawings and text of the attached plan and extract code parameters and dimensions.
+
+Extract the following parameters into a valid JSON object. If any parameter is not mentioned, use null.
+Do NOT guess or estimate values. Only extract explicit dimensions, counts, or measurements.
+
+JSON Schema:
+{
+  "facts": {
+    "occupant_load": <number | null>,
+    "exit_stairs_count": <number | null>,
+    "stair_width_inches": <number | null>,
+    "door_clear_width_inches": <number | null>,
+    "corridor_width_inches": <number | null>,
+    "ceiling_height_inches": <number | null>,
+    "room_dimensions_feet": [<numbers> | null],
+    "water_closet_spacing_inches": <number | null>,
+    "transformer_kva": <number | null>,
+    "planned_electrical_load_kva": <number | null>,
+    "panel_clearance_inches": <number | null>,
+    "receptacle_spacing_feet": <number | null>,
+    "gross_floor_area_sqft": <number | null>,
+    "lot_area_sqft": <number | null>,
+    "allowable_far": <number | null>,
+    "parking_spaces_provided": <number | null>,
+    "dwelling_units_count": <number | null>,
+    "allowable_dwelling_units_limit": <number | null>,
+    "travel_distance_feet": <number | null>,
+    "dead_end_corridor_feet": <number | null>
+  },
+  "vision_confidence": <float, between 0.0 and 1.0>
+}`;
+
+    const payload: any = {
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      }
+    };
+
+    if (cacheResult.cacheName) {
+      payload.cached_content = cacheResult.cacheName;
+      payload.contents = [{
+        role: 'user',
+        parts: [{ text: `System Instructions:\n${prompt}\n\nUser Request:\nExtract all parameters from the drawings.` }]
+      }];
+    } else if (cacheResult.inlineData) {
+      payload.contents = [{
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType, data: cacheResult.inlineData } },
+          { text: prompt }
+        ]
+      }];
+    } else {
+      payload.contents = [{
+        role: 'user',
+        parts: [
+          { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+          { text: prompt }
+        ]
+      }];
+    }
+
+    await SchedulerService.proSemaphore.acquire();
+    try {
+      const response = await GeminiClient.requestWithRetry(
+        PIPELINE_CONFIG.models.pro,
+        payload,
+        false,
+        undefined,
+        planId
+      );
+      SchedulerService.proCallsCount++;
+      const result = this.parseJsonResult(response.text, "Visual Fact Extractor");
+      return {
+        facts: result?.facts || {},
+        visionConfidence: result?.vision_confidence !== undefined ? result.vision_confidence : 0.90
+      };
+    } catch (err) {
+      console.error(`[SchedulerService] Plan fact extraction failed:`, err);
+      return { facts: {}, visionConfidence: 0.5 };
+    } finally {
+      SchedulerService.proSemaphore.release();
+    }
   }
 }

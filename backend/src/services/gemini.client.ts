@@ -2,6 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { PIPELINE_CONFIG } from '../config/pipeline.config';
 import { MonitoringService } from './monitoring.service';
+import { Logger } from './logger';
+import { geminiCircuitBreaker } from './circuit-breaker';
+import { metrics } from './metrics.service';
+
+const logger = new Logger({ stage: 'gemini-client' });
 
 export interface UsageMetadata {
   promptTokenCount: number;
@@ -24,7 +29,7 @@ export class GeminiClient {
     const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
     this.apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
     if (this.apiKeys.length === 0) {
-      console.warn('[GeminiClient] WARNING: No Gemini API keys found in environment. Please set GOOGLE_AI_STUDIO_KEY.');
+      logger.warn('No Gemini API keys found in environment. Set GOOGLE_AI_STUDIO_KEY.');
     }
   }
 
@@ -54,7 +59,7 @@ export class GeminiClient {
     const fileSize = fileStats.size;
     const apiKey = this.getApiKey();
 
-    console.log(`[GeminiClient] Initiating upload for ${displayName} (${fileSize} bytes)...`);
+    logger.info(`Initiating upload for ${displayName} (${fileSize} bytes)`);
 
     // Step 1: Start Resumable Upload
     const initUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`;
@@ -83,7 +88,7 @@ export class GeminiClient {
     }
 
     // Step 2: Upload file bytes
-    console.log(`[GeminiClient] Transferring bytes for ${displayName}...`);
+    logger.debug(`Transferring bytes for ${displayName}...`);
     const fileStream = fs.readFileSync(resolvedPath);
     const uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
@@ -102,8 +107,8 @@ export class GeminiClient {
 
     const uploadResult: any = await uploadResponse.json();
     const fileInfo = uploadResult.file;
-    const fileResourceName = fileInfo.name; // e.g. files/xxxxxx
-    console.log(`[GeminiClient] Upload complete. File resource: ${fileResourceName}. Processing status: ${fileInfo.state}`);
+    const fileResourceName = fileInfo.name;
+    logger.info(`Upload complete. File resource: ${fileResourceName}. Status: ${fileInfo.state}`);
 
     // Step 3: Poll File status until ACTIVE
     let state = fileInfo.state;
@@ -112,7 +117,7 @@ export class GeminiClient {
 
     while (state === 'PROCESSING' && pollAttempts < maxPollAttempts) {
       pollAttempts++;
-      console.log(`[GeminiClient] Polling status for ${fileResourceName} (attempt ${pollAttempts})...`);
+      logger.debug(`Polling status for ${fileResourceName} (attempt ${pollAttempts})...`);
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const pollUrl = `https://generativelanguage.googleapis.com/v1beta/${fileResourceName}?key=${apiKey}`;
@@ -121,7 +126,7 @@ export class GeminiClient {
         const pollResult: any = await pollResponse.json();
         state = pollResult.state;
         if (state === 'ACTIVE') {
-          console.log(`[GeminiClient] File ${fileResourceName} is ACTIVE and ready.`);
+          logger.info(`File ${fileResourceName} is ACTIVE and ready`);
           return pollResult;
         } else if (state === 'FAILED') {
           throw new Error(`Gemini File processing failed for ${displayName}.`);
@@ -145,18 +150,18 @@ export class GeminiClient {
       const url = `https://generativelanguage.googleapis.com/v1beta/${fileResourceName}?key=${apiKey}`;
       const response = await fetch(url, { method: 'DELETE' });
       if (response.ok) {
-        console.log(`[GeminiClient] Deleted Gemini file: ${fileResourceName}`);
+        logger.debug(`Deleted Gemini file: ${fileResourceName}`);
         return true;
       }
       return false;
     } catch (e) {
-      console.warn(`[GeminiClient] Non-critical error deleting file ${fileResourceName}:`, e);
+      logger.warn(`Non-critical error deleting file ${fileResourceName}`);
       return false;
     }
   }
 
   /**
-   * Executes a Gemini API call with retries and key rotation.
+   * Executes a Gemini API call with retries, key rotation, and circuit breaker protection.
    */
   static async requestWithRetry(
     model: string,
@@ -165,10 +170,27 @@ export class GeminiClient {
     onChunk?: (text: string) => void,
     planId?: string
   ): Promise<GeminiResponse> {
+    // Wrap the entire request in the circuit breaker
+    return geminiCircuitBreaker.execute(async () => {
+      return this.executeRequest(model, payload, stream, onChunk, planId);
+    });
+  }
+
+  /**
+   * Internal request execution with retries and backoff.
+   */
+  private static async executeRequest(
+    model: string,
+    payload: any,
+    stream: boolean,
+    onChunk?: (text: string) => void,
+    planId?: string
+  ): Promise<GeminiResponse> {
     const maxRetries = PIPELINE_CONFIG.maxRetries;
     let attempt = 0;
     const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
     let lastErrorDetail = "No request completed successfully";
+    const startTime = Date.now();
 
     while (attempt <= maxRetries) {
       attempt++;
@@ -181,7 +203,13 @@ export class GeminiClient {
       const timeoutId = setTimeout(() => controller.abort(), PIPELINE_CONFIG.timeoutMs);
 
       try {
-        console.log(`[GeminiClient] Sending request to ${model} (Attempt ${attempt}/${maxRetries + 1})...`);
+        logger.debug(`Sending request to ${model} (attempt ${attempt}/${maxRetries + 1})`, {
+          retryCount: attempt - 1,
+          auditId: planId
+        });
+
+        metrics.incrementCounter('nyc_gemini_requests_total', { model: model.includes('pro') ? 'pro' : 'flash' });
+
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -194,24 +222,35 @@ export class GeminiClient {
         if (!response.ok) {
           const status = response.status;
           const errText = await response.text();
-          console.warn(`[GeminiClient] API Error ${status}: ${errText}`);
+          logger.warn(`API Error ${status}: ${errText.substring(0, 200)}`, {
+            retryCount: attempt,
+            errorCode: `HTTP_${status}`,
+            auditId: planId
+          });
           lastErrorDetail = `HTTP ${status} (${response.statusText}): ${errText}`;
 
           if (status === 429) {
             const delay = 6000 * Math.pow(1.5, attempt) + Math.random() * 2000;
-            console.log(`[GeminiClient] Rate limit hit. Backing off for ${Math.round(delay)}ms...`);
+            logger.info(`Rate limit hit. Backing off for ${Math.round(delay)}ms`, { retryCount: attempt, auditId: planId });
+            metrics.incrementCounter('nyc_retries_total', { reason: 'rate_limit' });
             await new Promise(resolve => setTimeout(resolve, delay));
           } else if (status === 500 || status === 503) {
             const delay = 8000 * attempt + Math.random() * 2000;
-            console.log(`[GeminiClient] Server error. Backing off for ${Math.round(delay)}ms...`);
+            logger.info(`Server error. Backing off for ${Math.round(delay)}ms`, { retryCount: attempt, auditId: planId });
+            metrics.incrementCounter('nyc_retries_total', { reason: 'server_error' });
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
-            // Other client errors, retry with backoff but don't loop forever if key is bad
             const delay = 4000 * attempt;
+            metrics.incrementCounter('nyc_retries_total', { reason: 'client_error' });
             await new Promise(resolve => setTimeout(resolve, delay));
           }
           continue;
         }
+
+        const latencySeconds = (Date.now() - startTime) / 1000;
+        metrics.observeHistogram('nyc_gemini_latency_seconds', latencySeconds, {
+          model: model.includes('pro') ? 'pro' : 'flash'
+        });
 
         if (stream) {
           let accumulatedText = "";
@@ -281,9 +320,14 @@ export class GeminiClient {
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
-        console.warn(`[GeminiClient] Request exception (Attempt ${attempt}): ${err.message || err}`);
+        logger.warn(`Request exception (attempt ${attempt}): ${err.message || err}`, {
+          retryCount: attempt,
+          errorCode: err.code || 'EXCEPTION',
+          auditId: planId
+        });
         lastErrorDetail = `Exception: ${err.message || err}`;
         const delay = 4000 * Math.pow(1.5, attempt - 1);
+        metrics.incrementCounter('nyc_retries_total', { reason: 'exception' });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

@@ -17,9 +17,11 @@ export class RoutingService {
     planId: string,
     fileUri: string,
     mimeType: string,
-    cacheName?: string
+    cacheName?: string,
+    inlineData?: string,
+    totalPages?: number
   ): Promise<PageRouteResult[]> {
-    console.log(`[RoutingService] Starting classification for plan ${planId}...`);
+    console.log(`[RoutingService] Starting classification for plan ${planId} (Total pages: ${totalPages || 'unknown'})...`);
 
     const systemPrompt = `You are a document classification and routing engine for architectural blueprints and engineering document packages.
 Your task is to analyze the attached document and identify the category, complexity, and visual accuracy requirements for EACH page.
@@ -56,80 +58,100 @@ Example format:
   {"page_number": 2, "type": "Floor plans", "confidence": 0.96, "complexity": "high"}
 ]`;
 
-    // Construct the request payload
-    const payload: any = {
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
+    const classifyRange = async (startPage?: number, endPage?: number): Promise<any[]> => {
+      const rangeText = (startPage !== undefined && endPage !== undefined)
+        ? `from page ${startPage} to ${endPage}`
+        : `in the attached document`;
+      const userText = `Classify every page ${rangeText} and output a JSON array.`;
+
+      const payload: any = {
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        }
+      };
+
+      if (cacheName) {
+        payload.cached_content = cacheName;
+        payload.contents = [{
+          role: 'user',
+          parts: [{
+            text: `System Instructions:\n${systemPrompt}\n\nUser Request:\n${userText}`
+          }]
+        }];
+      } else if (inlineData) {
+        payload.contents = [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType, data: inlineData } },
+            { text: userText }
+          ]
+        }];
+      } else {
+        payload.contents = [{
+          role: 'user',
+          parts: [
+            { fileData: { fileUri, mimeType } },
+            { text: userText }
+          ]
+        }];
       }
-    };
 
-    if (cacheName) {
-      payload.cached_content = cacheName;
-      payload.contents = [{
-        role: 'user',
-        parts: [{
-          text: 'Classify every page in the cached document and output a JSON array.'
-        }]
-      }];
-    } else {
-      payload.contents = [{
-        role: 'user',
-        parts: [
-          {
-            fileData: {
-              fileUri: fileUri,
-              mimeType: mimeType
-            }
-          },
-          {
-            text: 'Classify every page in the attached document and output a JSON array.'
-          }
-        ]
-      }];
-    }
+      const requestPayload: any = { ...payload };
+      if (!cacheName) {
+        requestPayload.systemInstruction = { parts: [{ text: systemPrompt }] };
+      }
 
-    // Call Gemini 2.5 Flash for classification
-    let rawResponse = "";
-    try {
       const response = await GeminiClient.requestWithRetry(
         PIPELINE_CONFIG.models.flash,
-        {
-          ...payload,
-          systemInstruction: { parts: [{ text: systemPrompt }] }
-        },
+        requestPayload,
         false,
         undefined,
         planId
       );
-      rawResponse = response.text;
-    } catch (err) {
-      console.error(`[RoutingService] Page classification failed:`, err);
-      // Fallback: assume 1 page and route to Flash
-      return [{
-        page_number: 1,
-        type: 'Mixed content',
-        confidence: 0.5,
-        complexity: 'medium',
-        route: 'flash'
-      }];
-    }
 
-    // Parse the routing JSON
-    let pageClassifications: any[] = [];
-    try {
+      const rawResponse = response.text;
       const cleanJsonText = rawResponse.trim()
         .replace(/^```json\s*/i, '')
         .replace(/```$/, '')
         .trim();
       
-      pageClassifications = JSON.parse(cleanJsonText);
-      if (!Array.isArray(pageClassifications)) {
+      const parsed = JSON.parse(cleanJsonText);
+      if (!Array.isArray(parsed)) {
         throw new Error('Routing response is not a JSON array');
       }
-    } catch (parseErr) {
-      console.error(`[RoutingService] Failed to parse routing JSON. Raw output: "${rawResponse}"`, parseErr);
-      // Fallback: default to Flash for page 1
+      return parsed;
+    };
+
+    let pageClassifications: any[] = [];
+
+    try {
+      if (totalPages && totalPages > 10) {
+        const chunkSize = 10;
+        const chunkPromises: Promise<any[]>[] = [];
+        console.log(`[RoutingService] Parallelizing classification into chunks of size ${chunkSize} for ${totalPages} pages.`);
+        for (let start = 1; start <= totalPages; start += chunkSize) {
+          const end = Math.min(start + chunkSize - 1, totalPages);
+          chunkPromises.push(classifyRange(start, end).catch(err => {
+            console.warn(`[RoutingService] Chunk ${start}-${end} failed: ${err.message}. Retrying range in fallback.`);
+            return [];
+          }));
+        }
+
+        const chunkResults = await Promise.all(chunkPromises);
+        pageClassifications = chunkResults.flat();
+
+        // If chunked classification returned empty result, fall back to single document classification.
+        if (pageClassifications.length === 0) {
+          console.warn(`[RoutingService] Chunked classification returned empty result. Falling back to single document classification.`);
+          pageClassifications = await classifyRange();
+        }
+      } else {
+        pageClassifications = await classifyRange();
+      }
+    } catch (err) {
+      console.error(`[RoutingService] Page classification failed:`, err);
+      // Fallback: assume 1 page and route to Flash
       return [{
         page_number: 1,
         type: 'Mixed content',
