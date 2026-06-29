@@ -184,6 +184,89 @@ app.get('/health/ai', async (req, res) => {
   }
 });
 
+app.get('/health/frontend', async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const buildIdPath = path.resolve(__dirname, '../../frontend/.next/BUILD_ID');
+    const staticDir = path.resolve(__dirname, '../../frontend/.next/static');
+    
+    const buildIdExists = fs.existsSync(buildIdPath);
+    const staticExists = fs.existsSync(staticDir);
+    
+    if (!buildIdExists || !staticExists) {
+      return res.status(500).json({
+        status: 'unhealthy',
+        buildIdExists,
+        staticExists,
+        error: 'Frontend build assets are missing'
+      });
+    }
+    
+    const buildId = fs.readFileSync(buildIdPath, 'utf8').trim();
+    res.status(200).json({
+      status: 'healthy',
+      buildId,
+      staticAssets: 'ok'
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 'error',
+      error: err.message || String(err)
+    });
+  }
+});
+
+app.get('/health/backend', async (req, res) => {
+  try {
+    // 1. Check DB
+    const pool = (await import('./db')).default;
+    await pool.query('SELECT 1');
+    
+    // 2. Check Pinecone
+    const { Pinecone } = await import('@pinecone-database/pinecone');
+    const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
+    const index = pc.Index(process.env.PINECONE_INDEX as string);
+    await index.describeIndexStats();
+    
+    // 3. Check Queue Worker
+    const { QueueWorker } = await import('./services/queue.service');
+    const queueRunning = QueueWorker.isWorkerRunning();
+    
+    res.status(200).json({
+      status: 'healthy',
+      checks: {
+        database: 'ok',
+        pinecone: 'ok',
+        queueWorker: queueRunning ? 'active' : 'inactive'
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: err.message || String(err)
+    });
+  }
+});
+
+app.get('/health/kb', async (req, res) => {
+  try {
+    const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
+    const kbStatus = KnowledgeBaseValidationService.getValidationStatus();
+    const missingBooks = KnowledgeBaseValidationService.getMissingBooks();
+    
+    res.status(200).json({
+      status: missingBooks.length === 0 ? 'healthy' : 'degraded',
+      missingBooks,
+      details: kbStatus
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 'error',
+      error: err.message || String(err)
+    });
+  }
+});
+
 app.get('/ready', async (req, res) => {
   try {
     const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');

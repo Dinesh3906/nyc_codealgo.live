@@ -92,6 +92,10 @@ export class QueueWorker {
     logger.info('Queue worker stopped');
   }
 
+  static isWorkerRunning(): boolean {
+    return this.intervalId !== null;
+  }
+
   /**
    * Returns current queue depth for monitoring.
    */
