@@ -16,7 +16,8 @@ async function run() {
 
     const columns = [
       { name: 'mimetype', type: 'VARCHAR(100) NULL' },
-      { name: 'selectedSteps', type: 'TEXT NULL' }
+      { name: 'selectedSteps', type: 'TEXT NULL' },
+      { name: 'retryCount', type: 'INT DEFAULT 0' }
     ];
 
     for (const col of columns) {
