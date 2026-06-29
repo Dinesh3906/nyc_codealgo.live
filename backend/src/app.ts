@@ -107,6 +107,43 @@ app.get('/health', async (req, res) => {
   });
 });
 
+app.get('/health/ai', async (req, res) => {
+  try {
+    const { breakersRegistry } = await import('./services/circuit-breaker');
+    const { GeminiClient } = await import('./services/gemini.client');
+
+    const breakersStats: Record<string, any> = {};
+    for (const [name, breaker] of Object.entries(breakersRegistry)) {
+      breakersStats[name] = breaker.getStats();
+    }
+
+    const keysMetadata = GeminiClient.getKeysMetadata().map(km => ({
+      keyPrefix: km.key ? `${km.key.substring(0, 8)}...` : 'N/A',
+      rpmCount: km.rpmTimestamps.length,
+      tpmCount: km.tpmUsage.reduce((sum, u) => sum + u.tokens, 0),
+      dailyRequests: km.dailyRequests,
+      dailyTokens: km.dailyTokens,
+      coolDownRemainingMs: Math.max(0, km.coolDownUntil - Date.now()),
+      status: km.coolDownUntil > Date.now() ? 'COOLDOWN' : 'ACTIVE'
+    }));
+
+    const hasActiveKey = keysMetadata.some(k => k.status === 'ACTIVE');
+
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      connectivity: hasActiveKey ? 'connected' : 'degraded',
+      breakers: breakersStats,
+      apiKeys: keysMetadata
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message || err
+    });
+  }
+});
+
 app.get('/ready', async (req, res) => {
   try {
     const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');

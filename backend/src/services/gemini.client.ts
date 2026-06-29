@@ -3,7 +3,7 @@ import path from 'path';
 import { PIPELINE_CONFIG } from '../config/pipeline.config';
 import { MonitoringService } from './monitoring.service';
 import { Logger } from './logger';
-import { geminiCircuitBreaker } from './circuit-breaker';
+import { geminiCircuitBreaker, getDisciplineBreaker } from './circuit-breaker';
 import { metrics } from './metrics.service';
 
 const logger = new Logger({ stage: 'gemini-client' });
@@ -21,13 +21,26 @@ export interface GeminiResponse {
   model: string;
 }
 
+export interface TokenUsage {
+  timestamp: number;
+  tokens: number;
+}
+
+export interface KeyMetadata {
+  key: string;
+  rpmTimestamps: number[];
+  tpmUsage: TokenUsage[];
+  dailyRequests: number;
+  dailyTokens: number;
+  coolDownUntil: number; // timestamp in ms
+  lastCheckedDay: string; // YYYY-MM-DD
+}
+
 export class GeminiClient {
-  private static apiKeys: string[] = [];
-  private static keyIndex = 0;
-  
   private static cacheModels: Map<string, string> = new Map();
   private static cacheFiles: Map<string, { fileUri: string, inlineData?: string }> = new Map();
-
+  private static keysMetadata: KeyMetadata[] = [];
+  
   static registerCache(cacheName: string | undefined, model: string, fileUri: string, inlineData?: string) {
     if (!cacheName) return;
     const baseModel = model.startsWith('models/') ? model : `models/${model}`;
@@ -37,22 +50,91 @@ export class GeminiClient {
 
   static {
     const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
-    this.apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
-    if (this.apiKeys.length === 0) {
+    const keys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
+    this.keysMetadata = keys.map(k => ({
+      key: k,
+      rpmTimestamps: [],
+      tpmUsage: [],
+      dailyRequests: 0,
+      dailyTokens: 0,
+      coolDownUntil: 0,
+      lastCheckedDay: new Date().toISOString().split('T')[0]
+    }));
+    if (this.keysMetadata.length === 0) {
       logger.warn('No Gemini API keys found in environment. Set GOOGLE_AI_STUDIO_KEY.');
     }
   }
 
   /**
-   * Retrieves the current API key and advances the rotation index.
+   * Returns all API keys metadata for `/health/ai`
    */
-  private static getApiKey(): string {
-    if (this.apiKeys.length === 0) {
+  static getKeysMetadata(): KeyMetadata[] {
+    const now = Date.now();
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Prune expired records
+    for (const km of this.keysMetadata) {
+      if (km.lastCheckedDay !== today) {
+        km.dailyRequests = 0;
+        km.dailyTokens = 0;
+        km.lastCheckedDay = today;
+      }
+      km.rpmTimestamps = km.rpmTimestamps.filter(t => now - t < 60000);
+      km.tpmUsage = km.tpmUsage.filter(u => now - u.timestamp < 60000);
+    }
+    return this.keysMetadata;
+  }
+
+  /**
+   * Retrieves the best available API key metadata.
+   */
+  private static getAvailableKeyMetadata(): KeyMetadata {
+    if (this.keysMetadata.length === 0) {
       throw new Error('No Gemini API keys configured. Set GOOGLE_AI_STUDIO_KEY in .env.');
     }
-    const key = this.apiKeys[this.keyIndex % this.apiKeys.length];
-    this.keyIndex++;
-    return key;
+    const now = Date.now();
+    const today = new Date().toISOString().split('T')[0];
+
+    // Reset daily counters and prune old timestamps
+    for (const km of this.keysMetadata) {
+      if (km.lastCheckedDay !== today) {
+        km.dailyRequests = 0;
+        km.dailyTokens = 0;
+        km.lastCheckedDay = today;
+      }
+      km.rpmTimestamps = km.rpmTimestamps.filter(t => now - t < 60000);
+      km.tpmUsage = km.tpmUsage.filter(u => now - u.timestamp < 60000);
+    }
+
+    // Filter keys not currently cooling down
+    const activeKeys = this.keysMetadata.filter(km => now >= km.coolDownUntil);
+
+    if (activeKeys.length > 0) {
+      // Load-balance: pick the key with the least RPM utilization in the last 60 seconds
+      return activeKeys.sort((a, b) => a.rpmTimestamps.length - b.rpmTimestamps.length)[0];
+    }
+
+    // If all keys are in cooldown, pick the one that will finish cooldown first
+    return [...this.keysMetadata].sort((a, b) => a.coolDownUntil - b.coolDownUntil)[0];
+  }
+
+  private static getApiKey(): string {
+    return this.getAvailableKeyMetadata().key;
+  }
+
+  private static recordRequestStart(km: KeyMetadata) {
+    km.rpmTimestamps.push(Date.now());
+    km.dailyRequests++;
+  }
+
+  private static recordTokens(km: KeyMetadata, tokenCount: number) {
+    km.tpmUsage.push({ timestamp: Date.now(), tokens: tokenCount });
+    km.dailyTokens += tokenCount;
+  }
+
+  private static recordQuotaFailure(km: KeyMetadata) {
+    km.coolDownUntil = Date.now() + 60000; // 1-minute cooldown for this key
+    logger.warn(`API key ${km.key.substring(0, 8)}... hit quota limit. Cooling down for 60s.`);
   }
 
   /**
@@ -67,11 +149,12 @@ export class GeminiClient {
 
     const fileStats = fs.statSync(resolvedPath);
     const fileSize = fileStats.size;
-    const apiKey = this.getApiKey();
+    const km = this.getAvailableKeyMetadata();
+    const apiKey = km.key;
+    this.recordRequestStart(km);
 
     logger.info(`Initiating upload for ${displayName} (${fileSize} bytes)`);
 
-    // Step 1: Start Resumable Upload
     const initUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`;
     const initResponse = await fetch(initUrl, {
       method: 'POST',
@@ -88,6 +171,9 @@ export class GeminiClient {
     });
 
     if (!initResponse.ok) {
+      if (initResponse.status === 429) {
+        this.recordQuotaFailure(km);
+      }
       const errText = await initResponse.text();
       throw new Error(`Failed to initiate Gemini upload: ${initResponse.statusText} (${errText})`);
     }
@@ -97,7 +183,6 @@ export class GeminiClient {
       throw new Error('Gemini File API did not return x-goog-upload-url header.');
     }
 
-    // Step 2: Upload file bytes
     logger.debug(`Transferring bytes for ${displayName}...`);
     const fileStream = fs.readFileSync(resolvedPath);
     const uploadResponse = await fetch(uploadUrl, {
@@ -120,7 +205,6 @@ export class GeminiClient {
     const fileResourceName = fileInfo.name;
     logger.info(`Upload complete. File resource: ${fileResourceName}. Status: ${fileInfo.state}`);
 
-    // Step 3: Poll File status until ACTIVE
     let state = fileInfo.state;
     let pollAttempts = 0;
     const maxPollAttempts = 30;
@@ -156,7 +240,9 @@ export class GeminiClient {
    */
   static async deleteFile(fileResourceName: string): Promise<boolean> {
     try {
-      const apiKey = this.getApiKey();
+      const km = this.getAvailableKeyMetadata();
+      const apiKey = km.key;
+      this.recordRequestStart(km);
       const url = `https://generativelanguage.googleapis.com/v1beta/${fileResourceName}?key=${apiKey}`;
       const response = await fetch(url, { method: 'DELETE' });
       if (response.ok) {
@@ -178,10 +264,11 @@ export class GeminiClient {
     payload: any,
     stream = false,
     onChunk?: (text: string) => void,
-    planId?: string
+    planId?: string,
+    discipline?: string
   ): Promise<GeminiResponse> {
-    // Wrap the entire request in the circuit breaker
-    return geminiCircuitBreaker.execute(async () => {
+    const breaker = discipline ? getDisciplineBreaker(discipline) : geminiCircuitBreaker;
+    return breaker.execute(async () => {
       return this.executeRequest(model, payload, stream, onChunk, planId);
     });
   }
@@ -200,7 +287,6 @@ export class GeminiClient {
     let attempt = 0;
     const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
 
-    // Defensive runtime cache model validation
     if (payload && payload.cached_content) {
       const registeredModel = this.cacheModels.get(payload.cached_content);
       if (registeredModel && registeredModel !== baseModelName) {
@@ -224,7 +310,6 @@ export class GeminiClient {
           }
         }
         
-        // Remove systemInstruction as it was only omitted for cache requests
         if (payload.systemInstruction) {
           delete payload.systemInstruction;
         }
@@ -236,7 +321,10 @@ export class GeminiClient {
 
     while (attempt <= maxRetries) {
       attempt++;
-      const apiKey = this.getApiKey();
+      const km = this.getAvailableKeyMetadata();
+      const apiKey = km.key;
+      this.recordRequestStart(km);
+
       const action = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
       const separator = action.includes('?') ? '&' : '?';
       const url = `https://generativelanguage.googleapis.com/v1beta/${baseModelName}:${action}${separator}key=${apiKey}`;
@@ -245,7 +333,7 @@ export class GeminiClient {
       const timeoutId = setTimeout(() => controller.abort(), PIPELINE_CONFIG.timeoutMs);
 
       try {
-        logger.debug(`Sending request to ${model} (attempt ${attempt}/${maxRetries + 1})`, {
+        logger.debug(`Sending request to ${model} using key ${apiKey.substring(0, 8)}... (attempt ${attempt}/${maxRetries + 1})`, {
           retryCount: attempt - 1,
           auditId: planId
         });
@@ -272,17 +360,18 @@ export class GeminiClient {
           lastErrorDetail = `HTTP ${status} (${response.statusText}): ${errText}`;
 
           if (status === 429) {
-            const delay = 6000 * Math.pow(1.5, attempt) + Math.random() * 2000;
-            logger.info(`Rate limit hit. Backing off for ${Math.round(delay)}ms`, { retryCount: attempt, auditId: planId });
-            metrics.incrementCounter('nyc_retries_total', { reason: 'rate_limit' });
-            await new Promise(resolve => setTimeout(resolve, delay));
-          } else if (status === 500 || status === 503) {
-            const delay = 8000 * attempt + Math.random() * 2000;
-            logger.info(`Server error. Backing off for ${Math.round(delay)}ms`, { retryCount: attempt, auditId: planId });
+            this.recordQuotaFailure(km);
+            logger.info(`Rotating key to retry due to quota exhaustion (attempt ${attempt})`);
+            metrics.incrementCounter('nyc_retries_total', { reason: 'quota_exhaustion_failover' });
+            continue;
+          }
+
+          if (status === 500 || status === 503) {
+            const delay = 3000 * attempt + Math.random() * 1000;
             metrics.incrementCounter('nyc_retries_total', { reason: 'server_error' });
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
-            const delay = 4000 * attempt;
+            const delay = 2000 * attempt;
             metrics.incrementCounter('nyc_retries_total', { reason: 'client_error' });
             await new Promise(resolve => setTimeout(resolve, delay));
           }
@@ -298,6 +387,7 @@ export class GeminiClient {
           let accumulatedText = "";
           let lastUsageMetadata: UsageMetadata | undefined;
           const reader = response.body?.getReader();
+
           if (!reader) {
             throw new Error('Response body reader not available.');
           }
@@ -335,8 +425,8 @@ export class GeminiClient {
             }
           }
 
-          // Trigger monitoring tracking
           if (lastUsageMetadata) {
+            this.recordTokens(km, lastUsageMetadata.totalTokenCount);
             MonitoringService.trackUsage(model, lastUsageMetadata, planId);
           }
 
@@ -351,6 +441,7 @@ export class GeminiClient {
           const usageMetadata: UsageMetadata | undefined = result.usageMetadata;
 
           if (usageMetadata) {
+            this.recordTokens(km, usageMetadata.totalTokenCount);
             MonitoringService.trackUsage(model, usageMetadata, planId);
           }
 
@@ -368,8 +459,10 @@ export class GeminiClient {
           auditId: planId
         });
         lastErrorDetail = `Exception: ${err.message || err}`;
-        const delay = 4000 * Math.pow(1.5, attempt - 1);
-        metrics.incrementCounter('nyc_retries_total', { reason: 'exception' });
+        
+        const isTimeout = err.name === 'AbortError';
+        const delay = isTimeout ? 1000 : (4000 * Math.pow(1.5, attempt - 1));
+        metrics.incrementCounter('nyc_retries_total', { reason: isTimeout ? 'timeout' : 'exception' });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

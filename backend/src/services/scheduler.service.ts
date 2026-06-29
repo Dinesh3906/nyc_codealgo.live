@@ -188,11 +188,44 @@ export class SchedulerService {
 
     // 4.5. Extract Visual Parameters Facts from the Plan
     console.log(`[SchedulerService] Extracting structural parameters from drawings...`);
-    const extractionResult = await this.extractPlanFacts(planId, cacheResult, mimeType);
-    console.log(`[SchedulerService] Parameter extraction complete. Vision Confidence: ${extractionResult.visionConfidence}`);
-    const planFacts = extractionResult.facts;
-    const globalFacts = extractionResult.globalFacts;
-    const visionConfidence = extractionResult.visionConfidence;
+    let planFacts: any = {};
+    let globalFacts: any = {};
+    let visionConfidence = 0.5;
+    try {
+      const extractionResult = await this.extractPlanFacts(planId, cacheResult, mimeType);
+      console.log(`[SchedulerService] Parameter extraction complete. Vision Confidence: ${extractionResult.visionConfidence}`);
+      planFacts = extractionResult.facts;
+      globalFacts = extractionResult.globalFacts;
+      visionConfidence = extractionResult.visionConfidence;
+    } catch (err: any) {
+      console.error(`[SchedulerService] Failed to extract plan facts, using empty fallback facts:`, err);
+      globalFacts = {
+        project_name: { value: "Unknown", confidence: 1.0, source_page: null },
+        document_type: { value: "Construction Documents", confidence: 1.0 }
+      };
+      planFacts = {
+        occupant_load: { value: null, confidence: 1.0, source_page: null },
+        exit_stairs_count: { value: null, confidence: 1.0, source_page: null },
+        stair_width_inches: { value: null, confidence: 1.0, source_page: null },
+        door_clear_width_inches: { value: null, confidence: 1.0, source_page: null },
+        corridor_width_inches: { value: null, confidence: 1.0, source_page: null },
+        ceiling_height_inches: { value: null, confidence: 1.0, source_page: null },
+        room_dimensions_feet: { value: null, confidence: 1.0, source_page: null },
+        water_closet_spacing_inches: { value: null, confidence: 1.0, source_page: null },
+        transformer_kva: { value: null, confidence: 1.0, source_page: null },
+        planned_electrical_load_kva: { value: null, confidence: 1.0, source_page: null },
+        panel_clearance_inches: { value: null, confidence: 1.0, source_page: null },
+        receptacle_spacing_feet: { value: null, confidence: 1.0, source_page: null },
+        gross_floor_area_sqft: { value: null, confidence: 1.0, source_page: null },
+        lot_area_sqft: { value: null, confidence: 1.0, source_page: null },
+        allowable_far: { value: null, confidence: 1.0, source_page: null },
+        parking_spaces_provided: { value: null, confidence: 1.0, source_page: null },
+        dwelling_units_count: { value: null, confidence: 1.0, source_page: null },
+        allowable_dwelling_units_limit: { value: null, confidence: 1.0, source_page: null },
+        travel_distance_feet: { value: null, confidence: 1.0, source_page: null },
+        dead_end_corridor_feet: { value: null, confidence: 1.0, source_page: null }
+      };
+    }
 
     EvidenceLogger.logAudit({
       auditId: planId,
@@ -280,7 +313,7 @@ export class SchedulerService {
           
           // Generate checklist fallback on error
           const fallbackFeatures = (STEP_CODES_CHECKLIST[step.id] || []).map(
-            item => `${item.code} - ${item.title}: Verification pending due to API connection issue.`
+            item => `${item.code} - ${item.title}: Verification pending: Automated verification temporarily unavailable.`
           );
 
           return {
@@ -289,9 +322,20 @@ export class SchedulerService {
             checked: true,
             score: 70,
             status: 'warning' as const,
-            summary: `Audit partially completed for ${step.name} due to verification errors: ${err.message}`,
+            summary: `Automated verification temporarily unavailable. Manual review recommended.`,
             compliant_features: fallbackFeatures,
-            issues: []
+            issues: [
+              {
+                title: "Manual Review Required",
+                description: "Automated verification temporarily unavailable.",
+                severity: "major" as const,
+                citation_chunk_id: null,
+                recommendation: "Please review drawings manually to verify compliance.",
+                deduction_percentage: 0,
+                loophole_details: "Automated verification temporarily unavailable.",
+                required_elements: "Manual drawing inspection"
+              }
+            ]
           };
         }
       };
@@ -774,7 +818,8 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
             requestPayload,
             false,
             undefined,
-            planId
+            planId,
+            stepId
           );
           const duration = performance.now() - startProTime;
           ProfilerService.recordDuration(planId, 'geminiPro', duration);
@@ -867,7 +912,8 @@ Return a JSON object in this exact format:
             payload,
             false,
             undefined,
-            planId
+            planId,
+            stepId
           );
           const duration = performance.now() - start;
           ProfilerService.recordDuration(planId, 'geminiPro', duration);
@@ -983,7 +1029,8 @@ CRITICAL CITATION INSTRUCTION:
             payload,
             false,
             undefined,
-            planId
+            planId,
+            stepId
           );
           const duration = performance.now() - start;
           ProfilerService.recordDuration(planId, 'geminiPro', duration);
@@ -1151,7 +1198,8 @@ Return a JSON object in this exact format:
               payload,
               false,
               undefined,
-              planId
+              planId,
+              stepId
             );
             SchedulerService.proCallsCount++;
             const verifierResult = this.parseJsonResult(response.text, "Verifier");
@@ -1262,7 +1310,8 @@ Return a JSON object in this exact format:
               payload,
               false,
               undefined,
-              planId
+              planId,
+              stepId
             );
             SchedulerService.proCallsCount++;
             const repaired = this.parseJsonResult(response.text, "Repairer");
@@ -1659,7 +1708,8 @@ Return a JSON object in this exact format:
       challengerPayload,
       false,
       undefined,
-      planId
+      planId,
+      stepId
     );
 
     const challengerResult = this.parseJsonResult(challengerResponse.text, "Challenger");
@@ -1741,7 +1791,8 @@ Return a JSON object in this exact format:
           judgePayload,
           false,
           undefined,
-          planId
+          planId,
+          stepId
         );
         judgeResponseText = response.text;
       } finally {
@@ -1753,7 +1804,8 @@ Return a JSON object in this exact format:
         judgePayload,
         false,
         undefined,
-        planId
+        planId,
+        stepId
       );
       judgeResponseText = response.text;
     }
@@ -1888,7 +1940,8 @@ Return a JSON object in this exact format:
         payload,
         false,
         undefined,
-        planId
+        planId,
+        'cross_discipline'
       );
       SchedulerService.proCallsCount++;
       return this.parseJsonResult(response.text, "Cross-Discipline Validator");
