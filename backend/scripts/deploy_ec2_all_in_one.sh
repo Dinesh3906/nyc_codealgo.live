@@ -49,11 +49,8 @@ if [ -f ".env" ]; then
     echo "🗄️ Resetting transaction and history tables in RDS database ($DB_NAME)..."
     mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" -e "
         SET FOREIGN_KEY_CHECKS = 0;
-        TRUNCATE TABLE audit_reports;
-        TRUNCATE TABLE audit_steps;
-        TRUNCATE TABLE plans;
-        TRUNCATE TABLE jobs;
-        TRUNCATE TABLE logs;
+        TRUNCATE TABLE plan;
+        TRUNCATE TABLE dead_letter_queue;
         SET FOREIGN_KEY_CHECKS = 1;
     " || echo "⚠️ Warning: Database flush skipped or failed (check RDS connection/credentials)."
 else
@@ -68,8 +65,8 @@ npm run build || npx tsc
 echo "--------------------------------------------------"
 echo "🚀 STEP 5: Starting Applications via PM2"
 echo "--------------------------------------------------"
-pm2 delete all || true
-pm2 start dist/index.js --name "nyc-compliance-backend"
+pm2 delete nyc-backend || true
+pm2 start dist/server.js --name "nyc-backend"
 
 echo "--------------------------------------------------"
 echo "✅ DEPLOYMENT & FLUSH COMPLETED SUCCESSFULLY!"
