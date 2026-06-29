@@ -28,7 +28,7 @@ async function run() {
       await connection.execute('ALTER TABLE `user` ADD COLUMN `tokenVersion` INT DEFAULT 1');
       console.log('✅ Column `tokenVersion` added successfully.');
     } catch (err: any) {
-      if (err.code === 'ER_DUP_COLUMN_NAME') {
+      if (err.code === 'ER_DUP_COLUMN_NAME' || err.errno === 1060 || (err.message && err.message.includes('Duplicate column name'))) {
         console.log('ℹ️ Column `tokenVersion` already exists. Skipping.');
       } else {
         console.error('❌ Error adding column:', err.message);
