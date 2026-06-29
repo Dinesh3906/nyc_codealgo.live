@@ -74,7 +74,7 @@ export class KnowledgeBaseValidationService {
       const matches = allFiles.filter(f => meta.pattern.test(f.name));
       
       if (matches.length === 0) {
-        logger.error(`Production Error: Official reference book [${meta.officialBook}] is missing from corpus!`, new Error(`Missing files for pattern: ${meta.pattern}`));
+        logger.warn(`Production Warning: Official reference book [${meta.officialBook}] is missing from corpus. (Expected Pattern: ${meta.pattern.source})`);
         this.supportedDisciplines.set(discipline, false);
         this.documentRegistry.set(discipline, {
           filename: `${meta.officialBook} (Expected Pattern: ${meta.pattern.source})`,
