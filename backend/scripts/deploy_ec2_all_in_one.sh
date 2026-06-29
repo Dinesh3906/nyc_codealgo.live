@@ -9,16 +9,16 @@
 set -e
 
 echo "--------------------------------------------------"
-echo "🔧 STEP 1: Updating System & Installing Dependencies"
+echo "🔧 STEP 1: Bypassing System Updates (Bypassing broken apt)"
 echo "--------------------------------------------------"
-sudo apt-get update -y
-sudo apt-get install -y curl git build-essential mysql-client
+# sudo apt-get update -y
+# sudo apt-get install -y curl git build-essential mysql-client
 
 # Install Node.js v20 LTS
 if ! command -v node &> /dev/null; then
     echo "📦 Installing Node.js v20..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    # sudo apt-get install -y nodejs
 fi
 
 # Install PM2 globally
