@@ -9,6 +9,7 @@ interface CacheEntry {
   fileUri: string;
   fileResourceName: string;
   cacheName?: string; // projects/.../cachedContents/...
+  cacheModel?: string;
   expiresAt: number;  // timestamp in ms
   inlineData?: string;
 }
@@ -18,6 +19,13 @@ export class GeminiCacheManager {
   private static caches: Map<string, CacheEntry> = new Map();
 
   /**
+   * Helper to retrieve a CacheEntry for runtime cache bypass payload rebuilding.
+   */
+  static getCacheEntry(planId: string): CacheEntry | undefined {
+    return this.caches.get(planId);
+  }
+
+  /**
    * Gets an existing valid cache or uploads the file and creates a new cache.
    * Gracefully falls back to non-cached mode if caching fails (e.g. token count too low).
    */
@@ -25,7 +33,7 @@ export class GeminiCacheManager {
     planId: string,
     filePath: string,
     mimeType: string
-  ): Promise<{ cacheName?: string; fileUri: string; fileResourceName: string; isCached: boolean; inlineData?: string }> {
+  ): Promise<{ cacheName?: string; cacheModel?: string; fileUri: string; fileResourceName: string; isCached: boolean; inlineData?: string }> {
     
     const now = Date.now();
     const existing = this.caches.get(planId);
@@ -34,8 +42,12 @@ export class GeminiCacheManager {
     if (existing && existing.expiresAt > now) {
       MonitoringService.trackCacheEvent(planId, 'hit');
       console.log(`[GeminiCacheManager] Cache hit for plan ${planId}. Cache name: ${existing.cacheName}`);
+      if (existing.cacheName && existing.cacheModel) {
+        GeminiClient.registerCache(existing.cacheName, existing.cacheModel, existing.fileUri, existing.inlineData);
+      }
       return {
         cacheName: existing.cacheName,
+        cacheModel: existing.cacheModel,
         fileUri: existing.fileUri,
         fileResourceName: existing.fileResourceName,
         isCached: !!existing.cacheName,
@@ -126,6 +138,7 @@ export class GeminiCacheManager {
         cacheName = cacheResult.name; // projects/.../locations/.../cachedContents/xxxx
         isCached = true;
         console.log(`[GeminiCacheManager] Context Cache created successfully: ${cacheName}`);
+        GeminiClient.registerCache(cacheName, baseModelName, fileUri, undefined);
       } else {
         const errText = await response.text();
         console.warn(`[GeminiCacheManager] Failed to create Context Cache: ${response.status} ${response.statusText}. ` +
@@ -172,11 +185,16 @@ export class GeminiCacheManager {
       };
     }
 
+    const baseModelName = PIPELINE_CONFIG.models.pro.startsWith('models/') 
+      ? PIPELINE_CONFIG.models.pro 
+      : `models/${PIPELINE_CONFIG.models.pro}`;
+
     const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
     const entry: CacheEntry = {
       fileUri,
       fileResourceName,
       cacheName,
+      cacheModel: baseModelName,
       expiresAt
     };
 
@@ -184,6 +202,7 @@ export class GeminiCacheManager {
 
     return {
       cacheName,
+      cacheModel: baseModelName,
       fileUri,
       fileResourceName,
       isCached

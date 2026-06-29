@@ -41,6 +41,21 @@ async function runReindexing() {
     console.error("✗ Failed to purge index. It might be already empty or in-creation.", err.message);
   }
 
+  function scanDirectoryRecursively(dir: string, fileList: string[] = []): string[] {
+    if (!fs.existsSync(dir)) return fileList;
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        scanDirectoryRecursively(filePath, fileList);
+      } else if (file.endsWith('.pdf')) {
+        fileList.push(filePath);
+      }
+    }
+    return fileList;
+  }
+
   // 2. Fetch corpus PDF inventory
   const pdfDir = path.join(__dirname, "../pdfs");
   if (!fs.existsSync(pdfDir)) {
@@ -48,7 +63,7 @@ async function runReindexing() {
     process.exit(1);
   }
 
-  const files = fs.readdirSync(pdfDir).filter(f => f.endsWith(".pdf"));
+  const files = scanDirectoryRecursively(pdfDir);
   console.log(`\nFound ${files.length} PDFs to index.`);
 
   let successCount = 0;
@@ -57,15 +72,15 @@ async function runReindexing() {
   // 3. Process indexing file-by-file
   // Note: We use the single-file ingest script we built
   for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const filePath = path.join(pdfDir, file);
-    console.log(`\n[${i + 1}/${files.length}] Indexing: ${file}...`);
+    const filePath = files[i];
+    const relativePath = path.relative(pdfDir, filePath);
+    console.log(`\n[${i + 1}/${files.length}] Indexing: ${relativePath}...`);
     
     try {
       execSync(`npx tsx scripts/ingest_code.ts "${filePath}"`, { stdio: "inherit" });
       successCount++;
     } catch (e: any) {
-      console.error(`✗ Failed to index ${file}:`, e.message);
+      console.error(`✗ Failed to index ${relativePath}:`, e.message);
       failCount++;
     }
   }

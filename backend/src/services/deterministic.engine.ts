@@ -127,6 +127,20 @@ function rule(
   deduction: number,
   formula?: string
 ): RuleEvaluationResult {
+  const hasNullInput = Object.values(inputs).some(v => v === null);
+  if (hasNullInput) {
+    return {
+      code,
+      discipline,
+      section,
+      verdict: 'not_applicable',
+      inputs_used: inputs,
+      explanation: `Unable to verify. Reason: Dimension not present on drawing.`,
+      deduction_percentage: 0,
+      formula
+    };
+  }
+
   return {
     code,
     discipline,

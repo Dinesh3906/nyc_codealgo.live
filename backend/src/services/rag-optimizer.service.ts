@@ -143,9 +143,15 @@ export class RagOptimizerService {
           break;
         }
 
-        // Check 3: Semantic Jaccard Jaccard overlap (> 75%)
+        // Check 3: Semantic Jaccard overlap (> 75%)
         const jaccard = this.calculateJaccard(text, extText);
         if (jaccard > 0.75) {
+          isDuplicate = true;
+          break;
+        }
+
+        // Check 4: Same-page near-identical chunks (> 50% overlap)
+        if (page === extPage && page !== 0 && jaccard > 0.50) {
           isDuplicate = true;
           break;
         }
@@ -209,6 +215,57 @@ export class RagOptimizerService {
   }
 
   /**
+   * Maximal Marginal Relevance (MMR) Reranking.
+   * Maximizes relevance while minimizing redundancy by penalizing high similarity with already-selected documents.
+   */
+  static mmrRerank(
+    ranked: { match: PineconeMatch; rerankScore: number }[],
+    limit = 15,
+    lambda = 0.6
+  ): { match: PineconeMatch; rerankScore: number }[] {
+    if (ranked.length === 0) return [];
+    
+    const selected: { match: PineconeMatch; rerankScore: number }[] = [ranked[0]];
+    const remaining = ranked.slice(1);
+    
+    while (selected.length < limit && remaining.length > 0) {
+      let bestIdx = -1;
+      let bestScore = -Infinity;
+      
+      for (let i = 0; i < remaining.length; i++) {
+        const candidate = remaining[i];
+        const relevance = candidate.rerankScore;
+        
+        let maxSimilarity = 0;
+        for (const sel of selected) {
+          const sim = this.calculateJaccard(
+            candidate.match.metadata?.text || "",
+            sel.match.metadata?.text || ""
+          );
+          if (sim > maxSimilarity) {
+            maxSimilarity = sim;
+          }
+        }
+        
+        const score = lambda * relevance - (1 - lambda) * maxSimilarity;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+      
+      if (bestIdx !== -1) {
+        selected.push(remaining[bestIdx]);
+        remaining.splice(bestIdx, 1);
+      } else {
+        break;
+      }
+    }
+    
+    return selected;
+  }
+
+  /**
    * Adaptive Retrieval: retrieve chunks until confidence score or token budget is reached.
    */
   static selectAdaptiveContext(
@@ -220,28 +277,69 @@ export class RagOptimizerService {
     let charCount = 0;
     let cumulativeConfidence = 0;
 
-    // Use normalized score as individual confidence
     const maxScore = ranked[0]?.rerankScore || 1.0;
 
-    for (const item of ranked) {
+    const pageCounts = new Map<number, number>();
+    const sectionCounts = new Map<string, number>();
+    const firstPassSelectedIndices = new Set<number>();
+
+    // Pass 1: Select diverse chunks (max 2 chunks per page and max 2 chunks per section)
+    for (let i = 0; i < ranked.length; i++) {
+      const item = ranked[i];
       const text = item.match.metadata?.text || "";
       const textLen = text.length;
 
-      // Stop if adding this chunk exceeds maximum context limit
+      const page = item.match.metadata?.page_number || item.match.metadata?.pages || 0;
+      const { section } = this.parseFallbackSection(text);
+      const activeSection = item.match.metadata?.section || section || "";
+
+      const pCount = pageCounts.get(page) || 0;
+      const sCount = sectionCounts.get(activeSection) || 0;
+
+      if (page !== 0 && pCount >= 2) continue;
+      if (activeSection !== "" && sCount >= 2) continue;
+
       if (charCount + textLen > maxCharLimit) {
         break;
       }
 
       selected.push(item.match);
       charCount += textLen;
+      firstPassSelectedIndices.add(i);
 
-      // Normalize confidence contribution relative to top score
+      if (page !== 0) pageCounts.set(page, pCount + 1);
+      if (activeSection !== "") sectionCounts.set(activeSection, sCount + 1);
+
       const confidenceContribution = item.rerankScore / maxScore;
       cumulativeConfidence = Math.min(1.0, cumulativeConfidence + (confidenceContribution * 0.15));
 
-      // Adaptive early stopping if threshold reached and we have at least 4 chunks
       if (cumulativeConfidence >= confidenceThreshold && selected.length >= 4) {
         break;
+      }
+    }
+
+    // Pass 2: Fill in remaining budget with remaining top-ranked chunks (ignoring diversity limits)
+    if (cumulativeConfidence < confidenceThreshold && charCount < maxCharLimit) {
+      for (let i = 0; i < ranked.length; i++) {
+        if (firstPassSelectedIndices.has(i)) continue;
+
+        const item = ranked[i];
+        const text = item.match.metadata?.text || "";
+        const textLen = text.length;
+
+        if (charCount + textLen > maxCharLimit) {
+          break;
+        }
+
+        selected.push(item.match);
+        charCount += textLen;
+
+        const confidenceContribution = item.rerankScore / maxScore;
+        cumulativeConfidence = Math.min(1.0, cumulativeConfidence + (confidenceContribution * 0.15));
+
+        if (cumulativeConfidence >= confidenceThreshold && selected.length >= 4) {
+          break;
+        }
       }
     }
 

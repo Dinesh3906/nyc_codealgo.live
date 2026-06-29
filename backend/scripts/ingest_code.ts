@@ -52,8 +52,10 @@ async function getEmbedding(text: string): Promise<number[]> {
   return Array.from(output.data) as number[];
 }
 
-function parseFilenameDetails(filename: string) {
-  const name = path.basename(filename);
+function parseFilenameDetails(filePath: string) {
+  const name = path.basename(filePath);
+  const normalizedPath = filePath.toLowerCase().replace(/\\/g, '/');
+
   let family = "Building Code";
   let edition = "2022";
   let discipline = "building_code";
@@ -74,6 +76,31 @@ function parseFilenameDetails(filename: string) {
   } else if (name.startsWith("2022GAP_")) {
     family = "General Administrative Provisions";
     discipline = "general_administrative";
+  } else if (name.toLowerCase().includes("electrical_code")) {
+    family = "Electrical Code";
+    discipline = "electrical_code";
+    edition = "2025";
+  }
+
+  // Fallback check by directory path
+  if (family === "Building Code" && edition === "2022" && discipline === "building_code") {
+    if (normalizedPath.includes('/fire/')) {
+      family = "Fire Code";
+      discipline = "fire_code";
+      edition = "2022";
+    } else if (normalizedPath.includes('/energy/')) {
+      family = "Energy Conservation Code";
+      discipline = "energy_code";
+      edition = "2025";
+    } else if (normalizedPath.includes('/zoning/')) {
+      family = "Zoning Resolution";
+      discipline = "zoning_resolution";
+      edition = "2026";
+    } else if (normalizedPath.includes('/electrical/')) {
+      family = "Electrical Code";
+      discipline = "electrical_code";
+      edition = "2025";
+    }
   }
 
   // Extract chapter number (e.g. Chapter07 -> 7)
@@ -101,6 +128,7 @@ async function ingestPdf(filePath: string) {
   }
 
   const filename = path.basename(absolutePath);
+  const safeIdPrefix = filename.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_\-]/g, "_");
   console.log(`Starting ingestion of ${filename}...`);
 
   // Compute source hash (MD5)
@@ -108,7 +136,7 @@ async function ingestPdf(filePath: string) {
   const sourceHash = crypto.createHash("md5").update(fileBuffer).digest("hex");
   console.log(`Source Hash: ${sourceHash}`);
 
-  const { family, edition, discipline, chapter } = parseFilenameDetails(filename);
+  const { family, edition, discipline, chapter } = parseFilenameDetails(absolutePath);
 
   // Extract text using PDFJS
   const loadingTask = pdfjs.getDocument({ data: new Uint8Array(fileBuffer), verbosity: 0 });
@@ -117,6 +145,15 @@ async function ingestPdf(filePath: string) {
 
   const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
   const index = pc.Index(INDEX_NAME);
+
+  // Clean up existing records for this source to prevent duplicate chunks
+  console.log(`Cleaning up existing vectors for source: ${filename}...`);
+  try {
+    await index.deleteMany({ source: filename });
+    console.log("✓ Existing vectors cleaned.");
+  } catch (err: any) {
+    console.log(`No existing vectors cleaned: ${err.message}`);
+  }
 
   const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
@@ -127,8 +164,8 @@ async function ingestPdf(filePath: string) {
 
   // Smarter Chunking: segment by logical section markers
   const segmentBySections = (text: string): { section?: string; text: string }[] => {
-    // Regex matches section markers like "SECTION 1009", "BC 1009.3", "1009.3.1", or "PC 405.3"
-    const sectionStartRegex = /\b((?:BC|PC|MC|FGC|EC|ECC|ZR|SECTION)\s+\d+(?:\.\d+)*|\b\d{3,4}\.\d+(?:\.\d+)*)\b/gi;
+    // Regex matches section markers like "SECTION 1009", "BC 1009.3", "1009.3.1", "SECTION EC 80", or "ARTICLE 110"
+    const sectionStartRegex = /\b((?:BC|PC|MC|FGC|EC|ECC|ZR|SECTION|ARTICLE)\s+(?:EC\s+)?\d+(?:\.\d+)*|\b\d{3,4}\.\d+(?:\.\d+)*)\b/gi;
 
     const segments: { section?: string; text: string }[] = [];
     let match;
@@ -185,12 +222,20 @@ async function ingestPdf(filePath: string) {
     return finalSegments;
   };
 
+  let currentChapter = chapter;
+
   for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     const page = await pdfDoc.getPage(pageNum);
     const content = await page.getTextContent();
     const pageText = content.items.map((it: any) => it.str).join(" ").trim();
 
     if (pageText.length < 50) continue;
+
+    // Track active chapter/article dynamically from the page text
+    const pageChapterMatch = pageText.match(/CHAPTER\s+(\d+)/i);
+    if (pageChapterMatch) {
+      currentChapter = `Chapter ${pageChapterMatch[1]}`;
+    }
 
     // Segment page text by section structures
     const segments = segmentBySections(pageText);
@@ -204,7 +249,7 @@ async function ingestPdf(filePath: string) {
       const keywords = seg.text.match(/[a-zA-Z]{5,}/g)?.slice(0, 10).join(", ") || "";
 
       // Try to find cross-references (citations to other code sections)
-      const refMatches = seg.text.match(/\b(?:BC|PC|MC|FGC|EC|ECC|ZR|SECTION)\s+\d+(?:\.\d+)*\b/gi) || [];
+      const refMatches = seg.text.match(/\b(?:BC|PC|MC|FGC|EC|ECC|ZR|SECTION|ARTICLE)\s+(?:EC\s+)?\d+(?:\.\d+)*\b/gi) || [];
       const crossRefs = Array.from(new Set(refMatches)).join(", ");
 
       const metadata: RichChunkMetadata = {
@@ -212,12 +257,12 @@ async function ingestPdf(filePath: string) {
         source: filename,
         code_family: family,
         code_edition: edition,
-        chapter: chapter || undefined,
+        chapter: currentChapter || undefined,
         section: seg.section || undefined,
         page_number: pageNum,
         keywords: keywords + (crossRefs ? ", references: " + crossRefs : ""),
         discipline,
-        effective_date: "2022-11-07",
+        effective_date: edition === "2025" ? "2025-12-21" : "2022-11-07",
         revision: "Original",
         source_hash: sourceHash,
         chunk_index: chunkIdx++
@@ -227,7 +272,7 @@ async function ingestPdf(filePath: string) {
       const vector = await getEmbedding(seg.text);
 
       records.push({
-        id: `${filename.replace(".pdf", "")}_p${pageNum}_c${chunkIdx}_${Date.now()}`,
+        id: `${safeIdPrefix}_p${pageNum}_c${chunkIdx}_${Date.now()}`,
         values: vector,
         metadata: metadata as any
       });
@@ -238,6 +283,34 @@ async function ingestPdf(filePath: string) {
       totalUploaded += records.length;
       console.log(`Uploaded ${records.length} chunks for page ${pageNum}`);
     }
+  }
+
+  if (totalUploaded === 0) {
+    console.log(`No text extracted from ${filename}. Creating a placeholder chunk to register ingestion...`);
+    const metadata: RichChunkMetadata = {
+      text: `This document (${filename}) does not contain extractable text content (it may be empty, reserved, or scanned without OCR).`,
+      source: filename,
+      code_family: family,
+      code_edition: edition,
+      chapter: chapter || undefined,
+      section: undefined,
+      page_number: 1,
+      keywords: "empty, reserved, placeholder, no-text",
+      discipline,
+      effective_date: edition === "2025" ? "2025-12-21" : "2022-11-07",
+      revision: "Original",
+      source_hash: sourceHash,
+      chunk_index: 0
+    };
+
+    const vector = await getEmbedding(metadata.text);
+    await index.upsert([{
+      id: `${safeIdPrefix}_placeholder_${Date.now()}`,
+      values: vector,
+      metadata: metadata as any
+    }]);
+    totalUploaded = 1;
+    console.log(`Uploaded placeholder chunk for ${filename}.`);
   }
 
   console.log(`Ingestion completed successfully. Uploaded ${totalUploaded} chunks from ${filename}.`);

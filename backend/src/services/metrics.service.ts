@@ -178,6 +178,14 @@ metrics.registerGauge('nyc_circuit_breaker_state', 'Circuit breaker state (0=clo
 metrics.registerGauge('nyc_memory_rss_bytes', 'Process RSS memory in bytes');
 metrics.registerGauge('nyc_memory_heap_bytes', 'Process heap memory in bytes');
 
+// Sprint v2 Gauges
+metrics.registerGauge('nyc_citation_hallucination_rate', 'Rate of citation hallucinations detected');
+metrics.registerGauge('nyc_retrieval_precision', 'Precision of Pinecone retrieval matches');
+metrics.registerGauge('nyc_judge_disagreement', 'Rate of disagreements between Challenger and Auditor');
+metrics.registerGauge('nyc_ocr_confidence', 'Extracted visual fact OCR confidence');
+metrics.registerGauge('nyc_token_cost', 'Token usage cost in USD');
+metrics.registerGauge('nyc_per_discipline_accuracy', 'Per discipline code compliance verification accuracy');
+
 /**
  * Updates system gauges (call periodically or before scrape).
  */

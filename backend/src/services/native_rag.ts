@@ -416,18 +416,45 @@ export async function semanticSearchPlan(planData: any, stepId: string, topK: nu
   return resultText;
 }
 
-export function getPDFsForStep(stepId: string): string[] {
-  const pdfDir = path.join(__dirname, "../../pdfs");
-  let allFiles: string[] = [];
+function scanDirectoryRecursively(dir: string, fileList: string[] = []): string[] {
+  if (!fs.existsSync(dir)) return fileList;
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      scanDirectoryRecursively(filePath, fileList);
+    } else if (file.endsWith('.pdf')) {
+      fileList.push(file);
+    }
+  }
+  return fileList;
+}
+
+function getFilesFromSubdir(subdirName?: string): string[] {
+  const targetDir = subdirName 
+    ? path.join(__dirname, "../../pdfs", subdirName) 
+    : path.join(__dirname, "../../pdfs");
+  if (!fs.existsSync(targetDir)) return [];
   try {
-    allFiles = fs.readdirSync(pdfDir).filter(f => f.endsWith(".pdf"));
+    return fs.readdirSync(targetDir)
+      .filter(f => {
+        try {
+          return fs.statSync(path.join(targetDir, f)).isFile() && f.endsWith('.pdf');
+        } catch {
+          return false;
+        }
+      });
   } catch (e) {
-    console.error("Failed to read pdfs dir:", e);
+    console.error(`Failed to read subdir ${subdirName || "root"}:`, e);
     return [];
   }
+}
 
-  const gapFiles = allFiles.filter(f => f.startsWith("2022GAP_"));
-  const commonBuildingDocs = allFiles.filter(f => 
+export function getPDFsForStep(stepId: string): string[] {
+  const rootFiles = getFilesFromSubdir();
+  const gapFiles = rootFiles.filter(f => f.startsWith("2022GAP_"));
+  const commonBuildingDocs = rootFiles.filter(f => 
     f === "2022BC_Chapter02_DefinitionsWBwm.pdf" || 
     f === "2022BC_Chapter03_OccupancyClassWBwm.pdf" || 
     f === "2022BC_Chapter05_HeightAreaWBwm.pdf" || 
@@ -437,32 +464,34 @@ export function getPDFsForStep(stepId: string): string[] {
   switch (stepId) {
     case 'building_code':
       return [
-        ...allFiles.filter(f => f.startsWith("2022BC_") && f !== "2022BC_Chapter13_EnergyWBwm.pdf" && f !== "2022BC_Chapter27_ElectricalWBwm.pdf"),
+        ...rootFiles.filter(f => f.startsWith("2022BC_") && f !== "2022BC_Chapter13_EnergyWBwm.pdf" && f !== "2022BC_Chapter27_ElectricalWBwm.pdf"),
         ...gapFiles
       ];
     case 'plumbing_code':
       return [
-        ...allFiles.filter(f => f.startsWith("2022PC_")),
-        ...allFiles.filter(f => f === "2022BC_Chapter29_PlumbingWBwm.pdf"), // Cross-reference BC Chapter 29
+        ...rootFiles.filter(f => f.startsWith("2022PC_")),
+        ...rootFiles.filter(f => f === "2022BC_Chapter29_PlumbingWBwm.pdf"), // Cross-reference BC Chapter 29
         ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'mechanical_code':
       return [
-        ...allFiles.filter(f => f.startsWith("2022MC_")),
-        ...allFiles.filter(f => f === "2022BC_Chapter28_MechanicalWBwm.pdf"), // Cross-reference BC Chapter 28
+        ...rootFiles.filter(f => f.startsWith("2022MC_")),
+        ...rootFiles.filter(f => f === "2022BC_Chapter28_MechanicalWBwm.pdf"), // Cross-reference BC Chapter 28
         ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'fuel_gas_code':
       return [
-        ...allFiles.filter(f => f.startsWith("2022FGC_")),
+        ...rootFiles.filter(f => f.startsWith("2022FGC_")),
         ...commonBuildingDocs,
         ...gapFiles
       ];
-    case 'energy_code':
+    case 'energy_code': {
+      const energyFiles = getFilesFromSubdir("energy");
       return [
-        ...allFiles.filter(f => 
+        ...energyFiles,
+        ...rootFiles.filter(f => 
           f.startsWith("2022BC_Chapter13_") || 
           f === "2022BC_Chapter12_InteriorEnvironmentWBwm.pdf" || 
           f === "2022BC_Chapter14_ExteriorWallsWBwm.pdf" || 
@@ -470,16 +499,21 @@ export function getPDFsForStep(stepId: string): string[] {
         ),
         ...gapFiles
       ];
-    case 'electrical_code':
+    }
+    case 'electrical_code': {
+      const electricalFiles = getFilesFromSubdir("electrical");
       return [
-        ...allFiles.filter(f => f.startsWith("2022BC_Chapter27_")),
+        ...electricalFiles,
+        ...rootFiles.filter(f => f.startsWith("2022BC_Chapter27_") || f.toLowerCase().includes("electrical_code")),
         ...commonBuildingDocs,
         ...gapFiles
       ];
-    case 'fire_code':
+    }
+    case 'fire_code': {
+      const fireFiles = getFilesFromSubdir("fire");
       return [
-        // Include egress chapter (Chapter 10) and exit paths to remove critical fire egress blind spot
-        ...allFiles.filter(f => 
+        ...fireFiles,
+        ...rootFiles.filter(f => 
           f.includes("FireProtection") || 
           f.includes("FireResistance") || 
           f.includes("FireStandards") || 
@@ -490,11 +524,18 @@ export function getPDFsForStep(stepId: string): string[] {
         ...commonBuildingDocs,
         ...gapFiles
       ];
-    case 'zoning_resolution':
-      // Since actual ZR PDFs are missing, allow searching all files so we can pull zoning definitions from BC/PC/etc.
+    }
+    case 'zoning_resolution': {
+      const zoningFiles = getFilesFromSubdir("zoning");
+      return [
+        ...zoningFiles
+      ];
+    }
+    default: {
+      const allFiles: string[] = [];
+      scanDirectoryRecursively(path.join(__dirname, "../../pdfs"), allFiles);
       return allFiles;
-    default:
-      return allFiles;
+    }
   }
 }
 
@@ -866,7 +907,7 @@ Return valid JSON in this exact format:
           contents: [{ role: "user", parts }],
           systemInstruction: { parts: [{ text: systemPrompt }] },
             generationConfig: {
-              temperature: 0.1,
+              temperature: 0,
               maxOutputTokens: 8192,
               responseMimeType: "application/json"
             }
@@ -981,7 +1022,7 @@ Return valid JSON in this exact format:
               { role: "system", content: systemPrompt },
               { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${filteredPlanText.substring(0, 300000)}` }
             ],
-            temperature: 0.1,
+            temperature: 0,
             max_tokens: 4096,
             response_format: { type: "json_object" }
           });

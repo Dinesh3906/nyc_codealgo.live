@@ -67,11 +67,13 @@ Example format:
       const payload: any = {
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.1,
+          temperature: 0,
         }
       };
 
-      if (cacheName) {
+      const useCacheName = !!cacheName && (PIPELINE_CONFIG.models.flash === PIPELINE_CONFIG.models.pro);
+
+      if (useCacheName) {
         payload.cached_content = cacheName;
         payload.contents = [{
           role: 'user',
@@ -98,7 +100,7 @@ Example format:
       }
 
       const requestPayload: any = { ...payload };
-      if (!cacheName) {
+      if (!useCacheName) {
         requestPayload.systemInstruction = { parts: [{ text: systemPrompt }] };
       }
 

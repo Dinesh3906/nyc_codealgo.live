@@ -32,11 +32,26 @@ export class KnowledgeBaseValidationService {
     plumbing_code: { pattern: /^2022PC_/, officialBook: "NYC Plumbing Code (PC)" },
     mechanical_code: { pattern: /^2022MC_/, officialBook: "NYC Mechanical Code (MC)" },
     fuel_gas_code: { pattern: /^2022FGC_/, officialBook: "NYC Fuel Gas Code (FGC)" },
-    energy_code: { pattern: /^2022BC_Chapter13_/, officialBook: "NYC Energy Conservation Code (ECC)" },
-    electrical_code: { pattern: /^2022BC_Chapter27_/, officialBook: "NYC Electrical Code (EC)" },
-    fire_code: { pattern: /^2022FC_/, officialBook: "NYC Fire Code (FC)" },
-    zoning_resolution: { pattern: /^2022ZR_/, officialBook: "NYC Zoning Resolution (ZR)" }
+    energy_code: { pattern: /^(?:2022BC_Chapter13_|2025_acknowledgements_energy|2025nycecc)/, officialBook: "NYC Energy Conservation Code (ECC)" },
+    electrical_code: { pattern: /^(?:2022BC_Chapter27_|.*electrical_code)/, officialBook: "NYC Electrical Code (EC)" },
+    fire_code: { pattern: /^(?:2022FC_|chapter-\d+-2022)/, officialBook: "NYC Fire Code (FC)" },
+    zoning_resolution: { pattern: /^(?:2022ZR_|Article\s+[A-Z]+|Zoning\s+Resolution\s+Complete)/i, officialBook: "NYC Zoning Resolution (ZR)" }
   };
+
+  private static scanDirectoryRecursively(dir: string, fileList: { name: string; path: string }[] = []): { name: string; path: string }[] {
+    if (!fs.existsSync(dir)) return fileList;
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        this.scanDirectoryRecursively(filePath, fileList);
+      } else if (file.endsWith('.pdf')) {
+        fileList.push({ name: file, path: filePath });
+      }
+    }
+    return fileList;
+  }
 
   /**
    * Scans and validates all reference PDFs in the folder.
@@ -47,20 +62,16 @@ export class KnowledgeBaseValidationService {
     logger.info("Initializing Knowledge Base corpus validation...");
     const pdfDir = path.join(__dirname, "../../pdfs");
 
-    let allFiles: string[] = [];
+    let allFiles: { name: string; path: string }[] = [];
     try {
-      if (fs.existsSync(pdfDir)) {
-        allFiles = fs.readdirSync(pdfDir).filter(f => f.endsWith('.pdf'));
-      } else {
-        logger.error(`PDF directory not found at: ${pdfDir}`, new Error("Directory missing"));
-      }
+      allFiles = this.scanDirectoryRecursively(pdfDir);
     } catch (e: any) {
       logger.error(`Failed to read PDF directory: ${e.message}`, e);
     }
 
     // Process required patterns
     for (const [discipline, meta] of Object.entries(this.REQUIRED_PATTERNS)) {
-      const matches = allFiles.filter(f => meta.pattern.test(f));
+      const matches = allFiles.filter(f => meta.pattern.test(f.name));
       
       if (matches.length === 0) {
         logger.error(`Production Error: Official reference book [${meta.officialBook}] is missing from corpus!`, new Error(`Missing files for pattern: ${meta.pattern}`));
@@ -76,8 +87,9 @@ export class KnowledgeBaseValidationService {
       }
 
       // Check first match readability and metadata
-      const file = matches[0];
-      const filePath = path.join(pdfDir, file);
+      const fileObj = matches[0];
+      const filePath = fileObj.path;
+      const file = fileObj.name;
       let readable = false;
       let checksum = "";
       let pages = 0;

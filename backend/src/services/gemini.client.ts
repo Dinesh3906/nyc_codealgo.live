@@ -24,6 +24,16 @@ export interface GeminiResponse {
 export class GeminiClient {
   private static apiKeys: string[] = [];
   private static keyIndex = 0;
+  
+  private static cacheModels: Map<string, string> = new Map();
+  private static cacheFiles: Map<string, { fileUri: string, inlineData?: string }> = new Map();
+
+  static registerCache(cacheName: string | undefined, model: string, fileUri: string, inlineData?: string) {
+    if (!cacheName) return;
+    const baseModel = model.startsWith('models/') ? model : `models/${model}`;
+    this.cacheModels.set(cacheName, baseModel);
+    this.cacheFiles.set(cacheName, { fileUri, inlineData });
+  }
 
   static {
     const rawKeys = process.env.GOOGLE_AI_STUDIO_KEY || process.env.GEMINI_API_KEY || '';
@@ -189,6 +199,38 @@ export class GeminiClient {
     const maxRetries = PIPELINE_CONFIG.maxRetries;
     let attempt = 0;
     const baseModelName = model.startsWith('models/') ? model : `models/${model}`;
+
+    // Defensive runtime cache model validation
+    if (payload && payload.cached_content) {
+      const registeredModel = this.cacheModels.get(payload.cached_content);
+      if (registeredModel && registeredModel !== baseModelName) {
+        logger.warn(`Defensive cache bypass: request model ${baseModelName} mismatches cache creation model ${registeredModel}. Rebuilding payload...`, {
+          auditId: planId
+        });
+
+        const cacheName = payload.cached_content;
+        delete payload.cached_content;
+
+        const fileInfo = this.cacheFiles.get(cacheName);
+        if (fileInfo && payload.contents && payload.contents[0] && payload.contents[0].parts) {
+          if (fileInfo.inlineData) {
+            payload.contents[0].parts.unshift({
+              inlineData: { mimeType: 'application/pdf', data: fileInfo.inlineData }
+            });
+          } else if (fileInfo.fileUri) {
+            payload.contents[0].parts.unshift({
+              fileData: { fileUri: fileInfo.fileUri, mimeType: 'application/pdf' }
+            });
+          }
+        }
+        
+        // Remove systemInstruction as it was only omitted for cache requests
+        if (payload.systemInstruction) {
+          delete payload.systemInstruction;
+        }
+      }
+    }
+
     let lastErrorDetail = "No request completed successfully";
     const startTime = Date.now();
 

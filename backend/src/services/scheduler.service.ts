@@ -8,10 +8,30 @@ import { MonitoringService } from './monitoring.service';
 import { semanticSearchPlan, STEPS_CONFIG, STEP_CODES_CHECKLIST, generateQueryEmbedding, getPDFsForStep, repairTruncatedJson } from './native_rag';
 import { io } from '../app';
 import { ProfilerService } from './profiler.service';
-import { DeterministicRuleEngine, ExtractedFacts } from './deterministic.engine';
+import { DeterministicRuleEngine, ExtractedFacts, RuleEvaluationResult } from './deterministic.engine';
 import { EvidenceGraph } from './evidence.graph';
 import { RagOptimizerService } from './rag-optimizer.service';
 import { KnowledgeBaseValidationService } from './kb-validation.service';
+import { metrics } from './metrics.service';
+import { EvidenceLogger } from './evidence-logger';
+
+export interface GlobalFacts {
+  project_name: string | null;
+  project_address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  jurisdiction: string | null;
+  applicable_code_set: string | null;
+  document_type: 'Concept Drawing' | 'Marketing Drawing' | 'Construction Documents' | null;
+  occupancy: string | null;
+  construction_type: string | null;
+  building_height_feet: number | null;
+  story_count: number | null;
+  basement: boolean | null;
+  building_use: string | null;
+  review_scope: string | null;
+}
 
 class Semaphore {
   private permits: number;
@@ -171,7 +191,53 @@ export class SchedulerService {
     const extractionResult = await this.extractPlanFacts(planId, cacheResult, mimeType);
     console.log(`[SchedulerService] Parameter extraction complete. Vision Confidence: ${extractionResult.visionConfidence}`);
     const planFacts = extractionResult.facts;
+    const globalFacts = extractionResult.globalFacts;
     const visionConfidence = extractionResult.visionConfidence;
+
+    EvidenceLogger.logAudit({
+      auditId: planId,
+      uploadedPlan: filePath,
+      ocrOutput: planData.housePlanText,
+      extractedParameters: planFacts,
+      latencyMs: 0,
+      memoryUsageBytes: process.memoryUsage().rss,
+      cpuUsagePercentage: 0
+    });
+
+    // Pre-evaluate deterministic rules once
+    const allDeterministicResults = DeterministicRuleEngine.evaluateRules(planFacts);
+
+    // Pre-fetch administrative chunks once per plan audit (saves 16 redundant Pinecone query calls)
+    console.log(`[SchedulerService] Pre-fetching NYC administrative code chunks...`);
+    const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
+    const index = pc.Index(process.env.PINECONE_INDEX as string);
+    const adminQueries = [
+      "NYC General Administrative Provisions GAP administrative provisions code enforcement licenses permits DOB fees",
+      "NYC admin code construction documents architect stamp professional seal permit filing"
+    ];
+    const adminChunks: any[] = [];
+    try {
+      const adminQueryPromises = adminQueries.map(async (query) => {
+        const queryVector = await generateQueryEmbedding(query);
+        const queryResponse = await index.query({
+          topK: 6,
+          vector: queryVector,
+          includeMetadata: true
+        });
+        return queryResponse.matches || [];
+      });
+      const adminQueryResults = await Promise.all(adminQueryPromises);
+      for (const matches of adminQueryResults) {
+        for (const m of matches) {
+          if (m && m.metadata?.text) {
+            adminChunks.push(m);
+          }
+        }
+      }
+      console.log(`[SchedulerService] Pre-fetched ${adminChunks.length} administrative chunks.`);
+    } catch (err) {
+      console.error(`[SchedulerService] Failed to pre-fetch administrative chunks:`, err);
+    }
 
     // 5. Build task queue for concurrent execution
     let completedCount = 0;
@@ -195,7 +261,10 @@ export class SchedulerService {
             mimeType,
             preUploadedPages,
             planFacts,
-            visionConfidence
+            visionConfidence,
+            adminChunks,
+            allDeterministicResults,
+            globalFacts
           );
           completedCount++;
           io.emit('analysis-status', {
@@ -338,11 +407,54 @@ export class SchedulerService {
     mimeType: string,
     preUploadedPages: Map<number, { inlineData: string }>,
     planFacts: ExtractedFacts,
-    visionConfidence: number
+    visionConfidence: number,
+    adminChunks: any[],
+    allDeterministicResults: RuleEvaluationResult[],
+    globalFacts: GlobalFacts
   ): Promise<any> {
     const stepConfig = STEPS_CONFIG.find(s => s.id === stepId)!;
     let isCachedFallback = false;
     let warningMsg = "";
+
+    // Precondition Gates & Fact Validation (Phase 2 & 5)
+    let isNycJurisdiction = true;
+    if (globalFacts.city && globalFacts.city.toLowerCase().includes('ocean city')) {
+      isNycJurisdiction = false;
+    }
+    if (globalFacts.state && (globalFacts.state.toLowerCase() === 'md' || globalFacts.state.toLowerCase() === 'maryland' || globalFacts.state.toLowerCase() === 'fl' || globalFacts.state.toLowerCase() === 'florida')) {
+      isNycJurisdiction = false;
+    }
+    if (globalFacts.jurisdiction && !globalFacts.jurisdiction.toLowerCase().includes('nyc') && !globalFacts.jurisdiction.toLowerCase().includes('new york')) {
+      isNycJurisdiction = false;
+    }
+
+    if (!isNycJurisdiction) {
+      console.log(`[SchedulerService][${stepConfig.name}] Precondition Gate: Project outside NYC jurisdiction. Skipping step.`);
+      return {
+        id: stepId,
+        name: stepConfig.name,
+        checked: true,
+        score: 100,
+        status: 'compliant' as const,
+        summary: `Not Applicable. Reason: Project outside NYC jurisdiction (${globalFacts.city || 'Ocean City'}, ${globalFacts.state || 'MD'}).`,
+        compliant_features: [],
+        issues: []
+      };
+    }
+
+    if (globalFacts.document_type === 'Marketing Drawing') {
+      console.log(`[SchedulerService][${stepConfig.name}] Precondition Gate: Document is a Marketing Drawing. Skipping step.`);
+      return {
+        id: stepId,
+        name: stepConfig.name,
+        checked: true,
+        score: 100,
+        status: 'compliant' as const,
+        summary: `Not Applicable. Reason: Document is a Marketing Drawing, not construction documents for permit filing.`,
+        compliant_features: [],
+        issues: []
+      };
+    }
 
     if (!KnowledgeBaseValidationService.isDisciplineSupported(stepId)) {
       console.warn(`[SchedulerService][${stepConfig.name}] Disabling step: Official NYC code reference book is missing.`);
@@ -376,10 +488,6 @@ export class SchedulerService {
     const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
     const index = pc.Index(process.env.PINECONE_INDEX as string);
     const searchQueries = stepConfig.queries.map(q => q + " " + filteredPlanText.substring(0, 200));
-    searchQueries.push(
-      "NYC General Administrative Provisions GAP administrative provisions code enforcement licenses permits DOB fees",
-      "NYC admin code construction documents architect stamp professional seal permit filing"
-    );
 
     const stepPDFs = getPDFsForStep(stepId);
 
@@ -393,7 +501,7 @@ export class SchedulerService {
 
         const queryVector = await generateQueryEmbedding(query);
         const queryResponse = await index.query({
-          topK: 15,
+          topK: 12,
           vector: queryVector,
           includeMetadata: true,
           filter: stepPDFs.length > 0 ? { source: { "$in": stepPDFs } } : undefined
@@ -412,7 +520,7 @@ export class SchedulerService {
     const pineconeDuration = performance.now() - pineconeStart;
     ProfilerService.recordDuration(planId, 'pineconeSearch', pineconeDuration);
 
-    const allMatches: any[] = [];
+    const allMatches: any[] = [...adminChunks];
 
     for (const matches of queryResults) {
       for (const match of matches) {
@@ -438,11 +546,14 @@ export class SchedulerService {
       stepCodes
     );
 
+    // Apply MMR reranking for diversity
+    const mmrReranked = RagOptimizerService.mmrRerank(rerankedMatches, 15, 0.6);
+
     // 3. Adaptive retrieval: stop gathering chunks once confidence threshold or token budget is reached
     const maxCharLimit = 25000; // Keep within budget (approx. 5000 tokens)
     const confidenceThreshold = 0.85;
     const adaptiveContext = RagOptimizerService.selectAdaptiveContext(
-      rerankedMatches,
+      mmrReranked,
       maxCharLimit,
       confidenceThreshold
     );
@@ -451,11 +562,21 @@ export class SchedulerService {
 
     const contexts = topMatches
       .sort((a, b) => String(a.metadata?.source || "").localeCompare(String(b.metadata?.source || "")))
-      .map(m => `[NYC Code Section: ${m.metadata?.source}]\n${m.metadata?.text || ""}`)
+      .map((m, index) => {
+        // Assign temporary chunk ID for LLM structured references
+        (m as any).temp_chunk_id = `chunk_${index}`;
+        return `[Chunk ID: chunk_${index}]
+[Source Document: ${m.metadata?.source || 'Unknown'}]
+[Code Family: ${m.metadata?.code_family || ''}]
+[Code Edition: ${m.metadata?.code_edition || ''}]
+[Chapter: ${m.metadata?.chapter || ''}]
+[Section: ${m.metadata?.section || ''}]
+[Page: ${m.metadata?.page_number || ''}]
+${m.metadata?.text || ""}`;
+      })
       .join("\n\n---\n\n");
 
-    // Evaluate deterministic rules
-    const allDeterministicResults = DeterministicRuleEngine.evaluateRules(planFacts);
+    // Evaluate deterministic rules using pre-evaluated results passed in
     const stepDeterministicResults = allDeterministicResults.filter(dr => stepCodes.some(sc => sc.code === dr.code));
     const deterministicCodes = stepDeterministicResults.map(dr => dr.code);
     const nonDeterministicCodes = stepCodes.filter(c => !deterministicCodes.includes(c.code));
@@ -466,15 +587,19 @@ export class SchedulerService {
     const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner specializing in the ${stepConfig.name} discipline.
  
 CRITICAL MISSION:
-1. SCORING:
+1. CITATION INTEGRITY (ABSOLUTE RULE):
+   - You may ONLY cite specific code sections that are present in the REFERENCE CONTEXT below.
+   - If a code section is not present in the context, do NOT invent it. Instead, write exactly "No applicable section found".
+   - Never guess, never estimate, never complete section numbering, and never infer code regulations.
+2. SCORING:
    - Compliance score starts at 100%. Deduct percentage based on severity: critical = 15-25%, major = 10-15%, minor = 2-10%.
    - Score = 100 - sum(deductions). Cap at 0. If critical life-safety system is missing, score is 0.
-2. CODE CHECKS: Evaluate against these regulations:
+3. CODE CHECKS: Evaluate against these regulations:
 ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.description})`).join('\n')}
    Return status in "checklist_evaluations". Do NOT assume compliance; verify dimensions/parameters.
-3. OPERATIONAL PROTOCOLS (ConOps):
+4. OPERATIONAL PROTOCOLS (ConOps):
    - Evaluate Emergency Action Plans. Cite operational violations under NFPA 101.
-4. OCCUPANCY GOLDEN RULES:
+5. OCCUPANCY GOLDEN RULES:
    - Group I-2 (Hospitals): Enforce horizontal defend-in-place. Vertical evacuation or ventilator disconnection protocols are CRITICAL (NFPA 101 Sec 19.7.1).
    - Group H (High Hazard): delays prohibited (FC 907.2).
 5. STRESS-TESTS:
@@ -489,40 +614,44 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
 9. MISSING LIFE-SAFETY:
    - Missing core discipline systems in commercial plans is a CRITICAL omission. Score 0% and list critical violation.
 10. JSON FORMAT INSTRUCTIONS:
-    Return valid JSON in this format:
-    {
-      "score": <number>,
-      "summary": "<Short technical summary (max 3 sentences)>",
-      "checklist_evaluations": [
-        {
-          "code": "<code section>",
-          "status": "compliant" | "violation" | "not_applicable",
-          "details": "<For compliant checks, MUST write exactly 'Compliant' to save output tokens. For violations, write specific measurements and why they failed. For not_applicable, write the reason.>"
-        }
-      ],
-      "issues": [
-        {
-          "title": "<short title>",
-          "description": "<technical description>",
-          "severity": "critical" | "major" | "minor",
-          "code": "<reference code>",
-          "recommendation": "<remedy>",
-          "deduction_percentage": <number>,
-          "exact_pdf_citation": "<PDF name & section>",
-          "loophole_details": "<why it failed>",
-          "required_elements": "<fix requirements>"
-        }
-      ],
-      "building_info": {
-        "project_name": "<name>",
-        "occupancy_group": "<group>",
-        "construction_type": "<type>",
-        "stories": "<stories>"
-      }
-    }
+     Return valid JSON in this format:
+     {
+       "score": <number>,
+       "summary": "<Short technical summary (max 3 sentences)>",
+       "checklist_evaluations": [
+         {
+           "code": "<code section>",
+           "status": "compliant" | "violation" | "not_applicable",
+           "details": "<For compliant checks, MUST write exactly 'Compliant' to save output tokens. For violations, write specific measurements and why they failed. For not_applicable, write the reason.>"
+         }
+       ],
+       "issues": [
+         {
+           "title": "<short title>",
+           "description": "<technical description>",
+           "severity": "critical" | "major" | "minor",
+           "citation_chunk_id": "<must be one of the provided chunk IDs e.g. chunk_0, chunk_1, etc. that supports this finding. Set to null if none exists.>",
+           "recommendation": "<remedy>",
+           "deduction_percentage": <number>,
+           "loophole_details": "<why it failed>",
+           "required_elements": "<fix requirements>"
+         }
+       ],
+       "building_info": {
+         "project_name": "<name>",
+         "occupancy_group": "<group>",
+         "construction_type": "<type>",
+         "stories": "<stories>"
+       }
+     }
  
- REFERENCE CONTEXT (NYC BUILDING CODES):
- ${contexts.substring(0, 15000)}`;
+  CRITICAL CITATION INSTRUCTION:
+  - You MUST NOT write the code section citation string or drawing citation manually in any issue.
+  - Instead, specify the correct "citation_chunk_id" referencing a chunk from the context below.
+  - If no chunk from the reference context supports the issue, do NOT report it.
+  
+  REFERENCE CONTEXT (NYC BUILDING CODES):
+  ${contexts.substring(0, 15000)}`;
 
     // Identify pages relevant to this discipline
     const relevantTypes = this.STEP_PAGE_MAPPING[stepId] || ['mixed_content'];
@@ -602,7 +731,7 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
 
         const payload: any = {
           generationConfig: {
-            temperature: 0.15,
+            temperature: 0,
             maxOutputTokens: 8192,
             responseMimeType: "application/json"
           }
@@ -701,7 +830,7 @@ Return a JSON object in this exact format:
       const runChallenger = async (): Promise<any> => {
         const payload: any = {
           generationConfig: {
-            temperature: 0.2,
+            temperature: 0,
             responseMimeType: "application/json"
           }
         };
@@ -792,10 +921,9 @@ Return a JSON object in this exact format:
       "title": "<short title>",
       "description": "<technical description>",
       "severity": "critical" | "major" | "minor",
-      "code": "<reference code>",
+      "citation_chunk_id": "<must be one of the provided chunk IDs e.g. chunk_0, chunk_1, etc. that supports this finding. Set to null if none exists.>",
       "recommendation": "<remedy>",
       "deduction_percentage": <number>,
-      "exact_pdf_citation": "<PDF name & section>",
       "loophole_details": "<why it failed>",
       "required_elements": "<fix requirements>",
       "confidence": <float, confidence score between 0.0 and 1.0 for this finding>
@@ -807,12 +935,18 @@ Return a JSON object in this exact format:
     "construction_type": "<type>",
     "stories": "<stories>"
   }
-}`;
+}
 
-      const runJudge = async (): Promise<any> => {
+CRITICAL CITATION INSTRUCTION:
+- You MUST NOT write the code section citation string or drawing citation manually in any issue.
+- Instead, specify the correct "citation_chunk_id" referencing a chunk from the context below.
+- If no chunk from the reference context supports the issue, do NOT report it.`;
+
+      const runJudge = async (promptOverride?: string): Promise<any> => {
+        const activePrompt = promptOverride || judgePrompt;
         const payload: any = {
           generationConfig: {
-            temperature: 0.1,
+            temperature: 0,
             responseMimeType: "application/json"
           }
         };
@@ -821,14 +955,14 @@ Return a JSON object in this exact format:
           payload.cached_content = cacheResult.cacheName;
           payload.contents = [{
             role: 'user',
-            parts: [{ text: `System Instructions:\n${judgePrompt}\n\nUser Request:\nMake final rulings and resolve all disagreements.` }]
+            parts: [{ text: `System Instructions:\n${activePrompt}\n\nUser Request:\nMake final rulings and resolve all disagreements.` }]
           }];
         } else if (cacheResult.inlineData) {
           payload.contents = [{
             role: 'user',
             parts: [
               { inlineData: { mimeType, data: cacheResult.inlineData } },
-              { text: judgePrompt }
+              { text: activePrompt }
             ]
           }];
         } else {
@@ -836,7 +970,7 @@ Return a JSON object in this exact format:
             role: 'user',
             parts: [
               { fileData: { fileUri: cacheResult.fileUri, mimeType } },
-              { text: judgePrompt }
+              { text: activePrompt }
             ]
           }];
         }
@@ -867,19 +1001,93 @@ Return a JSON object in this exact format:
 
       console.log(`[SchedulerService][${stepConfig.name}] Judge completed. Score: ${judgeResult.score}, Issues: ${judgeResult.issues?.length}`);
 
-      // 4. Confidence-Based Verification Gate
-      const finalIssues: any[] = [];
-      const finalEvaluations = judgeResult.checklist_evaluations || [];
+      // 3.5. Citation Reconstruction, Validation, and Retry Gate
+      let validatedJudgeIssues: any[] = [];
+      let finalEvaluations = judgeResult.checklist_evaluations || [];
+      let currentJudgeResult = judgeResult;
 
-      if (Array.isArray(judgeResult.issues)) {
-        for (const issue of judgeResult.issues) {
-          const confidence = issue.confidence !== undefined ? issue.confidence : 1.0;
-          if (confidence < 0.90) {
-            console.log(`[SchedulerService][${stepConfig.name}] Low confidence finding (${confidence}) detected for code ${issue.code}. Running verification pass...`);
-            SchedulerService.verificationPassesCount++;
-            SchedulerService.challengedFindingsCount++;
+      const validateAndReconstruct = (issues: any[]): { reconstructed: any[], isValid: boolean } => {
+        let allValid = true;
+        const reconstructed: any[] = [];
 
-            const verifierPrompt = `You are a Chief NYC Code Compliance Auditor performing a precision verification check on a low-confidence compliance finding.
+        // Build code allowlist: stepCodes + retrieved section codes
+        const codeAllowlist = new Set<string>();
+        stepCodes.forEach(sc => codeAllowlist.add(sc.code.toLowerCase().replace(/\s+/g, '')));
+        topMatches.forEach(m => {
+          const { section } = RagOptimizerService.parseFallbackSection(m.metadata?.text || "");
+          const activeSection = m.metadata?.section || section || "";
+          if (activeSection) {
+            codeAllowlist.add(activeSection.toLowerCase().replace(/\s+/g, ''));
+          }
+        });
+
+        for (const issue of issues) {
+          const chunkId = issue.citation_chunk_id;
+          let matchedChunk = topMatches.find(m => (m as any).temp_chunk_id === chunkId);
+          
+          if (!matchedChunk && issue.code) {
+            const cleanCode = issue.code.toLowerCase().replace(/\s+/g, '');
+            matchedChunk = topMatches.find(m => {
+              const { section } = RagOptimizerService.parseFallbackSection(m.metadata?.text || "");
+              const activeSection = m.metadata?.section || section || "";
+              return activeSection.toLowerCase().replace(/\s+/g, '') === cleanCode;
+            });
+          }
+
+          if (matchedChunk) {
+            const { section } = RagOptimizerService.parseFallbackSection(matchedChunk.metadata?.text || "");
+            const activeSection = matchedChunk.metadata?.section || section || "Unknown Section";
+            const sourceFile = matchedChunk.metadata?.source || "NYC Building Code";
+
+            const cleanActiveSec = activeSection.toLowerCase().replace(/\s+/g, '');
+            if (codeAllowlist.has(cleanActiveSec)) {
+              issue.code = activeSection;
+              issue.exact_pdf_citation = `${sourceFile}, Page ${matchedChunk.metadata?.page_number || 'N/A'}`;
+              reconstructed.push(issue);
+            } else {
+              console.warn(`[SchedulerService][${stepConfig.name}] Citation allowlist mismatch: "${activeSection}" not in allowlist. Replacing.`);
+              issue.code = activeSection;
+              issue.exact_pdf_citation = "Citation unavailable";
+              issue.confidence_level = 'LOW';
+              allValid = false;
+              reconstructed.push(issue);
+            }
+          } else {
+            console.warn(`[SchedulerService][${stepConfig.name}] Citation Validation: rejected hallucinated/unverified chunk pointer ${chunkId} for issue:`, issue);
+            issue.code = "Citation unavailable";
+            issue.exact_pdf_citation = "Citation unavailable";
+            issue.confidence_level = 'LOW';
+            allValid = false;
+            reconstructed.push(issue);
+          }
+        }
+
+        return { reconstructed, isValid: allValid };
+      };
+
+      let checkResult = validateAndReconstruct(currentJudgeResult.issues || []);
+      validatedJudgeIssues = checkResult.reconstructed;
+
+      if (!checkResult.isValid) {
+        console.log(`[SchedulerService][${stepConfig.name}] Citation validation failed on first attempt. Retrying judge once...`);
+        const retryPrompt = `${judgePrompt}\n\nWARNING: Your previous response contained invalid or hallucinated citations. You may ONLY reference the following allowed chunk IDs:\n${topMatches.map(m => `   - ${(m as any).temp_chunk_id}: ${m.metadata?.source || ''}`).join('\n')}\nRetries must strictly comply with this constraint.`;
+        
+        const retryResult = await runJudge(retryPrompt);
+        if (retryResult) {
+          currentJudgeResult = retryResult;
+          finalEvaluations = retryResult.checklist_evaluations || [];
+          const secondCheck = validateAndReconstruct(currentJudgeResult.issues || []);
+          validatedJudgeIssues = secondCheck.reconstructed;
+        }
+      }
+
+      // Now run verifications in parallel
+      const verifierPromises = validatedJudgeIssues.map(async (issue) => {
+        const confidence = issue.confidence !== undefined ? issue.confidence : 1.0;
+        if (confidence < 0.90 && issue.code !== 'Citation unavailable') {
+          console.log(`[SchedulerService][${stepConfig.name}] Low confidence finding (${confidence}) detected for code ${issue.code}. Running verification pass...`);
+          
+          const verifierPrompt = `You are a Chief NYC Code Compliance Auditor performing a precision verification check on a low-confidence compliance finding.
 Target Compliance Issue to Verify:
 ${JSON.stringify(issue, null, 2)}
 
@@ -897,98 +1105,104 @@ Return a JSON object in this exact format:
     "title": "<short title>",
     "description": "<technical description>",
     "severity": "critical" | "major" | "minor",
-    "code": "<reference code>",
+    "citation_chunk_id": "<must be one of the provided chunk IDs e.g. chunk_0, chunk_1, etc. that supports this finding. Set to null if none exists.>",
     "recommendation": "<remedy>",
     "deduction_percentage": <number>,
-    "exact_pdf_citation": "<PDF name & section>",
     "loophole_details": "<why it failed>",
     "required_elements": "<fix requirements>"
   }
 }`;
 
-            try {
-              const runVerifier = async (): Promise<any> => {
-                const payload: any = {
-                  generationConfig: {
-                    temperature: 0.1,
-                    responseMimeType: "application/json"
-                  }
-                };
-
-                if (cacheResult.cacheName) {
-                  payload.cached_content = cacheResult.cacheName;
-                  payload.contents = [{
-                    role: 'user',
-                    parts: [{ text: `System Instructions:\n${verifierPrompt}\n\nUser Request:\nVerify the compliance issue.` }]
-                  }];
-                } else if (cacheResult.inlineData) {
-                  payload.contents = [{
-                    role: 'user',
-                    parts: [
-                      { inlineData: { mimeType, data: cacheResult.inlineData } },
-                      { text: verifierPrompt }
-                    ]
-                  }];
-                } else {
-                  payload.contents = [{
-                    role: 'user',
-                    parts: [
-                      { fileData: { fileUri: cacheResult.fileUri, mimeType } },
-                      { text: verifierPrompt }
-                    ]
-                  }];
-                }
-
-                await SchedulerService.proSemaphore.acquire();
-                try {
-                  const response = await GeminiClient.requestWithRetry(
-                    PIPELINE_CONFIG.models.pro,
-                    payload,
-                    false,
-                    undefined,
-                    planId
-                  );
-                  SchedulerService.proCallsCount++;
-                  return this.parseJsonResult(response.text, "Verifier");
-                } finally {
-                  SchedulerService.proSemaphore.release();
-                }
-              };
-
-              const verifierResult = await runVerifier();
-              if (verifierResult && verifierResult.verdict === 'CONFIRMED') {
-                console.log(`[SchedulerService][${stepConfig.name}] Issue CONFIRMED by verifier.`);
-                const corrected = verifierResult.corrected_issue || issue;
-                corrected.confidence = verifierResult.confidence || 0.95;
-                finalIssues.push(corrected);
-                SchedulerService.correctedFindingsCount++;
-              } else {
-                console.log(`[SchedulerService][${stepConfig.name}] Issue DISMISSED by verifier.`);
-                SchedulerService.correctedFindingsCount++;
-                // Dismiss: mark as compliant in checklist_evaluations
-                const ev = finalEvaluations.find((e: any) => e.code === issue.code);
-                if (ev) {
-                  ev.status = 'compliant';
-                  ev.details = `Compliant (Dismissed low-confidence violation: ${verifierResult?.explanation || 'No issue found'})`;
-                }
-              }
-            } catch (verifErr: any) {
-              console.error(`[SchedulerService][${stepConfig.name}] Verification pass failed:`, verifErr.message || verifErr);
-              finalIssues.push(issue); // Keep original if verification fails
+          const payload: any = {
+            generationConfig: {
+              temperature: 0,
+              responseMimeType: "application/json"
             }
+          };
+
+          if (cacheResult.cacheName) {
+            payload.cached_content = cacheResult.cacheName;
+            payload.contents = [{
+              role: 'user',
+              parts: [{ text: `System Instructions:\n${verifierPrompt}\n\nUser Request:\nVerify the compliance issue.` }]
+            }];
+          } else if (cacheResult.inlineData) {
+            payload.contents = [{
+              role: 'user',
+              parts: [
+                { inlineData: { mimeType, data: cacheResult.inlineData } },
+                { text: verifierPrompt }
+              ]
+            }];
           } else {
-            finalIssues.push(issue);
+            payload.contents = [{
+              role: 'user',
+              parts: [
+                { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+                { text: verifierPrompt }
+              ]
+            }];
           }
+
+          await SchedulerService.proSemaphore.acquire();
+          try {
+            const response = await GeminiClient.requestWithRetry(
+              PIPELINE_CONFIG.models.pro,
+              payload,
+              false,
+              undefined,
+              planId
+            );
+            SchedulerService.proCallsCount++;
+            const verifierResult = this.parseJsonResult(response.text, "Verifier");
+            return { issue, verifierResult };
+          } catch (err) {
+            console.error(`[SchedulerService] Verifier failed for code ${issue.code}:`, err);
+            return { issue, verifierResult: null };
+          } finally {
+            SchedulerService.proSemaphore.release();
+          }
+        }
+        return { issue, verifierResult: { verdict: 'CONFIRMED' } };
+      });
+
+      const verifierResults = await Promise.all(verifierPromises);
+      const verifiedProIssues: any[] = [];
+
+      for (const { issue, verifierResult } of verifierResults) {
+        if (verifierResult && verifierResult.verdict === 'CONFIRMED') {
+          const corrected = verifierResult.corrected_issue || issue;
+          corrected.confidence = verifierResult.confidence || 0.95;
+          
+          if (corrected.citation_chunk_id) {
+            const matchedChunk = topMatches.find(m => (m as any).temp_chunk_id === corrected.citation_chunk_id);
+            if (matchedChunk) {
+              const { section } = RagOptimizerService.parseFallbackSection(matchedChunk.metadata?.text || "");
+              const activeSection = matchedChunk.metadata?.section || section || "Unknown Section";
+              const sourceFile = matchedChunk.metadata?.source || "NYC Building Code";
+              corrected.code = activeSection;
+              corrected.exact_pdf_citation = `${sourceFile}, Page ${matchedChunk.metadata?.page_number || 'N/A'}`;
+            }
+          }
+          
+          verifiedProIssues.push(corrected);
+        } else if (verifierResult && verifierResult.verdict === 'DISMISSED') {
+          console.log(`[SchedulerService][${stepConfig.name}] Issue DISMISSED by verifier.`);
+          const ev = finalEvaluations.find((e: any) => e.code === issue.code);
+          if (ev) {
+            ev.status = 'compliant';
+            ev.details = `Compliant (Dismissed low-confidence violation: ${verifierResult?.explanation || 'No issue found'})`;
+          }
+        } else {
+          verifiedProIssues.push(issue);
         }
       }
 
-      // 5. Evidence Completeness Check & Repair Gate
-      const repairedIssues: any[] = [];
-      for (const issue of finalIssues) {
+      // 5. Evidence Completeness Check & Repair Gate in parallel
+      const repairPromises = verifiedProIssues.map(async (issue) => {
         const isMissingField = !issue.code || !issue.exact_pdf_citation || !issue.description || !issue.severity || !issue.recommendation;
-        if (isMissingField) {
+        if (isMissingField && issue.code !== 'Citation unavailable') {
           console.log(`[SchedulerService][${stepConfig.name}] Missing evidence fields detected in issue for code ${issue.code}. Running repair pass...`);
-          SchedulerService.citationCorrectionsCount++;
 
           const repairPrompt = `You are a Plan Examiner Assistant. The following compliance finding is missing key details.
 Compliance Issue:
@@ -1010,73 +1224,60 @@ Return a JSON object in this exact format:
   "required_elements": "<fix requirements>"
 }`;
 
-          try {
-            const runRepair = async (): Promise<any> => {
-              const payload: any = {
-                generationConfig: {
-                  temperature: 0.1,
-                  responseMimeType: "application/json"
-                }
-              };
-
-              if (cacheResult.cacheName) {
-                payload.cached_content = cacheResult.cacheName;
-                payload.contents = [{
-                  role: 'user',
-                  parts: [{ text: `System Instructions:\n${repairPrompt}\n\nUser Request:\nRepair missing fields.` }]
-                }];
-              } else if (cacheResult.inlineData) {
-                payload.contents = [{
-                  role: 'user',
-                  parts: [
-                    { inlineData: { mimeType, data: cacheResult.inlineData } },
-                    { text: repairPrompt }
-                  ]
-                }];
-              } else {
-                payload.contents = [{
-                  role: 'user',
-                  parts: [
-                    { fileData: { fileUri: cacheResult.fileUri, mimeType } },
-                    { text: repairPrompt }
-                  ]
-                }];
-              }
-
-              await SchedulerService.proSemaphore.acquire();
-              try {
-                const response = await GeminiClient.requestWithRetry(
-                  PIPELINE_CONFIG.models.pro,
-                  payload,
-                  false,
-                  undefined,
-                  planId
-                );
-                SchedulerService.proCallsCount++;
-                return this.parseJsonResult(response.text, "Repairer");
-              } finally {
-                SchedulerService.proSemaphore.release();
-              }
-            };
-
-            const repaired = await runRepair();
-            if (repaired) {
-              repairedIssues.push({
-                ...issue,
-                ...repaired
-              });
-              console.log(`[SchedulerService][${stepConfig.name}] Issue repaired successfully.`);
-            } else {
-              repairedIssues.push(issue);
+          const payload: any = {
+            generationConfig: {
+              temperature: 0,
+              responseMimeType: "application/json"
             }
-          } catch (repairErr: any) {
-            console.error(`[SchedulerService][${stepConfig.name}] Repair pass failed:`, repairErr.message || repairErr);
-            repairedIssues.push(issue);
+          };
+
+          if (cacheResult.cacheName) {
+            payload.cached_content = cacheResult.cacheName;
+            payload.contents = [{
+              role: 'user',
+              parts: [{ text: `System Instructions:\n${repairPrompt}\n\nUser Request:\nRepair missing fields.` }]
+            }];
+          } else if (cacheResult.inlineData) {
+            payload.contents = [{
+              role: 'user',
+              parts: [
+                { inlineData: { mimeType, data: cacheResult.inlineData } },
+                { text: repairPrompt }
+              ]
+            }];
+          } else {
+            payload.contents = [{
+              role: 'user',
+              parts: [
+                { fileData: { fileUri: cacheResult.fileUri, mimeType } },
+                { text: repairPrompt }
+              ]
+            }];
           }
-        } else {
-          repairedIssues.push(issue);
+
+          await SchedulerService.proSemaphore.acquire();
+          try {
+            const response = await GeminiClient.requestWithRetry(
+              PIPELINE_CONFIG.models.pro,
+              payload,
+              false,
+              undefined,
+              planId
+            );
+            SchedulerService.proCallsCount++;
+            const repaired = this.parseJsonResult(response.text, "Repairer");
+            return repaired ? { ...issue, ...repaired } : issue;
+          } catch (repairErr) {
+            console.error(`[SchedulerService] Repair pass failed for code ${issue.code}:`, repairErr);
+            return issue;
+          } finally {
+            SchedulerService.proSemaphore.release();
+          }
         }
-      }
+        return issue;
+      });
+
+      const repairedIssues = await Promise.all(repairPromises);
 
       // Merge deterministic results
       const deterministicIssues = stepDeterministicResults
@@ -1108,15 +1309,36 @@ Return a JSON object in this exact format:
       // Map evidence paths and confidence metrics for Pro issues
       const finalProIssuesMapped = repairedIssues.map((issue: any) => {
         const node = EvidenceGraph.buildNode(issue.code, planFacts, undefined, issue.description);
-        const overall = parseFloat((currentVisionConfidence * 0.90 * (issue.confidence || 0.95)).toFixed(2));
+        const visConf = currentVisionConfidence;
+        const ragConf = 0.90;
+        const reasoningConf = issue.confidence !== undefined ? issue.confidence : 0.85;
+        
+        const isCitationRemoved = issue.exact_pdf_citation === "Citation unavailable" || issue.code === "Citation unavailable";
+        const isOcrLow = visConf < 0.7;
+        const isFactMissing = Object.values(planFacts).some(v => v === null);
+        
+        let overall = visConf * ragConf * reasoningConf;
+        if (isFactMissing) overall *= 0.6;
+        if (isCitationRemoved) overall *= 0.4;
+        if (isOcrLow) overall *= 0.5;
+
+        let confidence_level: 'HIGH' | 'MEDIUM' | 'LOW' = 'HIGH';
+        if (isCitationRemoved || isFactMissing || isOcrLow || overall < 0.5) {
+          confidence_level = 'LOW';
+        } else if (overall < 0.78) {
+          confidence_level = 'MEDIUM';
+        }
+
         return {
           ...issue,
+          confidence_level,
+          confidence: parseFloat(overall.toFixed(2)),
           confidence_metrics: {
             deterministic: 0.0,
-            vision: currentVisionConfidence,
-            rag: 0.90,
-            reasoning: issue.confidence || 0.95,
-            overall: overall
+            vision: visConf,
+            rag: ragConf,
+            reasoning: reasoningConf,
+            overall: parseFloat(overall.toFixed(2))
           },
           evidence_path: node
         };
@@ -1143,15 +1365,47 @@ Return a JSON object in this exact format:
         const inContext = contexts.toLowerCase().includes(cleanCode);
         const inChecklist = stepCodes.some(sc => sc.code.toLowerCase().replace(/\s+/g, '') === cleanCode);
 
-        if (inContext || inChecklist) {
-          validatedIssues.push(issue);
-        } else {
-          console.warn(`[SchedulerService][${stepConfig.name}] Citation Validation REJECTED unverified code citation: ${codeSection}`);
-          const ev = combinedEvaluations.find(e => e.code === codeSection);
-          if (ev) {
-            ev.status = 'compliant';
-            ev.details = `Compliant (Rejected hallucinated citation: ${codeSection})`;
+        if (!inContext && !inChecklist) {
+          console.warn(`[SchedulerService][${stepConfig.name}] Citation Validation: Hallucinated code citation ${codeSection}. Replacing citation.`);
+          issue.exact_pdf_citation = "Citation unavailable";
+          issue.confidence_level = 'LOW';
+          if (issue.confidence_metrics) {
+            issue.confidence_metrics.reasoning = Math.max(0.1, issue.confidence_metrics.reasoning - 0.3);
+            issue.confidence_metrics.overall = parseFloat((issue.confidence_metrics.overall * 0.7).toFixed(2));
           }
+        }
+
+        // Verify exact_pdf_citation against retrieved contexts
+        if (issue.exact_pdf_citation && issue.exact_pdf_citation !== "Citation unavailable") {
+          const citationLower = issue.exact_pdf_citation.toLowerCase();
+          const secMatch = citationLower.match(/(?:section|bc|pc|mc|fc|zr)\s*([0-9]+(?:\.[0-9]+)*)/);
+          if (secMatch && secMatch[1]) {
+            const secNum = secMatch[1];
+            if (!contexts.toLowerCase().includes(secNum)) {
+              console.warn(`[SchedulerService][${stepConfig.name}] Citation Validation: exact_pdf_citation "${issue.exact_pdf_citation}" cites section ${secNum} not found in retrieved chunks.`);
+              issue.exact_pdf_citation = "Citation unavailable";
+              issue.confidence_level = 'LOW';
+              if (issue.confidence_metrics) {
+                issue.confidence_metrics.reasoning = Math.max(0.1, issue.confidence_metrics.reasoning - 0.2);
+                issue.confidence_metrics.overall = parseFloat((issue.confidence_metrics.overall * 0.8).toFixed(2));
+              }
+            }
+          }
+        }
+
+        validatedIssues.push(issue);
+      }
+
+      // Phase 4: Fact Locking Verification
+      for (const issue of validatedIssues) {
+        const descLower = (issue.description || "").toLowerCase();
+        if (globalFacts.story_count !== null && descLower.includes(`${globalFacts.story_count - 1} stories`)) {
+          console.warn(`[SchedulerService][${stepConfig.name}] Fact Locking: rejected reasoning contradicting story_count.`);
+          issue.description = `[Reasoning Rejected: Contradicted locked story count] ${issue.description}`;
+        }
+        if (globalFacts.occupancy && descLower.includes(`occupancy group`) && !descLower.includes(globalFacts.occupancy.toLowerCase())) {
+          console.warn(`[SchedulerService][${stepConfig.name}] Fact Locking: rejected reasoning contradicting occupancy group.`);
+          issue.description = `[Reasoning Rejected: Contradicted locked occupancy group] ${issue.description}`;
         }
       }
 
@@ -1168,6 +1422,60 @@ Return a JSON object in this exact format:
         issues: validatedIssues,
         checklist_evaluations: combinedEvaluations
       };
+
+      try {
+        const totalIssues = validatedIssues.length;
+        const hallucinatedCount = validatedIssues.filter((i: any) => i.code === 'Citation unavailable' || i.exact_pdf_citation === 'Citation unavailable').length;
+        const hallucinationRate = totalIssues > 0 ? (hallucinatedCount / totalIssues) : 0.0;
+        metrics.setGauge('nyc_citation_hallucination_rate', hallucinationRate, { discipline: stepId });
+        
+        const ocrConf = currentVisionConfidence;
+        metrics.setGauge('nyc_ocr_confidence', ocrConf, { discipline: stepId });
+
+        const judgeDisagreement = resultA && resultB && (resultA.issues?.length !== resultB.issues?.length) ? 1.0 : 0.0;
+        metrics.setGauge('nyc_judge_disagreement', judgeDisagreement, { discipline: stepId });
+
+        const verifiedCitations = validatedIssues.filter((i: any) => i.code !== 'Citation unavailable' && i.exact_pdf_citation !== 'Citation unavailable').length;
+        const retrievalPrecision = totalIssues > 0 ? (verifiedCitations / totalIssues) : 1.0;
+        metrics.setGauge('nyc_retrieval_precision', retrievalPrecision, { discipline: stepId });
+
+        metrics.setGauge('nyc_per_discipline_accuracy', finalScore / 100, { discipline: stepId });
+      } catch (metricsErr) {
+        console.error(`[SchedulerService] Failed to update Prometheus metrics for step ${stepId}:`, metricsErr);
+      }
+
+      try {
+        const startCPU = process.cpuUsage();
+        const startMemory = process.memoryUsage().rss;
+        
+        EvidenceLogger.logAudit({
+          auditId: planId,
+          discipline: stepId,
+          retrievedChunks: topMatches.map(m => ({
+            id: m.id,
+            score: m.score || 0,
+            mmrScore: (m as any).mmrScore,
+            metadata: m.metadata,
+            status: 'selected'
+          })),
+          deterministicRules: stepDeterministicResults,
+          judgeDecisions: judgeResult?.rulings || [],
+          challengerDecisions: challengerResult?.rebuttals || [],
+          citationsBeforeValidation: judgeResult?.issues || [],
+          citationsAfterValidation: validatedIssues,
+          repairedCitations: repairedIssues,
+          confidenceCalculations: {
+            vision: currentVisionConfidence,
+            rag: 0.90,
+            overall: finalScore / 100
+          },
+          latencyMs: Math.round(performance.now() - pineconeStart),
+          memoryUsageBytes: process.memoryUsage().rss - startMemory,
+          cpuUsagePercentage: Math.round(process.cpuUsage(startCPU).user / 1000)
+        });
+      } catch (err) {
+        console.error(`[SchedulerService] Evidence logging failed for step ${stepId}:`, err);
+      }
     }
 
     // Process output and formatting
@@ -1300,6 +1608,11 @@ ${JSON.stringify(issues, null, 2)}
 Your goal is to inspect the drawings and argue why each issue is actually COMPLIANT. Cite specific exceptions in the NYC Building/Plumbing/Mechanical Code, drawing tolerances, occupant loads, or design details from the blueprints that the auditor might have overlooked.
 Argue fiercely but professionally.
 
+CRITICAL CITATION RULES:
+- You may ONLY cite specific code sections or exceptions that are present in the provided NYC Building Code reference context.
+- If a section or exception is not present in the context, do NOT invent/hallucinate it. Instead, write exactly "No applicable section found".
+- Any rebuttal citing non-existent or fabricated sections will be rejected by the Judge.
+
 Return a JSON object in this exact format:
 {
   "rebuttals": [
@@ -1312,7 +1625,7 @@ Return a JSON object in this exact format:
 
     const challengerPayload: any = {
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0,
         responseMimeType: "application/json"
       }
     };
@@ -1373,6 +1686,7 @@ Answer with either:
 - "REJECT": If the contractor's defense is invalid (the violation stands, rebut the argument).
 
 CRITICAL RULE FOR EXAMINERS: The contractor's consultant might try to invent fake code sections or exceptions to win the argument. You MUST check the provided building code context. If the contractor cites a specific exception, tolerance, or section, you MUST verify that it actually exists in the code context and is applicable. If the cited exception is not present in the context, is made up, or is misapplied, you MUST reject the defense.
+If you find the contractor or the auditor has fabricated a citation (citing a section that does not exist in the reference context), you must deduct confidence and reject that specific point.
 
 Return a JSON object in this exact format:
 {
@@ -1387,12 +1701,12 @@ Return a JSON object in this exact format:
 
     const judgePayload: any = {
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0,
         responseMimeType: "application/json"
       }
     };
 
-    const canUseCacheForJudge = cacheResult.cacheName && (modelForJudge === PIPELINE_CONFIG.models.flash);
+    const canUseCacheForJudge = cacheResult.cacheName && (modelForJudge === PIPELINE_CONFIG.models.pro);
 
     if (canUseCacheForJudge) {
       judgePayload.cached_content = cacheResult.cacheName;
@@ -1538,7 +1852,7 @@ Return a JSON object in this exact format:
 
     const payload: any = {
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0,
         responseMimeType: "application/json"
       }
     };
@@ -1587,43 +1901,68 @@ Return a JSON object in this exact format:
     planId: string,
     cacheResult: any,
     mimeType: string
-  ): Promise<{ facts: ExtractedFacts; visionConfidence: number }> {
+  ): Promise<{ facts: ExtractedFacts; globalFacts: GlobalFacts; visionConfidence: number }> {
     const prompt = `You are a precision Plan Verification OCR & Vision Assistant.
-Your task is to analyze the drawings and text of the attached plan and extract code parameters and dimensions.
+Your task is to analyze the drawings and text of the attached plan and extract code parameters, dimensions, and global project metadata.
 
-Extract the following parameters into a valid JSON object. If any parameter is not mentioned, use null.
-Do NOT guess or estimate values. Only extract explicit dimensions, counts, or measurements.
+CRITICAL INSTRUCTION:
+1. ONLY extract dimensions, counts, or measurements that are explicitly visible/labeled on the drawings or in the text.
+2. If a parameter is not explicitly mentioned or is not readable on the drawings, you MUST set the "value" to null.
+3. Do NOT guess, estimate, approximate, or extrapolate any values.
+4. For each parameter, provide:
+   - "value": The extracted number, boolean, array of numbers, or null.
+   - "confidence": Your confidence in the extraction (between 0.0 and 1.0). If value is null, confidence is 1.0.
+   - "source_page": The 1-based page number where this information was found.
+   - "bounding_box": [ymin, xmin, ymax, xmax] coordinates of the bounding box on the page where the dimension/annotation is located (0-1000 scale). If not applicable, use null.
+   - "ocr_evidence": The exact OCR text or labeled text found (e.g. "STAIR WIDTH: 44\""). If not applicable, use null.
 
 JSON Schema:
 {
+  "global_facts": {
+    "project_name": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "project_address": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "city": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "state": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "country": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "jurisdiction": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "applicable_code_set": { "value": <string | null>, "confidence": <float>, "source_page": <number | null> },
+    "document_type": { "value": "Concept Drawing" | "Marketing Drawing" | "Construction Documents" | null, "confidence": <float> },
+    "occupancy": { "value": <string | null>, "confidence": <float> },
+    "construction_type": { "value": <string | null>, "confidence": <float> },
+    "building_height_feet": { "value": <number | null>, "confidence": <float> },
+    "story_count": { "value": <number | null>, "confidence": <float> },
+    "basement": { "value": <boolean | null>, "confidence": <float> },
+    "building_use": { "value": <string | null>, "confidence": <float> },
+    "review_scope": { "value": <string | null>, "confidence": <float> }
+  },
   "facts": {
-    "occupant_load": <number | null>,
-    "exit_stairs_count": <number | null>,
-    "stair_width_inches": <number | null>,
-    "door_clear_width_inches": <number | null>,
-    "corridor_width_inches": <number | null>,
-    "ceiling_height_inches": <number | null>,
-    "room_dimensions_feet": [<numbers> | null],
-    "water_closet_spacing_inches": <number | null>,
-    "transformer_kva": <number | null>,
-    "planned_electrical_load_kva": <number | null>,
-    "panel_clearance_inches": <number | null>,
-    "receptacle_spacing_feet": <number | null>,
-    "gross_floor_area_sqft": <number | null>,
-    "lot_area_sqft": <number | null>,
-    "allowable_far": <number | null>,
-    "parking_spaces_provided": <number | null>,
-    "dwelling_units_count": <number | null>,
-    "allowable_dwelling_units_limit": <number | null>,
-    "travel_distance_feet": <number | null>,
-    "dead_end_corridor_feet": <number | null>
+    "occupant_load": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "exit_stairs_count": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "stair_width_inches": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "door_clear_width_inches": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "corridor_width_inches": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "ceiling_height_inches": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "room_dimensions_feet": { "value": <[numbers] | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "water_closet_spacing_inches": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "transformer_kva": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "planned_electrical_load_kva": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "panel_clearance_inches": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "receptacle_spacing_feet": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "gross_floor_area_sqft": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "lot_area_sqft": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "allowable_far": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "parking_spaces_provided": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "dwelling_units_count": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "allowable_dwelling_units_limit": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "travel_distance_feet": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> },
+    "dead_end_corridor_feet": { "value": <number | null>, "confidence": <float>, "source_page": <number | null>, "bounding_box": <[ymin, xmin, ymax, xmax] | null>, "ocr_evidence": <string | null> }
   },
   "vision_confidence": <float, between 0.0 and 1.0>
 }`;
 
     const payload: any = {
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0,
         responseMimeType: "application/json"
       }
     };
@@ -1663,13 +2002,76 @@ JSON Schema:
       );
       SchedulerService.proCallsCount++;
       const result = this.parseJsonResult(response.text, "Visual Fact Extractor");
+      
+      const rawFacts = result?.facts || {};
+      const flattenedFacts: any = {};
+      const parameterKeys = Object.keys(rawFacts);
+
+      for (const key of parameterKeys) {
+        const item = rawFacts[key];
+        if (item && typeof item === 'object' && 'value' in item) {
+          const conf = typeof item.confidence === 'number' ? item.confidence : 1.0;
+          if (conf < 0.6) {
+            console.log(`[VisualFactExtractor] Downgrading low confidence parameter "${key}" (conf: ${conf}) to null.`);
+            flattenedFacts[key] = null;
+          } else {
+            flattenedFacts[key] = item.value;
+          }
+        } else if (item !== undefined) {
+          flattenedFacts[key] = item;
+        } else {
+          flattenedFacts[key] = null;
+        }
+      }
+
+      // Parse global facts
+      const rawGlobal = result?.global_facts || {};
+      const globalFacts: GlobalFacts = {
+        project_name: rawGlobal.project_name?.value || null,
+        project_address: rawGlobal.project_address?.value || null,
+        city: rawGlobal.city?.value || null,
+        state: rawGlobal.state?.value || null,
+        country: rawGlobal.country?.value || null,
+        jurisdiction: rawGlobal.jurisdiction?.value || null,
+        applicable_code_set: rawGlobal.applicable_code_set?.value || null,
+        document_type: rawGlobal.document_type?.value || null,
+        occupancy: rawGlobal.occupancy?.value || null,
+        construction_type: rawGlobal.construction_type?.value || null,
+        building_height_feet: rawGlobal.building_height_feet?.value || null,
+        story_count: rawGlobal.story_count?.value || null,
+        basement: rawGlobal.basement?.value || null,
+        building_use: rawGlobal.building_use?.value || null,
+        review_scope: rawGlobal.review_scope?.value || null
+      };
+
       return {
-        facts: result?.facts || {},
+        facts: flattenedFacts,
+        globalFacts,
         visionConfidence: result?.vision_confidence !== undefined ? result.vision_confidence : 0.90
       };
     } catch (err) {
       console.error(`[SchedulerService] Plan fact extraction failed:`, err);
-      return { facts: {}, visionConfidence: 0.5 };
+      return {
+        facts: {},
+        globalFacts: {
+          project_name: null,
+          project_address: null,
+          city: null,
+          state: null,
+          country: null,
+          jurisdiction: null,
+          applicable_code_set: null,
+          document_type: null,
+          occupancy: null,
+          construction_type: null,
+          building_height_feet: null,
+          story_count: null,
+          basement: null,
+          building_use: null,
+          review_scope: null
+        },
+        visionConfidence: 0.5
+      };
     } finally {
       SchedulerService.proSemaphore.release();
     }
