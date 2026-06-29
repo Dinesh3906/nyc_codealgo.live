@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import pool from '../db';
+import { Logger } from '../services/logger';
+
+const logger = new Logger({ stage: 'auth' });
 
 export const protect = async (req: any, res: Response, next: NextFunction) => {
   let token;
@@ -82,8 +85,13 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
 
     req.user = user;
     next();
-  } catch (error) {
-    console.error('JWT verification failed:', error);
+  } catch (error: any) {
+    const isExpectedJwtError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError || error?.name === 'JsonWebTokenError' || error?.name === 'TokenExpiredError';
+    if (isExpectedJwtError) {
+      logger.warn(`JWT verification failed: ${error.message || error}`);
+    } else {
+      logger.error('Unexpected JWT verification failure', error);
+    }
     return res.status(401).json({ message: 'Not authorized, token failed', error: 'JWT_ERROR' });
   }
 };
