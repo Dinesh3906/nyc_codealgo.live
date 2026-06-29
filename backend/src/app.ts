@@ -38,6 +38,7 @@ const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin || origin === 'undefined' || origin === 'null') return true; // Allow mobile apps, server-to-server, or missing headers
   return allowedOrigins.includes(origin) ||
     origin.includes('codealgo.live') ||
+    origin.includes('vercel.app') ||
     origin.includes('localhost') ||
     origin.includes('127.0.0.1');
 };

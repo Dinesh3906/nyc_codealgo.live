@@ -2,23 +2,19 @@
 set -e
 
 echo "========================================="
-echo "   STARTING PRODUCTION DEPLOYMENT        "
+echo "   BACKEND-ONLY DEPLOYMENT (EC2)         "
+echo "   Frontend is hosted on Vercel          "
 echo "========================================="
 
-# Save current git commit hash for rollback fallback
 PREV_COMMIT=$(git rev-parse HEAD)
-echo "Current commit hash before pull: $PREV_COMMIT"
+echo "Current commit: $PREV_COMMIT"
 
 echo "1. Pulling latest code..."
 git pull origin main
-echo "2. Cleaning npm cache and installing dependencies..."
-rm -rf ~/.npm
-echo "Installing backend dependencies..."
+
+echo "2. Installing backend dependencies..."
 cd backend
-npm install --no-audit --no-fund
-echo "Installing frontend dependencies..."
-cd ../frontend
-npm install --no-audit --no-fund
+npm install --no-audit --no-fund --prefer-offline
 cd ..
 
 echo "3. Building backend..."
@@ -26,56 +22,34 @@ cd backend
 npm run build
 cd ..
 
-echo "4. Building frontend (with memory limit)..."
-cd frontend
-NODE_OPTIONS="--max-old-space-size=512" npm run build
-cd ..
-
-echo "5. Verifying build artifacts..."
-if [ ! -f "frontend/.next/BUILD_ID" ]; then
-  echo "FATAL: Frontend BUILD_ID is missing! Build failed."
-  exit 1
-fi
+echo "4. Verifying backend build..."
 if [ ! -d "backend/dist" ]; then
-  echo "FATAL: Backend dist directory is missing! Build failed."
+  echo "FATAL: Backend dist directory missing!"
   exit 1
 fi
-echo "Build verification passed."
+echo "Backend build OK."
 
-echo "6. Restarting services with PM2 ecosystem config..."
+echo "5. Stopping old frontend process (if any)..."
+pm2 delete nyc-frontend 2>/dev/null || true
+
+echo "6. Restarting backend with PM2..."
 pm2 startOrReload ecosystem.config.js --update-env
 
-# Wait 5 seconds for services to boot up
-echo "Waiting 5 seconds for services to boot up..."
 sleep 5
 
-echo "7. Running production health checks..."
+echo "7. Health check..."
 HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "failed")
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health/frontend || echo "failed")
+echo "Backend health: $HEALTH_STATUS"
 
-echo "Backend Health Code: $HEALTH_STATUS"
-echo "Frontend Health Code: $FRONTEND_STATUS"
-
-if [ "$HEALTH_STATUS" != "200" ] || [ "$FRONTEND_STATUS" != "200" ]; then
-  echo "WARNING: Health checks failed! Rolling back to commit $PREV_COMMIT..."
-  
-  # Rollback steps
-  git reset --hard $PREV_COMMIT
-  
-  # Rebuild previous state
-  cd backend
-  npm ci && npm run build
-  cd ../frontend
-  npm ci && NODE_OPTIONS="--max-old-space-size=512" npm run build
-  cd ..
-  
-  # Restart previous working state
-  pm2 startOrReload ecosystem.config.js --update-env
-  
-  echo "Rollback completed. Restored previous stable version."
+if [ "$HEALTH_STATUS" != "200" ]; then
+  echo "WARNING: Health check failed! Check: pm2 logs nyc-backend --lines 20"
   exit 1
-else
-  echo "========================================="
-  echo "   DEPLOYMENT COMPLETED SUCCESSFULLY     "
-  echo "========================================="
 fi
+
+echo "========================================="
+echo "   DEPLOYMENT SUCCESSFUL                 "
+echo "========================================="
+pm2 status
+echo ""
+echo "Frontend: https://nyccodes.codealgo.live (Vercel)"
+echo "Backend:  https://api.codealgo.live (this server)"
