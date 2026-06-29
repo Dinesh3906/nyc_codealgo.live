@@ -8,6 +8,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 
 // Fix 5: ISR revalidation — 30 days
 export const revalidate = 2592000;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
@@ -45,11 +46,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
+/*
 export async function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({
     slug: post.slug,
   }));
 }
+*/
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
