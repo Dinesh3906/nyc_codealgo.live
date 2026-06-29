@@ -40,6 +40,83 @@ export class GeminiClient {
   private static cacheModels: Map<string, string> = new Map();
   private static cacheFiles: Map<string, { fileUri: string, inlineData?: string }> = new Map();
   private static keysMetadata: KeyMetadata[] = [];
+  private static projectCoolDownUntil = 0;
+  private static lastProjectErrorDetail = '';
+
+  static isProjectQuotaExhausted(): boolean {
+    return Date.now() < this.projectCoolDownUntil;
+  }
+
+  static getProjectCoolDownRemainingMs(): number {
+    return Math.max(0, this.projectCoolDownUntil - Date.now());
+  }
+
+  static getProjectErrorDetail(): string {
+    return this.lastProjectErrorDetail;
+  }
+
+  static resetProjectQuota() {
+    this.projectCoolDownUntil = 0;
+    this.lastProjectErrorDetail = '';
+  }
+
+  static parseGoogleError(errText: string): { isProjectExhausted: boolean, retryDelayMs: number | null } {
+    let isProjectExhausted = false;
+    let retryDelayMs: number | null = null;
+    try {
+      const errJson = JSON.parse(errText);
+      const errorObj = errJson.error || {};
+      const details = errorObj.details || [];
+      
+      for (const detail of details) {
+        if (detail.quotaId) {
+          if (detail.quotaId.includes('GenerateRequestsPerDayPerProjectPerModel') || 
+              detail.quotaId.includes('GenerateContentInputTokensPerModelPerDay') ||
+              detail.quotaId.includes('GenerateRequestsPerDayPerProject') ||
+              detail.quotaId.includes('GenerateContentInputTokensPerModelPerDay-FreeTier')) {
+            isProjectExhausted = true;
+          }
+        }
+        if (detail.violations) {
+          for (const violation of detail.violations) {
+            const desc = violation.description || '';
+            const keyMetric = violation.quotaMetric || '';
+            if (desc.includes('GenerateRequestsPerDayPerProjectPerModel') || 
+                desc.includes('GenerateContentInputTokensPerModelPerDay') ||
+                desc.includes('GenerateRequestsPerDayPerProject') ||
+                keyMetric.includes('project')) {
+              isProjectExhausted = true;
+            }
+          }
+        }
+        if (detail['@type'] === 'type.googleapis.com/google.rpc.RetryInfo') {
+          const delayStr = detail.retryDelay;
+          if (delayStr && typeof delayStr === 'string') {
+            const match = delayStr.match(/^([\d.]+)\s*s$/);
+            if (match) {
+              retryDelayMs = parseFloat(match[1]) * 1000;
+            }
+          }
+        }
+      }
+      
+      // Fallback search in entire string
+      if (!isProjectExhausted) {
+        if (errText.includes('GenerateRequestsPerDayPerProjectPerModel') || 
+            errText.includes('GenerateContentInputTokensPerModelPerDay') ||
+            errText.includes('GenerateRequestsPerDayPerProject')) {
+          isProjectExhausted = true;
+        }
+      }
+    } catch (e) {
+      if (errText.includes('GenerateRequestsPerDayPerProjectPerModel') || 
+          errText.includes('GenerateContentInputTokensPerModelPerDay') ||
+          errText.includes('GenerateRequestsPerDayPerProject')) {
+        isProjectExhausted = true;
+      }
+    }
+    return { isProjectExhausted, retryDelayMs };
+  }
   
   static registerCache(cacheName: string | undefined, model: string, fileUri: string, inlineData?: string) {
     if (!cacheName) return;
@@ -316,10 +393,22 @@ export class GeminiClient {
       }
     }
 
+    if (this.isProjectQuotaExhausted()) {
+      const err: any = new Error(`Gemini project quota exhausted. Cooldown remaining: ${this.getProjectCoolDownRemainingMs()}ms`);
+      err.code = 'PROJECT_EXHAUSTED';
+      throw err;
+    }
+
     let lastErrorDetail = "No request completed successfully";
     const startTime = Date.now();
 
     while (attempt <= maxRetries) {
+      if (this.isProjectQuotaExhausted()) {
+        const err: any = new Error(`Gemini project quota exhausted mid-flight. Cooldown remaining: ${this.getProjectCoolDownRemainingMs()}ms`);
+        err.code = 'PROJECT_EXHAUSTED';
+        throw err;
+      }
+
       attempt++;
       const km = this.getAvailableKeyMetadata();
       const apiKey = km.key;
@@ -360,10 +449,21 @@ export class GeminiClient {
           lastErrorDetail = `HTTP ${status} (${response.statusText}): ${errText}`;
 
           if (status === 429) {
-            this.recordQuotaFailure(km);
-            logger.info(`Rotating key to retry due to quota exhaustion (attempt ${attempt})`);
-            metrics.incrementCounter('nyc_retries_total', { reason: 'quota_exhaustion_failover' });
-            continue;
+            const parsed = this.parseGoogleError(errText);
+            if (parsed.isProjectExhausted) {
+              const cooldownDelay = parsed.retryDelayMs || 60000;
+              this.projectCoolDownUntil = Date.now() + cooldownDelay;
+              this.lastProjectErrorDetail = errText;
+              logger.error(`Gemini PROJECT quota exhausted! Cooldown for ${cooldownDelay}ms. Aborting retries immediately.`);
+              const err: any = new Error(`Gemini project quota exhausted: ${errText}`);
+              err.code = 'PROJECT_EXHAUSTED';
+              throw err;
+            } else {
+              this.recordQuotaFailure(km);
+              logger.info(`Rotating key to retry due to quota exhaustion (attempt ${attempt})`);
+              metrics.incrementCounter('nyc_retries_total', { reason: 'quota_exhaustion_failover' });
+              continue;
+            }
           }
 
           if (status === 500 || status === 503) {
@@ -452,6 +552,9 @@ export class GeminiClient {
           };
         }
       } catch (err: any) {
+        if (err.code === 'PROJECT_EXHAUSTED') {
+          throw err; // Propagate project-level failures immediately
+        }
         clearTimeout(timeoutId);
         logger.warn(`Request exception (attempt ${attempt}): ${err.message || err}`, {
           retryCount: attempt,

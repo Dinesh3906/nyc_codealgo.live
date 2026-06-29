@@ -161,6 +161,7 @@ function AnalyzerContent() {
               {recentScans.map((plan: any) => {
                 const result = getParsedResult(plan);
                 const score = result.score || result.percentage || 0;
+                const isManualReview = result.status === 'manual_review' || result.score === null;
                 return (
                   <Link 
                     key={plan.id}
@@ -180,7 +181,7 @@ function AnalyzerContent() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-black text-blue-600 dark:text-blue-500">
-                        {plan.status === 'analyzed' ? `${score}%` : '--'}
+                        {plan.status === 'analyzed' && !isManualReview ? `${score}%` : '--'}
                       </p>
                       <p className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">Compliance</p>
                     </div>
@@ -197,23 +198,19 @@ function AnalyzerContent() {
   );
 }
 
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-8">
-      <Skeleton className="h-[250px] w-full rounded-2xl" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Skeleton className="h-32" />
-        <Skeleton className="h-32" />
-        <Skeleton className="h-32" />
-      </div>
-      <Skeleton className="h-96 w-full" />
-    </div>
-  );
-}
-
 export default function AnalyzerPage() {
   return (
-    <Suspense fallback={<LoadingSkeleton />}>
+    <Suspense fallback={
+      <div className="space-y-8">
+        <Skeleton className="h-[250px] w-full rounded-2xl" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    }>
       <AnalyzerContent />
     </Suspense>
   );

@@ -12,3 +12,5 @@ backend/dist/
 .DS_Store
 .kiro/
 .vscode/
+backend/pdfs/
+backend/scratch/

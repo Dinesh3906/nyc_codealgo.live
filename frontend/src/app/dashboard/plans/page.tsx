@@ -75,14 +75,15 @@ export default function PlansHub() {
               </TableHeader>
               <TableBody>
                 {plans.map((plan) => {
-                  // Robust parsing for historical plans (handle double serialization)
                   let result = plan.analysisResult;
                   let depth = 0;
                   while (typeof result === 'string' && depth < 5) {
                     try { result = JSON.parse(result); } catch { break; }
                     depth++;
                   }
-                  const score = result?.percentage || result?.score || 0;
+
+                  const isManualReview = result?.status === 'manual_review' || result?.score === null;
+                  const scoreText = isManualReview ? '--' : `${result?.percentage || result?.score || 0}%`;
 
                   return (
                     <TableRow key={plan.id}>
@@ -95,12 +96,12 @@ export default function PlansHub() {
                         {new Date(plan.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'} className="capitalize">
-                          {plan.status}
+                        <Badge variant={plan.status === 'analyzed' ? 'success' : (plan.status === 'manual_review' ? 'warning' : 'warning')} className="capitalize">
+                          {plan.status === 'manual_review' ? 'Manual Review' : plan.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-bold text-blue-500">
-                        {score}%
+                        {scoreText}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

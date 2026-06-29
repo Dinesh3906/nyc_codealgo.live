@@ -28,13 +28,18 @@ export default function DashboardOverview() {
       try { result = JSON.parse(result); } catch { break; }
       depth++;
     }
-    return result || {};
+    return typeof result === 'object' && result !== null ? result : {};
   };
 
   const totalAnalyzed = plans.length;
   const totalIssues = plans.reduce((acc, p) => acc + (getParsedResult(p).issues?.length || 0), 0);
-  const avgScore = plans.length > 0 
-    ? Math.round(plans.reduce((acc, p) => acc + (getParsedResult(p).score || getParsedResult(p).percentage || 0), 0) / plans.length) 
+  
+  const validPlans = plans.filter(p => {
+    const res = getParsedResult(p);
+    return res.score !== null && res.score !== undefined && res.status !== 'manual_review';
+  });
+  const avgScore = validPlans.length > 0 
+    ? Math.round(validPlans.reduce((acc, p) => acc + (getParsedResult(p).score || getParsedResult(p).percentage || 0), 0) / validPlans.length) 
     : 0;
 
   const stats = [
@@ -62,41 +67,41 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Overview of your compliance analysis</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.name || 'Architect'}</h1>
+          <p className="text-muted-foreground mt-1">Here is a summary of your NYC compliance audits</p>
+        </div>
+        <Link href="/dashboard/analyzer">
+          <Button className="bg-blue-600 hover:bg-blue-500 text-white font-semibold">Start New Scan</Button>
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {stats.map((stat, i) => (
-          <Card key={i} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-slate-200 dark:border-slate-700/50 shadow-sm transition-all hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</CardTitle>
-              <stat.icon className="h-5 w-5 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900 dark:text-white">{stat.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {stats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={i} className="bg-white dark:bg-slate-800/30 border-slate-200 dark:border-slate-700/50 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <Card className="bg-white dark:bg-slate-800/30 backdrop-blur-lg border-slate-200 dark:border-slate-700/50 shadow-sm">
+      <Card className="bg-white dark:bg-slate-800/30 border-slate-200 dark:border-slate-700/50 shadow-sm">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Recent Analysis</CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400">Your latest compliance checks</CardDescription>
-            </div>
-            <Link href="/dashboard/plans">
-              <Button variant="outline" size="sm" className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">View All</Button>
-            </Link>
-          </div>
+          <CardTitle>Recent Audits</CardTitle>
+          <CardDescription>Your last 5 uploaded plans and their analysis status</CardDescription>
         </CardHeader>
         <CardContent>
           {plans.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+            <div className="text-center py-6 text-muted-foreground">
               <p>No plans analyzed yet</p>
               <p className="text-sm mt-1">Upload a plan to get started</p>
             </div>
@@ -113,7 +118,8 @@ export default function DashboardOverview() {
               <TableBody>
                 {plans.slice(0, 5).map((plan) => {
                   const result = getParsedResult(plan);
-                  const score = result.score || result.percentage || 0;
+                  const isManualReview = result.status === 'manual_review' || result.score === null;
+                  const scoreText = isManualReview ? '--' : `${result.score || result.percentage || 0}%`;
                   return (
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">
@@ -122,12 +128,12 @@ export default function DashboardOverview() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={plan.status === 'analyzed' ? 'success' : 'warning'} className="capitalize">
-                          {plan.status}
+                        <Badge variant={plan.status === 'analyzed' ? 'success' : (plan.status === 'manual_review' ? 'warning' : 'warning')} className="capitalize">
+                          {plan.status === 'manual_review' ? 'Manual Review' : plan.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-bold text-blue-500">
-                        {score}%
+                        {scoreText}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

@@ -1,6 +1,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { PIPELINE_CONFIG } from '../config/pipeline.config';
 import { GeminiClient } from './gemini.client';
+import { AiProviderService } from './provider.service';
 import { GeminiCacheManager } from './gemini.cache';
 import { RoutingService, PageRouteResult } from './routing.service';
 import { PDFSplitter } from '../utils/pdf.splitter';
@@ -96,6 +97,7 @@ export class SchedulerService {
   ): Promise<any> {
     ProfilerService.startPlan(planId);
     RagOptimizerService.startTrace(planId);
+    AiProviderService.startAuditTracking(planId);
     SchedulerService.proCallsCount = 0;
     SchedulerService.verificationPassesCount = 0;
     SchedulerService.challengedFindingsCount = 0;
@@ -404,13 +406,17 @@ export class SchedulerService {
 
     // Include explainability traces in the pipeline response
     const ragTraces = RagOptimizerService.getTraces(planId);
+    const tracking = AiProviderService.getAuditTracking(planId);
+    AiProviderService.endAuditTracking(planId);
+
     return {
       results,
       metrics,
       profile: {
         ...profileSummary,
         ragTraces
-      }
+      },
+      tracking
     };
   }
 
@@ -813,13 +819,11 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
         await SchedulerService.proSemaphore.acquire();
         try {
           const startProTime = performance.now();
-          const response = await GeminiClient.requestWithRetry(
-            PIPELINE_CONFIG.models.pro,
+          const response = await AiProviderService.executePromptWithFailover(
             requestPayload,
-            false,
-            undefined,
             planId,
-            stepId
+            stepId,
+            PIPELINE_CONFIG.models.pro
           );
           const duration = performance.now() - startProTime;
           ProfilerService.recordDuration(planId, 'geminiPro', duration);
@@ -907,13 +911,11 @@ Return a JSON object in this exact format:
         await SchedulerService.proSemaphore.acquire();
         try {
           const start = performance.now();
-          const response = await GeminiClient.requestWithRetry(
-            PIPELINE_CONFIG.models.pro,
+          const response = await AiProviderService.executePromptWithFailover(
             payload,
-            false,
-            undefined,
             planId,
-            stepId
+            stepId,
+            PIPELINE_CONFIG.models.pro
           );
           const duration = performance.now() - start;
           ProfilerService.recordDuration(planId, 'geminiPro', duration);
@@ -1024,13 +1026,11 @@ CRITICAL CITATION INSTRUCTION:
         await SchedulerService.proSemaphore.acquire();
         try {
           const start = performance.now();
-          const response = await GeminiClient.requestWithRetry(
-            PIPELINE_CONFIG.models.pro,
+          const response = await AiProviderService.executePromptWithFailover(
             payload,
-            false,
-            undefined,
             planId,
-            stepId
+            stepId,
+            PIPELINE_CONFIG.models.pro
           );
           const duration = performance.now() - start;
           ProfilerService.recordDuration(planId, 'geminiPro', duration);
@@ -1193,13 +1193,11 @@ Return a JSON object in this exact format:
 
           await SchedulerService.proSemaphore.acquire();
           try {
-            const response = await GeminiClient.requestWithRetry(
-              PIPELINE_CONFIG.models.pro,
+            const response = await AiProviderService.executePromptWithFailover(
               payload,
-              false,
-              undefined,
               planId,
-              stepId
+              stepId,
+              PIPELINE_CONFIG.models.pro
             );
             SchedulerService.proCallsCount++;
             const verifierResult = this.parseJsonResult(response.text, "Verifier");
@@ -1305,13 +1303,11 @@ Return a JSON object in this exact format:
 
           await SchedulerService.proSemaphore.acquire();
           try {
-            const response = await GeminiClient.requestWithRetry(
-              PIPELINE_CONFIG.models.pro,
+            const response = await AiProviderService.executePromptWithFailover(
               payload,
-              false,
-              undefined,
               planId,
-              stepId
+              stepId,
+              PIPELINE_CONFIG.models.pro
             );
             SchedulerService.proCallsCount++;
             const repaired = this.parseJsonResult(response.text, "Repairer");
@@ -1703,13 +1699,11 @@ Return a JSON object in this exact format:
       }];
     }
 
-    const challengerResponse = await GeminiClient.requestWithRetry(
-      PIPELINE_CONFIG.models.flash,
+    const challengerResponse = await AiProviderService.executePromptWithFailover(
       challengerPayload,
-      false,
-      undefined,
       planId,
-      stepId
+      stepId,
+      PIPELINE_CONFIG.models.flash
     );
 
     const challengerResult = this.parseJsonResult(challengerResponse.text, "Challenger");
@@ -1786,26 +1780,22 @@ Return a JSON object in this exact format:
     if (modelForJudge === PIPELINE_CONFIG.models.pro) {
       await SchedulerService.proSemaphore.acquire();
       try {
-        const response = await GeminiClient.requestWithRetry(
-          modelForJudge,
+        const response = await AiProviderService.executePromptWithFailover(
           judgePayload,
-          false,
-          undefined,
           planId,
-          stepId
+          stepId,
+          modelForJudge
         );
         judgeResponseText = response.text;
       } finally {
         SchedulerService.proSemaphore.release();
       }
     } else {
-      const response = await GeminiClient.requestWithRetry(
-        modelForJudge,
+      const response = await AiProviderService.executePromptWithFailover(
         judgePayload,
-        false,
-        undefined,
         planId,
-        stepId
+        stepId,
+        modelForJudge
       );
       judgeResponseText = response.text;
     }
@@ -1935,13 +1925,11 @@ Return a JSON object in this exact format:
 
     await SchedulerService.proSemaphore.acquire();
     try {
-      const response = await GeminiClient.requestWithRetry(
-        PIPELINE_CONFIG.models.pro,
+      const response = await AiProviderService.executePromptWithFailover(
         payload,
-        false,
-        undefined,
         planId,
-        'cross_discipline'
+        'cross_discipline',
+        PIPELINE_CONFIG.models.pro
       );
       SchedulerService.proCallsCount++;
       return this.parseJsonResult(response.text, "Cross-Discipline Validator");
@@ -2046,12 +2034,11 @@ JSON Schema:
 
     await SchedulerService.proSemaphore.acquire();
     try {
-      const response = await GeminiClient.requestWithRetry(
-        PIPELINE_CONFIG.models.pro,
+      const response = await AiProviderService.executePromptWithFailover(
         payload,
-        false,
-        undefined,
-        planId
+        planId,
+        'building', // use building as default for visual extraction
+        PIPELINE_CONFIG.models.pro
       );
       SchedulerService.proCallsCount++;
       const result = this.parseJsonResult(response.text, "Visual Fact Extractor");

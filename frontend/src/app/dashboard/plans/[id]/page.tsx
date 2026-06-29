@@ -471,10 +471,40 @@ export default function PlanDetailPage() {
             </CardHeader>
           </Card>
           <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center p-6 text-center shadow-sm">
-            <div className="text-5xl font-black text-blue-600 dark:text-blue-500 mb-1">{analysisResult.percentage || analysisResult.score || 0}%</div>
-            <p className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">Compliance Score</p>
+            <div className="text-5xl font-black text-blue-600 dark:text-blue-500 mb-1">
+              {analysisResult.status === 'manual_review' || analysisResult.score === null ? '--' : `${analysisResult.percentage || analysisResult.score || 0}%`}
+            </div>
+            <p className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">
+              {analysisResult.status === 'manual_review' ? 'Manual Review Required' : 'Compliance Score'}
+            </p>
           </Card>
         </div>
+
+        {analysisResult.status === 'manual_review' && (
+          <Card className="bg-amber-500/5 border border-amber-500/20 shadow-md p-6 rounded-xl space-y-3">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-5 h-5 animate-pulse" />
+              Automated AI Verification Unavailable
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div className="bg-white dark:bg-slate-900/60 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Automated AI Verification</p>
+                <p className="text-sm font-semibold text-red-500 mt-1">Unavailable</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900/60 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Deterministic Analysis</p>
+                <p className="text-sm font-semibold text-green-500 mt-1">Completed</p>
+              </div>
+              <div className="bg-white dark:bg-slate-900/60 p-4 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Manual Review</p>
+                <p className="text-sm font-semibold text-blue-500 mt-1">Recommended</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+              <strong>Reason:</strong> {analysisResult.reason || 'AI quota unavailable during audit.'}
+            </p>
+          </Card>
+        )}
 
         {/* Human Touch Appreciation */}
         {analysisResult.appreciation && (
@@ -566,7 +596,7 @@ export default function PlanDetailPage() {
                               }
                               variant="outline"
                             >
-                              {isSkipped ? 'Skipped' : `${step.score}%`}
+                              {isSkipped ? 'Skipped' : (analysisResult.status === 'manual_review' ? 'Unavailable' : `${step.score}%`)}
                             </Badge>
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">

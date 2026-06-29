@@ -95,22 +95,30 @@ app.use('/api', apiLimiter);
 // ─── Health, Readiness & Metrics Endpoints ───
 
 app.get('/health', async (req, res) => {
-  const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
-  const missingBooks = KnowledgeBaseValidationService.getMissingBooks();
-  
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.APP_VERSION || '1.0.0',
-    warnings: missingBooks.length > 0 ? `Missing required code books: ${missingBooks.join(', ')}` : undefined
-  });
+  try {
+    const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
+    const missingBooks = KnowledgeBaseValidationService.getMissingBooks();
+    
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.APP_VERSION || '1.0.0',
+      warnings: missingBooks.length > 0 ? `Missing required code books: ${missingBooks.join(', ')}` : undefined
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message || err
+    });
+  }
 });
 
 app.get('/health/ai', async (req, res) => {
   try {
     const { breakersRegistry } = await import('./services/circuit-breaker');
     const { GeminiClient } = await import('./services/gemini.client');
+    const { AiProviderService } = await import('./services/provider.service');
 
     const breakersStats: Record<string, any> = {};
     for (const [name, breaker] of Object.entries(breakersRegistry)) {
@@ -127,14 +135,46 @@ app.get('/health/ai', async (req, res) => {
       status: km.coolDownUntil > Date.now() ? 'COOLDOWN' : 'ACTIVE'
     }));
 
-    const hasActiveKey = keysMetadata.some(k => k.status === 'ACTIVE');
+    const providerStats = AiProviderService.getStats();
+    const priorityList = AiProviderService.getPriorityList();
+    
+    let fallbackProvider = 'none';
+    for (const p of priorityList) {
+      if (p !== 'gemini' && !AiProviderService.isCoolingDown(p)) {
+        fallbackProvider = p;
+        break;
+      }
+    }
+
+    const isProjectQuotaExhausted = GeminiClient.isProjectQuotaExhausted();
+    const projectCooldownRemainingMs = GeminiClient.getProjectCoolDownRemainingMs();
+
+    let isAiAvailable = false;
+    for (const p of priorityList) {
+      if (!AiProviderService.isCoolingDown(p)) {
+        isAiAvailable = true;
+        break;
+      }
+    }
 
     res.status(200).json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      connectivity: hasActiveKey ? 'connected' : 'degraded',
+      connectivity: isAiAvailable ? 'connected' : 'degraded',
       breakers: breakersStats,
-      apiKeys: keysMetadata
+      apiKeys: keysMetadata,
+      aiAvailable: isAiAvailable,
+      providers: providerStats,
+      priorityList,
+      projectQuota: {
+        exhausted: isProjectQuotaExhausted,
+        cooldownRemainingMs: projectCooldownRemainingMs,
+        estimatedRecovery: projectCooldownRemainingMs > 0 
+          ? new Date(Date.now() + projectCooldownRemainingMs).toISOString()
+          : null
+      },
+      fallbackProvider,
+      estimatedRecovery: projectCooldownRemainingMs > 0 ? projectCooldownRemainingMs : 0
     });
   } catch (err: any) {
     res.status(500).json({

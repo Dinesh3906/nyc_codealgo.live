@@ -4,6 +4,7 @@ import pool from '../db';
 import path from 'path';
 import { checkComplianceTS, checkStepComplianceTS, extractPlanData, STEPS_CONFIG, STEP_CODES_CHECKLIST } from './native_rag';
 import { SchedulerService } from './scheduler.service';
+import { AiProviderService } from './provider.service';
 import { Logger } from './logger';
 import { metrics } from './metrics.service';
 import { VERSIONS } from '../config/versions';
@@ -120,7 +121,10 @@ export class CompliancePipeline {
         metrics.incrementCounter('nyc_audits_partial_total');
       }
 
-      const finalScore = checkedSteps.length > 0
+      const tracking = pipelineRun.tracking || { successfulCalls: 0, failedCalls: 0, providersUsed: [], aiExecuted: false };
+      const aiAnalysesExecuted = tracking.successfulCalls;
+
+      let finalScore: number | null = checkedSteps.length > 0
         ? Math.round(checkedSteps.reduce((acc: number, r: any) => acc + r.score!, 0) / checkedSteps.length)
         : 100;
 
@@ -146,11 +150,15 @@ export class CompliancePipeline {
         else severity.minor++;
       });
 
+      const isManualReview = aiAnalysesExecuted === 0;
+
       const finalResult: ComplianceResult = {
-        compliant: finalScore >= 70,
-        score: finalScore,
-        summary: checkedSteps.map((r: any) => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
-        status: isDegraded ? 'partial' : 'complete',
+        compliant: isManualReview ? null : (finalScore >= 70),
+        score: isManualReview ? null : finalScore,
+        summary: isManualReview 
+          ? 'Automated AI Verification Unavailable. Manual Review Required.' 
+          : checkedSteps.map((r: any) => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
+        status: isManualReview ? 'manual_review' : (isDegraded ? 'partial' : 'complete'),
         issuesCount: combinedIssues.length,
         severity: severity,
         issues: combinedIssues,
@@ -170,20 +178,34 @@ export class CompliancePipeline {
           return merged;
         })(),
         systems_detected: checkedSteps.map((r: any) => `${r.name}: ${r.status.toUpperCase()}`),
-        appreciation: [
+        appreciation: isManualReview ? [
+          'Automated AI Verification: Unavailable',
+          'Deterministic Analysis: Completed',
+          'Manual Review: Recommended'
+        ] : [
           `Completed plan examiner audit across ${checkedSteps.length} active categories.`,
           ...checkedSteps.flatMap((r: any) => r.compliant_features.map((f: string) => `Compliant feature detected in ${r.name}: ${f}`)).slice(0, 4)
         ],
         betterments: checkedSteps.map((r: any) => `Enhance detail validation for ${r.name} sub-assemblies.`),
         steps: stepResults,
         metrics: pipelineMetrics,
-        profile: pipelineRun.profile,
+        profile: isManualReview ? null : pipelineRun.profile,
         versions: VERSIONS,
+        aiVerification: isManualReview ? 'Unavailable' : 'Available',
+        deterministicChecks: 'Completed',
+        ragRetrieval: 'Completed',
+        reason: isManualReview ? 'AI quota unavailable during audit.' : undefined,
         auditMetadata: {
           completedSteps: checkedSteps.length,
           totalSteps: stepResults.length,
-          degraded: isDegraded,
-          failedSteps: failedSteps.map((r: any) => r.id || r.name)
+          degraded: isManualReview || isDegraded,
+          failedSteps: failedSteps.map((r: any) => r.id || r.name),
+          aiExecuted: tracking.aiExecuted,
+          providerUsed: tracking.providersUsed.join(', ') || 'none',
+          reasonForDegradation: isManualReview ? 'AI quota unavailable during audit.' : 'none',
+          quotaState: AiProviderService.getStats(),
+          successfulLlmCalls: tracking.successfulCalls,
+          failedLlmCalls: tracking.failedCalls
         }
       };
 
@@ -194,7 +216,7 @@ export class CompliancePipeline {
         try {
           await pool.query(
             'UPDATE `plan` SET status = ?, analysisResult = ? WHERE id = ?',
-            [isDegraded ? 'partial' : 'analyzed', JSON.stringify(finalResult), planId]
+            [isManualReview ? 'manual_review' : (isDegraded ? 'partial' : 'analyzed'), JSON.stringify(finalResult), planId]
           );
           saved = true;
         } catch (saveErr) {
