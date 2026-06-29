@@ -11,14 +11,14 @@ echo "Current commit hash before pull: $PREV_COMMIT"
 
 echo "1. Pulling latest code..."
 git pull origin main
-
-echo "2. Installing dependencies..."
+echo "2. Cleaning npm cache and installing dependencies..."
+rm -rf ~/.npm
 echo "Installing backend dependencies..."
 cd backend
-npm ci
+npm install --no-audit --no-fund
 echo "Installing frontend dependencies..."
 cd ../frontend
-npm ci
+npm install --no-audit --no-fund
 cd ..
 
 echo "3. Building backend..."
