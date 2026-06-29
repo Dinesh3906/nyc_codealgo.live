@@ -80,7 +80,6 @@ export class QueueWorker {
 
     logger.info('Queue worker stopped');
   }
-
   /**
    * Stops the background queue worker loop immediately.
    */
@@ -90,8 +89,7 @@ export class QueueWorker {
       this.intervalId = null;
     }
     logger.info('Queue worker stopped');
-  }
-
+  } // stop
   static isWorkerRunning(): boolean {
     return this.intervalId !== null;
   }
