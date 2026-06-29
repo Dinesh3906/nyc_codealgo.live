@@ -5,14 +5,21 @@ import 'dotenv/config';
 async function run() {
   console.log('🚀 Running database schema update for token versioning...');
   
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    console.error('❌ DATABASE_URL not found in .env');
-    process.exit(1);
-  }
-
   try {
-    const connection = await mysql.createConnection(dbUrl);
+    let connection;
+    if (process.env.DATABASE_URL) {
+      console.log('📡 Connecting via DATABASE_URL...');
+      connection = await mysql.createConnection(process.env.DATABASE_URL);
+    } else {
+      console.log('📡 Connecting via database configuration variables...');
+      connection = await mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME,
+        port: Number(process.env.DB_PORT || 3306)
+      });
+    }
     console.log('📡 Connected to Database. Adding tokenVersion column to `user` table...');
 
     try {
