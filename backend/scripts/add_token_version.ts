@@ -1,6 +1,8 @@
-/// <reference types="node" />
 import mysql from 'mysql2/promise';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 async function run() {
   console.log('🚀 Running database schema update for token versioning...');
