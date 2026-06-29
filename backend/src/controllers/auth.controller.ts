@@ -4,16 +4,10 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import pool from '../db';
+import { JwtService } from '../services/jwt.service';
 
-
-const generateToken = (id: string, email: string) => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error("FATAL: JWT_SECRET environment variable is missing in production!");
-  }
-  return jwt.sign({ id, email }, secret || 'secret', {
-    expiresIn: '30d',
-  });
+const generateToken = (id: string, email: string, tokenVersion: number = 1) => {
+  return JwtService.signUserToken(id, email, tokenVersion);
 };
 
 export const registerSendOtp = async (req: Request, res: Response) => {
@@ -93,7 +87,7 @@ export const register = async (req: Request, res: Response) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      token: generateToken(user.id, user.email),
+      token: generateToken(user.id, user.email, user.tokenVersion),
     });
   } catch (error: any) {
     console.error('Registration Error:', error);
@@ -132,7 +126,7 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        token: generateToken(user.id, user.email),
+        token: generateToken(user.id, user.email, user.tokenVersion),
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -217,7 +211,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     await pool.query(
-      'UPDATE `user` SET password = ?, resetOtp = NULL, resetOtpExpiry = NULL WHERE email = ?',
+      'UPDATE `user` SET password = ?, tokenVersion = tokenVersion + 1, resetOtp = NULL, resetOtpExpiry = NULL WHERE email = ?',
       [hashedPassword, email]
     );
 
@@ -305,7 +299,7 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     }
 
     // 4. Generate JWT and redirect back to frontend dashboard!
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user.id, user.email, user.tokenVersion);
     res.redirect(`${frontendUrl}/dashboard?token=${token}&id=${user.id}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`);
 
   } catch (error: any) {

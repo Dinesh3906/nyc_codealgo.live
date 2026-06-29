@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import pool from '../db';
 import { Logger } from '../services/logger';
+import { JwtService } from '../services/jwt.service';
 
 const logger = new Logger({ stage: 'auth' });
 
@@ -13,24 +14,33 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Authentication required.', code: 'MISSING_TOKEN' });
+  }
+
+  let decoded: any;
+  try {
+    decoded = JwtService.verifyUserToken(token);
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired. Please log in again.', code: 'TOKEN_EXPIRED' });
+    }
+    if (error.name === 'JsonWebTokenError' && error.message.includes('signature')) {
+      return res.status(401).json({ message: 'Session expired after security update. Please sign in again.', code: 'SECRET_ROTATED' });
+    }
+    if (error.name === 'JsonWebTokenError' && error.message.includes('jwt malformed')) {
+      return res.status(401).json({ message: 'Malformed authentication token.', code: 'MALFORMED_TOKEN' });
+    }
+    return res.status(401).json({ message: 'Malformed authentication token.', code: 'MALFORMED_TOKEN' });
   }
 
   try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret && process.env.NODE_ENV === 'production') {
-      console.error("FATAL SECURITY BREACH: JWT_SECRET environment variable is missing in production!");
-      return res.status(500).json({ message: "Internal Server Configuration Error." });
-    }
-    const decoded = jwt.verify(token, secret || 'secret') as any;
-    
     // Fetch user using pool with simple retry for AWS stability
     let users: any = [];
     let attempts = 0;
     while (attempts < 2) {
       try {
         const [rows]: any = await pool.query(
-          'SELECT id, name, email, subStatus, scanLimit, pagesUsed, subPeriodEnd, introSubscriptionCount, trialClaimed FROM `user` WHERE id = ?',
+          'SELECT id, name, email, subStatus, scanLimit, pagesUsed, subPeriodEnd, introSubscriptionCount, trialClaimed, tokenVersion FROM `user` WHERE id = ?',
           [decoded.id]
         );
         users = rows;
@@ -38,10 +48,10 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
       } catch (dbError) {
         attempts++;
         if (attempts >= 2) {
-          console.error('Database error in auth middleware after retries:', dbError);
+          logger.error('Database error in auth middleware after retries:', dbError);
           return res.status(500).json({ message: 'Database connection failed. Please check your DB settings.', error: 'DB_CONNECTION_ERROR' });
         }
-        console.warn(`Auth DB retry ${attempts}...`);
+        logger.warn(`Auth DB retry ${attempts}...`);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
@@ -51,6 +61,11 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
     }
 
     const user = users[0];
+
+    // Check token version consistency
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      return res.status(401).json({ message: 'Session expired after security update. Please sign in again.', code: 'TOKEN_VERSION_MISMATCH' });
+    }
 
     // On-Demand Monthly Reset Logic
     const now = new Date();
@@ -69,7 +84,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
           newScanLimit = 0;
         }
 
-        console.log(`[AUTH MIDDLEWARE] Billing period expired for user ${user.id}. Resetting pagesUsed to 0, setting scanLimit to ${newScanLimit}, nextPeriodEnd to ${nextPeriodEnd}`);
+        logger.info(`[AUTH MIDDLEWARE] Billing period expired for user ${user.id}. Resetting pagesUsed to 0, setting scanLimit to ${newScanLimit}, nextPeriodEnd to ${nextPeriodEnd}`);
         await pool.query(
           'UPDATE `user` SET pagesUsed = 0, scanLimit = ?, subPeriodEnd = ? WHERE id = ?',
           [newScanLimit, nextPeriodEnd, user.id]
@@ -79,19 +94,14 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
         user.scanLimit = newScanLimit;
         user.subPeriodEnd = nextPeriodEnd;
       } catch (resetErr) {
-        console.error('[AUTH MIDDLEWARE] Failed to reset monthly pages balance:', resetErr);
+        logger.error('[AUTH MIDDLEWARE] Failed to reset monthly pages balance:', resetErr);
       }
     }
 
     req.user = user;
     next();
-  } catch (error: any) {
-    const isExpectedJwtError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError || error?.name === 'JsonWebTokenError' || error?.name === 'TokenExpiredError';
-    if (isExpectedJwtError) {
-      logger.warn(`JWT verification failed: ${error.message || error}`);
-    } else {
-      logger.error('Unexpected JWT verification failure', error);
-    }
-    return res.status(401).json({ message: 'Not authorized, token failed', error: 'JWT_ERROR' });
+  } catch (error) {
+    logger.error('Unexpected error in auth middleware:', error);
+    return res.status(500).json({ message: 'Internal server error during authentication.' });
   }
 };

@@ -19,7 +19,7 @@ const ENV_RULES: EnvRule[] = [
   // Required secrets
   { name: 'GOOGLE_AI_STUDIO_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
   { name: 'PINECONE_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
-  { name: 'JWT_SECRET', required: true, type: 'string', minLength: 8, sensitive: true },
+  { name: 'JWT_SECRET', required: true, type: 'string', minLength: 32, sensitive: true },
 
   // Database
   { name: 'DB_HOST', required: true, type: 'string' },
@@ -113,11 +113,49 @@ export function validateEnvironment(): string[] {
     }
   }
 
+  // 1. Only one JWT secret is loaded
+  const jwtRelatedKeys = Object.keys(process.env).filter(k => 
+    k.toUpperCase().includes('JWT_') && k !== 'JWT_SECRET' && k !== 'JWT_EXPIRES_IN' && k !== 'JWT_ALGORITHM'
+  );
+  if (jwtRelatedKeys.length > 0) {
+    warnings.push(`Warning: Multiple JWT-related keys detected in environment: ${jwtRelatedKeys.join(', ')}. Ensure they are not conflicting.`);
+  }
+
+  // 2. dotenv loaded before other imports (checks if DB modules or express were loaded prior to this)
+  const cacheKeys = Object.keys(require.cache);
+  const dbIndex = cacheKeys.findIndex(k => k.includes('/db.ts') || k.includes('\\db.ts') || k.includes('/db.js') || k.includes('\\db.js'));
+  const dotenvIndex = cacheKeys.findIndex(k => k.includes('dotenv'));
+  if (dbIndex !== -1 && dotenvIndex !== -1 && dbIndex < dotenvIndex) {
+    errors.push('CRITICAL: dotenv was loaded after database modules! Configuration might be stale.');
+  }
+
+  // 3. PM2 / local environment validation against disk .env
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const dotenv = require('dotenv');
+    const envPath = path.resolve(__dirname, '../../.env');
+    if (fs.existsSync(envPath)) {
+      const fileBuffer = fs.readFileSync(envPath);
+      const parsedEnv = dotenv.parse(fileBuffer);
+      if (parsedEnv.JWT_SECRET && process.env.JWT_SECRET !== parsedEnv.JWT_SECRET) {
+        errors.push('CRITICAL: Runtime JWT_SECRET does not match the value in .env file! PM2 may be running with stale environment. Restart PM2 with --update-env.');
+      }
+    }
+  } catch (err: any) {
+    warnings.push(`Could not read .env file on disk for verification: ${err.message}`);
+  }
+
   // Production-specific checks
   if (process.env.NODE_ENV === 'production') {
-    if (process.env.JWT_SECRET === 'secret' || process.env.JWT_SECRET === 'nyc_house_code_secret_v1_2024') {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'secret' || process.env.JWT_SECRET === 'nyc_house_code_secret_v1_2024') {
       errors.push('JWT_SECRET must be changed from default value in production');
     }
+  }
+
+  // Log warnings
+  for (const warn of warnings) {
+    logger.warn(warn);
   }
 
   // Log results

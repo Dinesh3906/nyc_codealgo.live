@@ -1,9 +1,17 @@
 import 'dotenv/config';
+import { validateEnvironment } from './config/env.validator';
+
+// 1. Environment Variables Check (Fail-fast before loading other modules)
+const envErrors = validateEnvironment();
+if (envErrors.length > 0) {
+  console.error("FATAL: Environment validation failed:\n" + envErrors.join('\n'));
+  process.exit(1);
+}
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { httpServer } from './app';
 import { QueueWorker } from './services/queue.service';
-import { validateEnvironment } from './config/env.validator';
 import { Logger } from './services/logger';
 import { DeadLetterService } from './services/dead-letter.service';
 import { KnowledgeBaseValidationService } from './services/kb-validation.service';
@@ -12,13 +20,6 @@ const logger = new Logger({ stage: 'server' });
 
 async function runStartupValidation() {
   logger.info("Executing strict startup validation...");
-
-  // 1. Environment Variables Check
-  const envErrors = validateEnvironment();
-  if (envErrors.length > 0) {
-    logger.fatal(`Environment validation failed`, new Error(envErrors.join('; ')));
-    process.exit(1);
-  }
   logger.info("Startup check: Environment variables OK");
 
   // 2. Database Connection Check

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../db';
 import { protect } from '../middleware/auth.middleware';
+import { JwtService } from '../services/jwt.service';
 import { sendAdminOtpEmail, sendGiftPagesEmail } from '../services/mail.service';
 
 const router = Router();
@@ -26,10 +27,9 @@ const verifyAdminSession = (req: any, res: Response, next: NextFunction) => {
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'secret';
-    const decoded = jwt.verify(adminToken, secret) as any;
+    const decoded = JwtService.verifyAdminToken(adminToken);
 
-    if (!decoded.verifiedAdmin || decoded.email !== req.user.email || !ADMIN_EMAILS.includes(decoded.email)) {
+    if (decoded.email !== req.user.email || !ADMIN_EMAILS.includes(decoded.email)) {
       return res.status(403).json({ message: 'Invalid or expired admin session.' });
     }
 
@@ -100,12 +100,7 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
     );
 
     // Generate short-lived admin session token (2 hours)
-    const secret = process.env.JWT_SECRET || 'secret';
-    const adminSessionToken = jwt.sign(
-      { id: req.user.id, email: req.user.email, verifiedAdmin: true },
-      secret,
-      { expiresIn: '2h' }
-    );
+    const adminSessionToken = JwtService.signAdminToken(req.user.id, req.user.email);
 
     res.json({ adminSessionToken });
   } catch (error) {
@@ -231,6 +226,29 @@ router.post('/broadcast-notification', protect, requireAdmin, verifyAdminSession
   } catch (error) {
     console.error('Broadcast Notification Error:', error);
     res.status(500).json({ message: 'Failed to broadcast system notification.' });
+  }
+});
+
+// @route   POST /api/admin/users/:id/revoke
+// @desc    Revoke user active sessions by incrementing their tokenVersion
+// @access  Private (Admins Only + Verified Session)
+router.post('/users/:id/revoke', protect, requireAdmin, verifyAdminSession, async (req: any, res: Response) => {
+  const userId = req.params.id;
+
+  try {
+    const [result]: any = await pool.query(
+      'UPDATE `user` SET tokenVersion = tokenVersion + 1 WHERE id = ?',
+      [userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    res.json({ message: `Successfully revoked all sessions for user ${userId}.` });
+  } catch (error) {
+    console.error('Revoke User Session Error:', error);
+    res.status(500).json({ message: 'Failed to revoke user session.' });
   }
 });
 
