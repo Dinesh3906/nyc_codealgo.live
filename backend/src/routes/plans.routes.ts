@@ -43,8 +43,6 @@ const upload = multer({
 
 router.get('/debug-list', async (req, res) => {
   try {
-    console.log("DEBUG: process.env.JWT_SECRET is:", process.env.JWT_SECRET);
-    console.log("DEBUG: process.env.DATABASE_URL is:", process.env.DATABASE_URL);
     const [rows]: any = await pool.query('SELECT id, userId, fileName, status, analysisResult, createdAt FROM plan ORDER BY createdAt DESC LIMIT 3');
     res.json(rows);
   } catch (err: any) {

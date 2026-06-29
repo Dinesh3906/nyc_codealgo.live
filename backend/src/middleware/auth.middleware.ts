@@ -21,15 +21,22 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
   try {
     decoded = JwtService.verifyUserToken(token);
   } catch (error: any) {
+    // Log with token fingerprint (first 10 chars) for tracing stale tokens
+    const tokenFingerprint = token.substring(0, 10) + '...';
+    
     if (error.name === 'TokenExpiredError') {
+      logger.warn('JWT expired', { tokenFingerprint, expiredAt: error.expiredAt });
       return res.status(401).json({ message: 'Token expired. Please log in again.', code: 'TOKEN_EXPIRED' });
     }
     if (error.name === 'JsonWebTokenError' && error.message.includes('signature')) {
+      logger.warn('JWT invalid signature — likely a stale token from before secret rotation', { tokenFingerprint });
       return res.status(401).json({ message: 'Session expired after security update. Please sign in again.', code: 'SECRET_ROTATED' });
     }
     if (error.name === 'JsonWebTokenError' && error.message.includes('jwt malformed')) {
+      logger.warn('Malformed JWT received', { tokenFingerprint });
       return res.status(401).json({ message: 'Malformed authentication token.', code: 'MALFORMED_TOKEN' });
     }
+    logger.warn('JWT verification failed', { tokenFingerprint, error: error.message });
     return res.status(401).json({ message: 'Malformed authentication token.', code: 'MALFORMED_TOKEN' });
   }
 
