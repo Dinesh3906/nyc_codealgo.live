@@ -52,13 +52,13 @@ async function runStartupValidation() {
     process.exit(1);
   }
 
-  // 5. Frontend Build Check
+  // 5. Frontend Build Check (skip if frontend is hosted externally e.g. Vercel)
   const frontendBuildIdPath = path.resolve(__dirname, '../../frontend/.next/BUILD_ID');
   if (!fs.existsSync(frontendBuildIdPath)) {
-    logger.fatal(`Frontend build check failed: Could not find build ID at ${frontendBuildIdPath}. Ensure frontend is built before starting backend.`);
-    process.exit(1);
+    logger.info('Frontend build not found locally — assuming frontend is hosted externally (Vercel)');
+  } else {
+    logger.info("Startup check: Frontend production build OK");
   }
-  logger.info("Startup check: Frontend production build OK");
 
   // 6. Writable Storage Check
   const dirsToTest = [
