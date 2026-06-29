@@ -31,12 +31,12 @@ export interface AnalysisIssue {
 }
 
 export interface ComplianceResult {
-  compliant: boolean;
-  score: number;
+  compliant: boolean | null;
+  score: number | null;
   severity: ScoreBreakdown;
   issues: AnalysisIssue[];
   summary: string;
-  status: 'complete' | 'failed' | 'partial';
+  status: 'complete' | 'failed' | 'partial' | 'manual_review';
   issuesCount: number;
   building_info?: any;
   systems_detected?: any[];
@@ -46,11 +46,21 @@ export interface ComplianceResult {
   metrics?: any;
   profile?: any;
   versions?: typeof VERSIONS;
+  aiVerification?: string;
+  deterministicChecks?: string;
+  ragRetrieval?: string;
+  reason?: string;
   auditMetadata?: {
     completedSteps: number;
     totalSteps: number;
     degraded: boolean;
     failedSteps: string[];
+    aiExecuted?: boolean;
+    providerUsed?: string;
+    reasonForDegradation?: string;
+    quotaState?: any;
+    successfulLlmCalls?: number;
+    failedLlmCalls?: number;
   };
 }
 

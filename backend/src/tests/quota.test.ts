@@ -54,7 +54,7 @@ GeminiCacheManager.getOrCreateCache = async () => ({
 });
 
 RoutingService.routeDocument = async () => [
-  { page_number: 1, type: 'architectural_drawing', route: 'pro' }
+  { page_number: 1, type: 'architectural_drawing', route: 'pro', confidence: 0.9, complexity: 'medium' }
 ];
 
 (SchedulerService as any).extractPlanFacts = async () => ({
