@@ -38,7 +38,7 @@ pm2 startOrReload ecosystem.config.js --update-env
 sleep 5
 
 echo "7. Health check..."
-HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "failed")
+HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/health || echo "failed")
 echo "Backend health: $HEALTH_STATUS"
 
 if [ "$HEALTH_STATUS" != "200" ]; then
