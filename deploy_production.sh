@@ -34,11 +34,17 @@ pm2 delete nyc-frontend 2>/dev/null || true
 
 echo "6. Restarting backend with PM2..."
 pm2 startOrReload ecosystem.config.js --update-env
-
-sleep 5
-
 echo "7. Health check..."
-HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/health || echo "failed")
+HEALTH_STATUS="failed"
+for i in {1..12}; do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/health || echo "failed")
+  if [ "$STATUS" = "200" ]; then
+    HEALTH_STATUS="200"
+    break
+  fi
+  echo "Waiting for backend to start (attempt $i/12, status: $STATUS)..."
+  sleep 2
+done
 echo "Backend health: $HEALTH_STATUS"
 
 if [ "$HEALTH_STATUS" != "200" ]; then
