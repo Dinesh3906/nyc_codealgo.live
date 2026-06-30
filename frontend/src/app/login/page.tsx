@@ -39,7 +39,7 @@ export default function LoginPage() {
     const backendUrl = typeof window !== 'undefined' && 
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5000'
-      : 'https://api.codealgo.live';
+      : 'https://api.permitiq.live';
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 
@@ -130,7 +130,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-border/40 relative z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <CardHeader className="space-y-4 text-center">
           <Link href="/" className="flex items-center gap-2.5 justify-center group">
-            <Image src="/logo.png" alt="CodeAlgo NYC Codes Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
+            <Image src="/logo.png" alt="PermitIQ ( by Aureon ) NYC Codes Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
             <span className="text-xl font-bold text-foreground">NYC House Code</span>
           </Link>
           <div>

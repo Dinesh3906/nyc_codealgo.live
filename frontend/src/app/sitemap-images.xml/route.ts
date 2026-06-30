@@ -1,7 +1,7 @@
 import { BLOG_POSTS } from '@/lib/blog-data';
 
 export async function GET() {
-  const baseUrl = 'https://nyccodes.codealgo.live';
+  const baseUrl = 'https://nyccodes.permitiq.live';
 
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"

@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'AI Prompt Analyzer Online - Prompt Engineering Optimizer | CodeAlgo',
+  title: 'AI Prompt Analyzer Online - Prompt Engineering Optimizer | PermitIQ ( by Aureon )',
   description: 'Evaluate, validate, and optimize ChatGPT, Claude, and Gemini prompts instantly. Detect prompt injection vulnerabilities and improve AI instruction clarity.',
 };
 
@@ -47,7 +47,7 @@ export default function PromptAnalyzerLandingPage() {
               An <strong>AI Prompt Analyzer</strong> is a specialized utility designed to evaluate the clarity, structure, safety, and efficiency of instructions (prompts) supplied to Large Language Models (LLMs). As businesses integrate LLMs into customer-facing applications and data pipelines, prompt construction has transitioned from casual interaction to critical system configuration—often termed <strong>prompt engineering</strong>.
             </p>
             <p>
-              A poorly engineered prompt leads to inconsistent LLM outputs, bloated API billing (from redundant token usage), or severe security issues like **prompt injection attacks** (where malicious user inputs hijack the system's instructions). CodeAlgo's Prompt Optimizer acts as an automatic validator, highlighting semantic flaws and rewriting prompts for optimal AI model comprehension.
+              A poorly engineered prompt leads to inconsistent LLM outputs, bloated API billing (from redundant token usage), or severe security issues like **prompt injection attacks** (where malicious user inputs hijack the system's instructions). PermitIQ ( by Aureon )'s Prompt Optimizer acts as an automatic validator, highlighting semantic flaws and rewriting prompts for optimal AI model comprehension.
             </p>
           </article>
 
@@ -84,7 +84,7 @@ export default function PromptAnalyzerLandingPage() {
             {/* H2 */}
             <h2 className="text-3xl font-bold text-white mb-4">Key Capabilities of the Prompt Engineering Tool</h2>
             <p>
-              To serve as the **best prompt engineering tool**, CodeAlgo includes several optimization components designed for modern AI developers:
+              To serve as the **best prompt engineering tool**, PermitIQ ( by Aureon ) includes several optimization components designed for modern AI developers:
             </p>
             <ol className="list-decimal pl-6 space-y-4 my-6">
               <li>
@@ -135,7 +135,7 @@ User Input:
               As companies transition from prototypes to production SaaS applications, AI models are directly exposed to user interactions. Without rigorous **prompt engineering analysis**, software agents can easily hallucinate, yield incorrect answers, or leak operational system keys. 
             </p>
             <p>
-              The CodeAlgo validation suite analyzes instruction semantics against hundreds of known vulnerability signatures, ensuring that your AI engines perform safely and consistently.
+              The PermitIQ ( by Aureon ) validation suite analyzes instruction semantics against hundreds of known vulnerability signatures, ensuring that your AI engines perform safely and consistently.
             </p>
           </article>
 

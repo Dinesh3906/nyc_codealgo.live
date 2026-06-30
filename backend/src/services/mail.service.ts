@@ -109,13 +109,13 @@ export const sendAdminOtpEmail = async (email: string, otp: string) => {
   }
 
   const mailOptions = {
-    from: `"CodeAlgo Admin Portal" <${process.env.SMTP_USER}>`,
+    from: `"PermitIQ ( by Aureon ) Admin Portal" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `Admin Verification Code: ${otp}`,
     html: `
       <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="background-color: #0f172a; padding: 30px; text-align: center;">
-          <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">CodeAlgo Admin Panel</h1>
+          <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">PermitIQ ( by Aureon ) Admin Panel</h1>
         </div>
         <div style="padding: 40px 30px; text-align: center;">
           <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">Database Access Verification</h2>
@@ -130,7 +130,7 @@ export const sendAdminOtpEmail = async (email: string, otp: string) => {
           </p>
         </div>
         <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} CodeAlgo. All rights reserved.</p>
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} PermitIQ. All rights reserved.</p>
         </div>
       </div>
     `,
@@ -147,7 +147,7 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
   }
 
   const mailOptions = {
-    from: `"CodeAlgo Pages" <${process.env.SMTP_USER}>`,
+    from: `"PermitIQ ( by Aureon ) Pages" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `🎁 You've received ${pages} free pages!`,
     html: `
@@ -157,7 +157,7 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
           <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.025em;">Pages Gifted!</h1>
         </div>
         <div style="padding: 40px 30px; text-align: center;">
-          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">CodeAlgo has gifted you pages</h2>
+          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">PermitIQ ( by Aureon ) has gifted you pages</h2>
           <p style="color: #64748b; font-size: 15px; line-height: 24px; margin-bottom: 30px;">
             We've successfully credited <strong>${pages} pages</strong> to your account! You can now use these to scan and analyze your design blueprints against NYC Building Codes.
           </p>
@@ -168,11 +168,11 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
             Head over to your dashboard to start scanning right away.
           </p>
           <div style="margin-top: 24px;">
-            <a href="https://nyccodes.codealgo.live/dashboard" style="background-color: #10b981; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">Go to Dashboard</a>
+            <a href="https://nyccodes.permitiq.live/dashboard" style="background-color: #10b981; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">Go to Dashboard</a>
           </div>
         </div>
         <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} CodeAlgo. All rights reserved.</p>
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} PermitIQ. All rights reserved.</p>
         </div>
       </div>
     `,

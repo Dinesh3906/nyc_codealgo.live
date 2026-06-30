@@ -724,7 +724,7 @@ export function ReportPreview() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-4 border-dashed border-primary/10 rounded-full w-48 h-48 flex flex-col items-center justify-center uppercase tracking-widest text-[8px] text-primary/10 font-bold rotate-12 pointer-events-none select-none">
                 <span>NYC House Code</span>
                 <span className="text-[6px] mt-1">AI Verified</span>
-                <span className="text-[5px] mt-1 font-sans">© 2026 CODEALGO</span>
+                <span className="text-[5px] mt-1 font-sans">© 2026 PERMITIQ ( BY AUREON )</span>
               </div>
 
               {/* Header */}

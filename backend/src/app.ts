@@ -27,8 +27,8 @@ app.use(helmet({
 }));
 
 const allowedOrigins = [
-  'https://nyccodes.codealgo.live',
-  'https://www.nyccodes.codealgo.live',
+  'https://nyccodes.permitiq.live',
+  'https://www.nyccodes.permitiq.live',
   'http://localhost:3000',
   process.env.CORS_ORIGIN,
   process.env.FRONTEND_URL
@@ -37,7 +37,7 @@ const allowedOrigins = [
 const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin || origin === 'undefined' || origin === 'null') return true; // Allow mobile apps, server-to-server, or missing headers
   return allowedOrigins.includes(origin) ||
-    origin.includes('codealgo.live') ||
+    origin.includes('permitiq.live') ||
     origin.includes('vercel.app') ||
     origin.includes('localhost') ||
     origin.includes('127.0.0.1');

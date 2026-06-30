@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nyccodes.codealgo.live/sitemap.xml
+Sitemap: https://nyccodes.permitiq.live/sitemap.xml

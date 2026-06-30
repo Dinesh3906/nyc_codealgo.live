@@ -1,14 +1,14 @@
-# NYC CodeAlgo: Complete System Documentation
+# NYC PermitIQ: Complete System Documentation
 
-Welcome to the comprehensive technical documentation for **CodeAlgo (NYC Building Code Compliance Analyzer)**, hosted at [nyccodes.codealgo.live](https://nyccodes.codealgo.live).
+Welcome to the comprehensive technical documentation for **PermitIQ ( by Aureon ) (NYC Building Code Compliance Analyzer)**, hosted at [nyccodes.permitiq.live](https://nyccodes.permitiq.live).
 
-CodeAlgo is an enterprise-grade, AI-powered compliance-checking platform designed to automate the review of architectural plans against the dense and complex **New York City Building Codes**. Using an advanced Retrieval-Augmented Generation (RAG) architecture, local neural embeddings, multi-model Google Gemini APIs, and real-time WebSockets, CodeAlgo analyzes uploaded plans (PDFs or drawings) and produces standard compliance reviews, issue logs, architectural appreciations, and layout betterments in seconds.
+PermitIQ ( by Aureon ) is an enterprise-grade, AI-powered compliance-checking platform designed to automate the review of architectural plans against the dense and complex **New York City Building Codes**. Using an advanced Retrieval-Augmented Generation (RAG) architecture, local neural embeddings, multi-model Google Gemini APIs, and real-time WebSockets, PermitIQ ( by Aureon ) analyzes uploaded plans (PDFs or drawings) and produces standard compliance reviews, issue logs, architectural appreciations, and layout betterments in seconds.
 
 ---
 
 ## 🗺️ System Architecture Overview
 
-CodeAlgo follows a decoupled client-server architecture, built for extreme performance, cost efficiency, and high throughput.
+PermitIQ ( by Aureon ) follows a decoupled client-server architecture, built for extreme performance, cost efficiency, and high throughput.
 
 ```mermaid
 graph TD
@@ -133,7 +133,7 @@ A user uploading a plan gets instant visual indicators in the premium UI. The ba
 
 ## 💳 Billing, Monetization & Quota Engine
 
-CodeAlgo features a premium, secure subscription and credit-purchasing portal integrated with **Razorpay**. 
+PermitIQ ( by Aureon ) features a premium, secure subscription and credit-purchasing portal integrated with **Razorpay**. 
 
 ### 1. Purchase Packs
 *   **`pack-1`**: 1 Scan Upload for **$2.00 USD**
@@ -183,10 +183,10 @@ CREATE TABLE `plan` (
 
 ## 🚀 Live Server Deployment & Operations Guide
 
-CodeAlgo is deployed on an **AWS EC2 server** with live builds managed via Git.
+PermitIQ ( by Aureon ) is deployed on an **AWS EC2 server** with live builds managed via Git.
 
 ### 1. Server Configuration
-*   **Folder Location**: `~/nyc_codealgo.live`
+*   **Folder Location**: `~/nyc_permitiq.live`
 *   **Port Config**: Backend runs on `5000` (reverse-proxied), Frontend runs on Next.js default `3000`.
 *   **Process Managers**: Processes are managed via `PM2` for active daemon monitoring and automatic crash recovery.
 
@@ -195,7 +195,7 @@ To roll out updates to the live server, access the server terminal and run:
 
 ```bash
 # 1. Update backend files & rebuild TypeScript
-cd ~/nyc_codealgo.live
+cd ~/nyc_permitiq.live
 git pull origin main
 cd backend
 npm install
@@ -203,7 +203,7 @@ npm run build
 pm2 restart nyc-backend
 
 # 3. Update frontend files & rebuild Next.js static bundles
-cd ~/nyc_codealgo.live/frontend
+cd ~/nyc_permitiq.live/frontend
 npm install
 npm run build
 pm2 restart nyc-frontend
@@ -214,4 +214,4 @@ pm2 logs nyc-backend
 
 ---
 
-*This document serves as the absolute single source of truth for the CodeAlgo workspace architecture, API structure, and data flows.*
+*This document serves as the absolute single source of truth for the PermitIQ ( by Aureon ) workspace architecture, API structure, and data flows.*

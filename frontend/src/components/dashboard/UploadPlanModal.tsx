@@ -105,7 +105,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
   useEffect(() => {
     if (status === 'analyzing' && activePlanId) {
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.codealgo.live");
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.permitiq.live");
 
       socket.on('analysis-status', (data) => {
         if (data.planId !== activePlanId) return;
@@ -732,7 +732,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setFontSize(8);
         doc.text("PASSED", stampX + 20, stampY + 22, { align: 'center' });
         doc.setFontSize(4);
-        doc.text("NYC CODEALGO LIVE", stampX + 20, stampY + 28, { align: 'center' });
+        doc.text("NYC PERMITIQ ( BY AUREON ) LIVE", stampX + 20, stampY + 28, { align: 'center' });
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');

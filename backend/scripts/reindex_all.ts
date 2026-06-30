@@ -14,7 +14,7 @@ import { execSync } from "child_process";
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const INDEX_NAME = process.env.PINECONE_INDEX || "codealgo";
+const INDEX_NAME = process.env.PINECONE_INDEX || "permitiq";
 
 async function runReindexing() {
   if (!PINECONE_API_KEY) {

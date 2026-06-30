@@ -84,7 +84,7 @@ export default function AdminDatabasePage() {
       }
       
       // Check for cached admin OTP session token (valid for 2 hours)
-      const cachedToken = sessionStorage.getItem("codealgo-admin-otp-token");
+      const cachedToken = sessionStorage.getItem("permitiq-admin-otp-token");
       if (cachedToken) {
         setAdminToken(cachedToken);
         setIsVerified(true);
@@ -109,7 +109,7 @@ export default function AdminDatabasePage() {
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 403) {
         toast.error("Admin session expired. Please verify OTP again.");
-        sessionStorage.removeItem("codealgo-admin-otp-token");
+        sessionStorage.removeItem("permitiq-admin-otp-token");
         setAdminToken(null);
         setIsVerified(false);
       } else {
@@ -158,7 +158,7 @@ export default function AdminDatabasePage() {
       const res = await api.post("/admin/verify-otp", { otp: otpCode });
       const receivedToken = res.data.adminSessionToken;
       
-      sessionStorage.setItem("codealgo-admin-otp-token", receivedToken);
+      sessionStorage.setItem("permitiq-admin-otp-token", receivedToken);
       setAdminToken(receivedToken);
       setIsVerified(true);
       toast.success("Security authorization complete. Welcome back!");

@@ -15,7 +15,7 @@ async function checkPinecone() {
     console.log("\nAvailable indexes:", indexes);
     
     // Check if our index exists
-    const indexName = "codealgo";
+    const indexName = "permitiq";
     const indexExists = indexes.indexes?.some((idx: any) => idx.name === indexName);
     
     if (!indexExists) {

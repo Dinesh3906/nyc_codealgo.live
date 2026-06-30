@@ -19,8 +19,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nyccodes.codealgo.live'),
-  title: "NYC Building Code AI Compliance Checker | CodeAlgo",
+  metadataBase: new URL('https://nyccodes.permitiq.live'),
+  title: "NYC Building Code AI Compliance Checker | PermitIQ ( by Aureon )",
   description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
   keywords: [
     "NYC building code",
@@ -31,22 +31,22 @@ export const metadata: Metadata = {
     "building code checker",
     "NYC house codes list"
   ],
-  authors: [{ name: "CodeAlgo Editorial Team" }],
+  authors: [{ name: "PermitIQ ( by Aureon ) Editorial Team" }],
   alternates: {
-    canonical: "https://nyccodes.codealgo.live",
+    canonical: "https://nyccodes.permitiq.live",
   },
   openGraph: {
-    title: "NYC Building Code AI Compliance Checker | CodeAlgo",
+    title: "NYC Building Code AI Compliance Checker | PermitIQ ( by Aureon )",
     description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports.",
     type: "website",
-    url: "https://nyccodes.codealgo.live",
-    siteName: "CodeAlgo",
+    url: "https://nyccodes.permitiq.live",
+    siteName: "PermitIQ ( by Aureon )",
     images: [
       {
-        url: "https://nyccodes.codealgo.live/opengraph-image",
+        url: "https://nyccodes.permitiq.live/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "CodeAlgo — NYC Building Code Compliance Checker",
+        alt: "PermitIQ ( by Aureon ) — NYC Building Code Compliance Checker",
       },
     ],
   },
@@ -72,10 +72,10 @@ export const metadata: Metadata = {
 const softwareAppSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "CodeAlgo",
+  "name": "PermitIQ ( by Aureon )",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
-  "url": "https://nyccodes.codealgo.live",
+  "url": "https://nyccodes.permitiq.live",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers across all 5 NYC boroughs",
   "areaServed": { "@type": "City", "name": "New York City" },
@@ -90,14 +90,14 @@ const softwareAppSchema = {
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "CodeAlgo",
-  "url": "https://nyccodes.codealgo.live",
+  "name": "PermitIQ ( by Aureon )",
+  "url": "https://nyccodes.permitiq.live",
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": "https://nyccodes.codealgo.live/blog?q={search_term_string}"
+      "urlTemplate": "https://nyccodes.permitiq.live/blog?q={search_term_string}"
     },
     "query-input": "required name=search_term_string"
   }
@@ -120,7 +120,7 @@ const faqJsonLd = {
       "name": "How do I verify New York building compliance?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "You can use CodeAlgo's AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
+        "text": "You can use PermitIQ ( by Aureon )'s AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
       }
     },
     {

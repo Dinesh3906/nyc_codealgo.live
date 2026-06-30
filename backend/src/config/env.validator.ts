@@ -39,7 +39,7 @@ const ENV_RULES: EnvRule[] = [
 
   // Pinecone
   { name: 'PINECONE_ENVIRONMENT', required: false, type: 'string', default: 'us-east-1' },
-  { name: 'PINECONE_INDEX', required: false, type: 'string', default: 'codealgo' },
+  { name: 'PINECONE_INDEX', required: false, type: 'string', default: 'permitiq' },
 
   // Email (optional)
   { name: 'SMTP_HOST', required: false, type: 'string' },

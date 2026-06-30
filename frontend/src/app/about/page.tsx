@@ -1,29 +1,29 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "About CodeAlgo: AI-Powered NYC Code Compliance | CodeAlgo",
-  description: "CodeAlgo is the leading AI platform dedicated to simplifying New York City building code compliance for construction professionals.",
+  title: "About PermitIQ: AI-Powered NYC Code Compliance | PermitIQ ( by Aureon )",
+  description: "PermitIQ ( by Aureon ) is the leading AI platform dedicated to simplifying New York City building code compliance for construction professionals.",
   alternates: {
-    canonical: "https://nyccodes.codealgo.live/about",
+    canonical: "https://nyccodes.permitiq.live/about",
   },
   openGraph: {
-    title: "About CodeAlgo: AI-Powered NYC Code Compliance",
+    title: "About PermitIQ: AI-Powered NYC Code Compliance",
     description: "The leading AI platform for NYC building code compliance.",
-    url: "https://nyccodes.codealgo.live/about",
+    url: "https://nyccodes.permitiq.live/about",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "About CodeAlgo: AI-Powered NYC Code Compliance",
+    title: "About PermitIQ: AI-Powered NYC Code Compliance",
   },
-  keywords: ["about CodeAlgo", "NYC building code company", "construction tech NYC"],
+  keywords: ["about PermitIQ ( by Aureon )", "NYC building code company", "construction tech NYC"],
 };
 
 const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": "CodeAlgo",
-  "image": "https://nyccodes.codealgo.live/logo.png",
+  "name": "PermitIQ ( by Aureon )",
+  "image": "https://nyccodes.permitiq.live/logo.png",
   "description": "AI-powered NYC building code compliance checker.",
   "address": {
     "@type": "PostalAddress",
@@ -47,7 +47,7 @@ export default function AboutPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
       <div className="container mx-auto max-w-4xl text-center">
-        <h1 className="text-4xl font-bold mb-6 text-foreground">About CodeAlgo: AI-Powered NYC Code Compliance</h1>
+        <h1 className="text-4xl font-bold mb-6 text-foreground">About PermitIQ: AI-Powered NYC Code Compliance</h1>
         <p className="text-xl text-muted-foreground">Our mission is to eliminate NYC DOB rejection delays using Artificial Intelligence.</p>
       </div>
     </main>

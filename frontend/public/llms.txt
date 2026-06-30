@@ -1,6 +1,6 @@
-# CodeAlgo
+# PermitIQ ( by Aureon )
 
-CodeAlgo is an AI-powered NYC building code compliance checker designed for Registered Architects, Professional Engineers, Expediters, and Developers.
+PermitIQ ( by Aureon ) is an AI-powered NYC building code compliance checker designed for Registered Architects, Professional Engineers, Expediters, and Developers.
 
 ## Key Features
 - Verifies architectural plans against 112+ NYC Building Code requirements.
@@ -9,11 +9,11 @@ CodeAlgo is an AI-powered NYC building code compliance checker designed for Regi
 - Generates detailed PDF compliance reports to assist with DOB NOW submissions.
 
 ## Important Links
-- Home: https://nyccodes.codealgo.live
-- Features: https://nyccodes.codealgo.live/features
-- Pricing: https://nyccodes.codealgo.live/pricing
-- Blog: https://nyccodes.codealgo.live/blog
-- Use Cases: https://nyccodes.codealgo.live/use-cases
+- Home: https://nyccodes.permitiq.live
+- Features: https://nyccodes.permitiq.live/features
+- Pricing: https://nyccodes.permitiq.live/pricing
+- Blog: https://nyccodes.permitiq.live/blog
+- Use Cases: https://nyccodes.permitiq.live/use-cases
 
 ## Target Audience
 Architects, Engineers, Developers, and Expediters working in the 5 boroughs of New York City (Manhattan, Brooklyn, Queens, Bronx, Staten Island).

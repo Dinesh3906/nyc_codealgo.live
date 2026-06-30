@@ -16,7 +16,7 @@
 | `GOOGLE_AI_STUDIO_KEY` | Gemini API key (supports comma-separated rotation) |
 | `PINECONE_API_KEY` | Pinecone vector database API key |
 | `PINECONE_ENVIRONMENT` | Pinecone region (default: `us-east-1`) |
-| `PINECONE_INDEX` | Pinecone index name (default: `codealgo`) |
+| `PINECONE_INDEX` | Pinecone index name (default: `permitiq`) |
 | `DB_HOST` | MySQL host |
 | `DB_USER` | MySQL username |
 | `DB_PASS` | MySQL password |

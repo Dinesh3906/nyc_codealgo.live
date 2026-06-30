@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Default to the production URL from upstream, but allow override via env variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.codealgo.live/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.permitiq.live/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'AI Code Analyzer Online - Direct Source Code Auditing | CodeAlgo',
-  description: 'Use the CodeAlgo AI Code Analyzer to scan source code instantly. Detect syntax bugs, security threats, performance bottlenecks, and optimize software projects.',
+  title: 'AI Code Analyzer Online - Direct Source Code Auditing | PermitIQ ( by Aureon )',
+  description: 'Use the PermitIQ ( by Aureon ) AI Code Analyzer to scan source code instantly. Detect syntax bugs, security threats, performance bottlenecks, and optimize software projects.',
 };
 
 export default function CodeAnalyzerLandingPage() {
@@ -47,7 +47,7 @@ export default function CodeAnalyzerLandingPage() {
               An <strong>AI Code Analyzer</strong> is a software utility that uses trained large language models (LLMs) and advanced structural parsers to evaluate programming code without running it (static analysis) or while simulating inputs (dynamic profiling). Unlike traditional static code linters which check rigid stylistic rule sets (like ESLint or Pylint), an <strong>AI-powered code quality checker</strong> understands complex programmatic context, logic flaws, architectural boundaries, and algorithmic inefficiencies.
             </p>
             <p>
-              CodeAlgo leverages deep contextual RAG systems and advanced reasoning models (including Google Gemini 2.5) to perform a multi-dimensional analysis of your software code. By uploading a file or typing a query, developers get immediate reports outlining compliance with language specifications, security loopholes, memory leaks, and performance bottlenecks.
+              PermitIQ ( by Aureon ) leverages deep contextual RAG systems and advanced reasoning models (including Google Gemini 2.5) to perform a multi-dimensional analysis of your software code. By uploading a file or typing a query, developers get immediate reports outlining compliance with language specifications, security loopholes, memory leaks, and performance bottlenecks.
             </p>
           </article>
 
@@ -82,9 +82,9 @@ export default function CodeAnalyzerLandingPage() {
 
           <article className="prose prose-invert max-w-none">
             {/* H2 */}
-            <h2 className="text-3xl font-bold text-white mb-4">Features of the CodeAlgo Source Code Analyzer</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Features of the PermitIQ ( by Aureon ) Source Code Analyzer</h2>
             <p>
-              To rank as the <strong>best code analyzer online</strong>, CodeAlgo combines several developer optimization systems under a single unified dashboard:
+              To rank as the <strong>best code analyzer online</strong>, PermitIQ ( by Aureon ) combines several developer optimization systems under a single unified dashboard:
             </p>
             <ol className="list-decimal pl-6 space-y-4 my-6">
               <li>
@@ -134,9 +134,9 @@ export default function CodeAnalyzerLandingPage() {
 
           <article className="prose prose-invert max-w-none">
             {/* H2 */}
-            <h2 className="text-3xl font-bold text-white mb-4">Why Developers Choose CodeAlgo</h2>
+            <h2 className="text-3xl font-bold text-white mb-4">Why Developers Choose PermitIQ ( by Aureon )</h2>
             <p>
-              Traditional static analysers (linters) only target syntax and formatting standards. They cannot identify logical inconsistencies or suggest performant algorithmic variations. CodeAlgo fills this structural gap by combining deep developer semantics with the latest LLM reasoning.
+              Traditional static analysers (linters) only target syntax and formatting standards. They cannot identify logical inconsistencies or suggest performant algorithmic variations. PermitIQ ( by Aureon ) fills this structural gap by combining deep developer semantics with the latest LLM reasoning.
             </p>
             <p>
               Whether you are looking to audit a large corporate project, compile clean documentation, or simply improve your programming workflow, our tool provides an all-in-one execution pipeline.

@@ -8,16 +8,16 @@ export interface Author {
 }
 
 export const authors: Record<string, Author> = {
-  'codealgo-team': {
-    name: 'CodeAlgo Editorial Team',
+  'permitiq-team': {
+    name: 'PermitIQ ( by Aureon ) Editorial Team',
     role: 'NYC Building Code Specialists',
-    bio: 'The CodeAlgo team includes licensed architects, registered engineers, and NYC permit expediters with combined 20+ years of DOB filing experience across all five boroughs.',
+    bio: 'The PermitIQ ( by Aureon ) team includes licensed architects, registered engineers, and NYC permit expediters with combined 20+ years of DOB filing experience across all five boroughs.',
     credentials: [
       'Verified against NYC DOB Code Library',
       'Updated for 2026 Existing Building Code',
       'Reviewed by Licensed Professionals'
     ],
-    avatar: '/authors/codealgo-team.jpg',
-    linkedin: 'https://linkedin.com/company/codealgo',
+    avatar: '/authors/permitiq-team.jpg',
+    linkedin: 'https://linkedin.com/company/permitiq',
   }
 };

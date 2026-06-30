@@ -58,5 +58,5 @@ echo "   DEPLOYMENT SUCCESSFUL                 "
 echo "========================================="
 pm2 status
 echo ""
-echo "Frontend: https://nyccodes.codealgo.live (Vercel)"
-echo "Backend:  https://api.codealgo.live (EC2)"
+echo "Frontend: https://nyccodes.permitiq.live (Vercel)"
+echo "Backend:  https://api.permitiq.live (EC2)"

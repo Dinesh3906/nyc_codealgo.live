@@ -29,7 +29,7 @@ export default function FreeScanOnboardingPage() {
 
   useEffect(() => {
     setMounted(true);
-    document.title = "Get Started: Scan your First Plan for Free | CodeAlgo";
+    document.title = "Get Started: Scan your First Plan for Free | PermitIQ ( by Aureon )";
   }, []);
 
   const handleAction = () => {
@@ -61,7 +61,7 @@ export default function FreeScanOnboardingPage() {
             Scan Your First Plan <span className="text-primary">100% Free</span>
           </h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            See how the CodeAlgo AI Compliance Engine works on your own blueprints. Get an instant forensic audit mapping egress travel distances, ADA clearances, and zoning setbacks before municipal submission.
+            See how the PermitIQ ( by Aureon ) AI Compliance Engine works on your own blueprints. Get an instant forensic audit mapping egress travel distances, ADA clearances, and zoning setbacks before municipal submission.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">

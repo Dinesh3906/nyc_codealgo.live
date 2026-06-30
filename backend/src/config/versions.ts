@@ -18,7 +18,7 @@ export const VERSIONS = {
   GEMINI_MODEL_VERSION: process.env.GEMINI_PRO_MODEL || 'gemini-2.5-pro',
 
   /** Pinecone index name/version */
-  PINECONE_INDEX_VERSION: process.env.PINECONE_INDEX || 'codealgo',
+  PINECONE_INDEX_VERSION: process.env.PINECONE_INDEX || 'permitiq',
 
   /** Embedding model used for RAG vectorization */
   EMBEDDING_MODEL_VERSION: process.env.EMBEDDING_MODEL || 'text-embedding-004',

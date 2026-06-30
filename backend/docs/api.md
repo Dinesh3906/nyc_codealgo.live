@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-Production: https://nyccodes.codealgo.live/api
+Production: https://nyccodes.permitiq.live/api
 Local:      http://localhost:5000/api
 ```
 
@@ -163,7 +163,7 @@ Authorization: Bearer <token>
 
 ### Connection
 ```javascript
-const socket = io('wss://nyccodes.codealgo.live');
+const socket = io('wss://nyccodes.permitiq.live');
 ```
 
 ### Events

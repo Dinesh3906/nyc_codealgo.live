@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/_next/', '/dashboard/', '/admin/'],
       },
     ],
-    sitemap: 'https://nyccodes.codealgo.live/sitemap.xml',
+    sitemap: 'https://nyccodes.permitiq.live/sitemap.xml',
   };
 }
