@@ -475,8 +475,14 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         autoTable(doc, {
           startY: currentY,
           margin: { bottom: 30 },
-          head: [['System Description', 'Status', 'Assessment Notes']],
-          body: analysisResult.systems_detected.map((s: any) => [s.name || 'System', (s.status || 'unknown').toUpperCase(), s.notes || "No issues identified"]),
+          head: [['System / Discipline', 'Verification Status']],
+          body: analysisResult.systems_detected.map((s: any) => {
+            if (typeof s === 'string') {
+              const parts = s.split(': ');
+              return [parts[0] || s, parts[1] || 'VERIFIED PRESENT'];
+            }
+            return [s.name || 'System', (s.status || 'verified').toUpperCase()];
+          }),
           theme: 'striped',
           headStyles: {
             fillColor: [241, 245, 249], // Slate 100

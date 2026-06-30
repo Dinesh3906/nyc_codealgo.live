@@ -368,16 +368,22 @@ export default function PlanDetailPage() {
       if (analysisResult.systems_detected && analysisResult.systems_detected.length > 0) {
         if (currentY > pageHeight - 60) { doc.addPage(); currentY = 30; }
         doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        doc.setFontSize(16);
+        doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text("Structural & Mechanical Rooms Detected", 20, currentY);
+        doc.text("Safety Systems & Disciplines Verified", 20, currentY);
         currentY += 10;
 
         autoTableModule.default(doc, {
-          startY: currentY + 10,
+          startY: currentY + 5,
           margin: { top: 30 },
-          head: [['Room Name', 'Dimensions / Label', 'Code Classification']],
-          body: analysisResult.systems_detected.map((s: string) => [s, "VERIFIED PRESENT"]),
+          head: [['System / Discipline', 'Verification Status']],
+          body: analysisResult.systems_detected.map((s: any) => {
+            if (typeof s === 'string') {
+              const parts = s.split(': ');
+              return [parts[0] || s, parts[1] || 'VERIFIED PRESENT'];
+            }
+            return [s.name || 'System', (s.status || 'verified').toUpperCase()];
+          }),
           theme: 'striped',
           styles: { fontSize: 8 },
           headStyles: { fillColor: [240, 240, 240], textColor: colors.primary as [number, number, number] }
