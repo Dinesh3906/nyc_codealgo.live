@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "Who Uses PermitIQ: Architects, Engineers, Expediters | PermitIQ by Aureon",
   description: "Learn how architects, engineers, expediters, and developers use PermitIQ by Aureon's AI to guarantee NYC building code and DOB filing compliance.",
   alternates: {
-    canonical: "https://nyccodes.permitiq.live/use-cases",
+    canonical: "https://nyccodes.codealgo.live/use-cases",
   },
   openGraph: {
     title: "Who Uses PermitIQ: Architects, Engineers, Expediters",
     description: "Learn how architects and developers use PermitIQ by Aureon's AI to guarantee NYC DOB compliance.",
-    url: "https://nyccodes.permitiq.live/use-cases",
+    url: "https://nyccodes.codealgo.live/use-cases",
     type: "website",
   },
   twitter: {

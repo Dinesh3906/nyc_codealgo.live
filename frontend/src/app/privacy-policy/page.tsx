@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <p>
               <strong>Construction AI Technologies Inc.</strong><br/>
               Registered Address: 1 World Trade Center, Suite 4500, New York, NY 10007<br/>
-              Contact Email: support@nyccodes.permitiq.live
+              Contact Email: support@nyccodes.codealgo.live
             </p>
             <p>
               By using our services, you agree to the collection and use of information in accordance with this Privacy Policy.
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
               <strong>Account Deletion:</strong> You may request full account deletion at any time directly through your user dashboard settings, or by emailing us. Deletion requests are processed within 14 business days.
             </p>
             <p>
-              <strong>Submitting Requests:</strong> Privacy requests must be submitted to <strong>support@nyccodes.permitiq.live</strong>. We will require identity verification (such as confirming your email address or account details) before fulfilling specific data requests.
+              <strong>Submitting Requests:</strong> Privacy requests must be submitted to <strong>support@nyccodes.codealgo.live</strong>. We will require identity verification (such as confirming your email address or account details) before fulfilling specific data requests.
             </p>
           </section>
 
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-4">
               <strong>Construction AI Technologies Inc.</strong><br/>
-              Email: <a href="mailto:support@nyccodes.permitiq.live" className="text-blue-400 hover:underline">support@nyccodes.permitiq.live</a><br />
+              Email: <a href="mailto:support@nyccodes.codealgo.live" className="text-blue-400 hover:underline">support@nyccodes.codealgo.live</a><br />
               Address: 1 World Trade Center, Suite 4500, New York, NY 10007
             </p>
           </section>

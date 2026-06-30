@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "PermitIQ by Aureon Pricing: Plans for Architects & Developers | PermitIQ by Aureon",
   description: "View pricing plans for PermitIQ. Save thousands on DOB filing errors with our AI-powered NYC building code compliance checker for architects.",
   alternates: {
-    canonical: "https://nyccodes.permitiq.live/pricing",
+    canonical: "https://nyccodes.codealgo.live/pricing",
   },
   openGraph: {
     title: "PermitIQ by Aureon Pricing: Plans for Architects and Developers",
     description: "Save thousands on DOB filing errors with our AI-powered NYC building code checker.",
-    url: "https://nyccodes.permitiq.live/pricing",
+    url: "https://nyccodes.codealgo.live/pricing",
     type: "website",
   },
   twitter: {

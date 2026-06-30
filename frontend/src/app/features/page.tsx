@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "PermitIQ by Aureon Features: 112+ NYC Code Checks | PermitIQ by Aureon",
   description: "Explore PermitIQ by Aureon features: automated NYC building code checks, PDF violation reports, and pre-permit architectural readiness scoring. Try free today.",
   alternates: {
-    canonical: "https://nyccodes.permitiq.live/features",
+    canonical: "https://nyccodes.codealgo.live/features",
   },
   openGraph: {
     title: "PermitIQ by Aureon Features: 112+ NYC Code Requirements Checked",
     description: "Automated NYC building code checks and PDF violation reports.",
-    url: "https://nyccodes.permitiq.live/features",
+    url: "https://nyccodes.codealgo.live/features",
     type: "website",
   },
   twitter: {

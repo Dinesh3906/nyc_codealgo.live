@@ -1,6 +1,6 @@
 # 🚀 PermitIQ by Aureon SEO Domination: World's Strongest SEO Strategy & 10,000+ Word Search Terms Directory
 
-This document defines the absolute single-source-of-truth **SEO Domination Blueprint** for **PermitIQ by Aureon (nyccodes.permitiq.live)**. 
+This document defines the absolute single-source-of-truth **SEO Domination Blueprint** for **PermitIQ by Aureon (nyccodes.codealgo.live)**. 
 
 To achieve your vision of the **"World's Strongest SEO"**, this guide outlines our comprehensive schema injection, page optimization architectures, and a **Search Term & Keyword Expansion Directory** targeting over 10,000+ potential long-tail search queries. When Google crawlers index this structure, PermitIQ by Aureon will capture organic search real estate for anyone querying NYC building codes, home plans, architectural rules, or DOB procedures.
 
@@ -102,21 +102,21 @@ flowchart LR
 
 ### Step 1: Claim Google Search Console (GSC)
 1. Go to the [Google Search Console](https://search.google.com/search-console).
-2. Add your property: `https://nyccodes.permitiq.live`.
+2. Add your property: `https://nyccodes.codealgo.live`.
 3. Complete the HTML tag verification using your custom token:
    *   We have already pre-configured the Google verification tag inside `frontend/src/app/layout.tsx` (Line 42: `google: "_5er4jeJ8TtJrhHTqD3gaVeQt__QaenGj8MEZRKO0W0"`).
    *   Simply click **Verify** in GSC, and Google will immediately read the site metadata and connect.
 
 ### Step 2: Submit the XML Sitemap
 1. Inside Google Search Console, navigate to the **Sitemaps** tab in the sidebar.
-2. Enter the URL of your sitemap: `https://nyccodes.permitiq.live/sitemap.xml`.
+2. Enter the URL of your sitemap: `https://nyccodes.codealgo.live/sitemap.xml`.
 3. Click **Submit**. 
 4. Google will now recursively read your Next.js `sitemap.ts` dynamic schema, automatically indexing `/new-york-city-house-codes`, `/nyc-codes-checking`, and the new searchable `/nyc-house-codes-list` page.
 
 ### Step 3: Link Building & Authority Injection (Off-Page SEO)
 To guarantee you sit at the **#1 position** for high-volume searches like "New York codes", you need external domain authority (backlinks).
 *   **Target Directory Submissions**: Register PermitIQ by Aureon in architectural software indices, NYC local business directories, and contractor lookup hubs.
-*   **Guest Blogging**: Write deep-dive educational compliance articles on medium-authority real estate and construction websites, linking back to `nyccodes.permitiq.live`.
+*   **Guest Blogging**: Write deep-dive educational compliance articles on medium-authority real estate and construction websites, linking back to `nyccodes.codealgo.live`.
 *   **PR Outreach**: Release an industry announcement highlighting how "AI is accelerating NYC DOB building plan approval rates by 400%," capturing high-authority backlinks from news networks.
 
 ### Step 4: Monitor Page Experience & Core Web Vitals

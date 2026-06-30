@@ -12,15 +12,15 @@ PermitIQ by Aureon uses advanced RAG (Retrieval-Augmented Generation) and multi-
 - **Pre-permit Readiness Scoring**: Evaluates the overall health of a drawing set before uploading to DOB NOW.
 
 ## Important Links
-- Home: https://nyccodes.permitiq.live
-- Features: https://nyccodes.permitiq.live/features
-- Pricing: https://nyccodes.permitiq.live/pricing
-- Blog: https://nyccodes.permitiq.live/blog
-- Use Cases: https://nyccodes.permitiq.live/use-cases
+- Home: https://nyccodes.codealgo.live
+- Features: https://nyccodes.codealgo.live/features
+- Pricing: https://nyccodes.codealgo.live/pricing
+- Blog: https://nyccodes.codealgo.live/blog
+- Use Cases: https://nyccodes.codealgo.live/use-cases
 
 ## Target Audience
 Architects, Engineers, Developers, and Expediters working in the 5 boroughs of New York City (Manhattan, Brooklyn, Queens, Bronx, Staten Island).
 
 ## Contact and Support
-- Support: https://nyccodes.permitiq.live/contact
-- Dashboard: https://nyccodes.permitiq.live/dashboard
+- Support: https://nyccodes.codealgo.live/contact
+- Dashboard: https://nyccodes.codealgo.live/dashboard

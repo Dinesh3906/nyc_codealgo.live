@@ -51,7 +51,7 @@ export default function AdminFeedbackPage() {
 
   const isAdmin = user?.email === 'chalams115@gmail.com' || user?.email === 'sathvi2018@gmail.com';
   // Hardcode the production backend URL for images to be safe against relative path issues
-  const backendUrl = 'https://api.permitiq.live';
+  const backendUrl = 'https://api.codealgo.live';
 
   useEffect(() => {
     if (hasHydrated && (!isAuthenticated || !isAdmin)) {
@@ -195,7 +195,7 @@ export default function AdminFeedbackPage() {
                       <div className="flex -space-x-2 overflow-hidden">
                         {(fb as any).images && (fb as any).images.map((img: string, idx: number) => {
                           const cleanPath = img.startsWith('/') ? img : `/${img}`;
-                          const fullUrl = `https://api.permitiq.live${cleanPath}`;
+                          const fullUrl = `https://api.codealgo.live${cleanPath}`;
                           return (
                             <a 
                               key={idx} 

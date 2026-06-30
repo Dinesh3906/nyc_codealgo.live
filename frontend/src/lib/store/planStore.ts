@@ -67,7 +67,7 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:5000'
-        : 'https://api.permitiq.live'
+        : 'https://api.codealgo.live'
     );
 
     const socket = io(socketUrl);

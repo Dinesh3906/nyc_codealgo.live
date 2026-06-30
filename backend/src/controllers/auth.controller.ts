@@ -226,7 +226,7 @@ export const googleAuthRedirect = async (req: Request, res: Response) => {
   const isLocal = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
   const redirectUri = isLocal
     ? 'http://localhost:5000/api/auth/google/callback'
-    : 'https://api.permitiq.live/api/auth/google/callback';
+    : 'https://api.codealgo.live/api/auth/google/callback';
 
   const clientId = '782344767987-5kvji7i83jmo6qq0m1r59vpbns0elu62.apps.googleusercontent.com';
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email`;
@@ -239,8 +239,8 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
   const isLocal = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
   const redirectUri = isLocal
     ? 'http://localhost:5000/api/auth/google/callback'
-    : 'https://api.permitiq.live/api/auth/google/callback';
-  const frontendUrl = isLocal ? 'http://localhost:3000' : 'https://nyccodes.permitiq.live';
+    : 'https://api.codealgo.live/api/auth/google/callback';
+  const frontendUrl = isLocal ? 'http://localhost:3000' : 'https://nyccodes.codealgo.live';
 
   if (!code) {
     return res.redirect(`${frontendUrl}/login?error=Google authentication failed`);

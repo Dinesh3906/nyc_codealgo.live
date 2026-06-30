@@ -168,7 +168,7 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
             Head over to your dashboard to start scanning right away.
           </p>
           <div style="margin-top: 24px;">
-            <a href="https://nyccodes.permitiq.live/dashboard" style="background-color: #10b981; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">Go to Dashboard</a>
+            <a href="https://nyccodes.codealgo.live/dashboard" style="background-color: #10b981; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">Go to Dashboard</a>
           </div>
         </div>
         <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
