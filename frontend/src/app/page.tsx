@@ -106,7 +106,7 @@ export default function LandingPage() {
                 New York Building Code Technical Index
               </h2>
               <p className="text-muted-foreground leading-relaxed font-sans text-xs">
-                <strong>NYC House Code</strong> by <strong>PermitIQ ( by Aureon )</strong> delivers highly specialized compliance mapping tools for the New York architectural grid. 
+                <strong>NYC House Code</strong> by <strong>PermitIQ by Aureon</strong> delivers highly specialized compliance mapping tools for the New York architectural grid. 
                 Our parser reviews layouts against structural constraints, accessibility clearances, and zoning resolutions.
               </p>
               <ul className="space-y-2 text-muted-foreground text-xs font-sans">
@@ -128,10 +128,10 @@ export default function LandingPage() {
               <div className="space-y-3">
                 <h3 className="text-xs uppercase tracking-wider font-bold text-foreground border-b border-border/40 pb-2 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-primary" />
-                  PermitIQ ( by Aureon ) Algorithmic Framework
+                  PermitIQ by Aureon Algorithmic Framework
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed font-sans">
-                  Unlike generic SaaS platforms or conversational AI wrappers, <strong>PermitIQ ( by Aureon )</strong> is built explicitly as a <strong>NYC House Code</strong> compliance system. 
+                  Unlike generic SaaS platforms or conversational AI wrappers, <strong>PermitIQ by Aureon</strong> is built explicitly as a <strong>NYC House Code</strong> compliance system. 
                   Our regulatory parsers are updated in real-time to align with current administrative amendments, ensuring vector inspections reflect correct legal parameters.
                 </p>
               </div>

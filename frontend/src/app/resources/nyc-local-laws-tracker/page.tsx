@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "NYC Local Laws & Deadlines Tracker | PermitIQ ( by Aureon )",
+  title: "NYC Local Laws & Deadlines Tracker | PermitIQ by Aureon",
   description: "Track the latest NYC Local Laws affecting building construction, energy compliance, and safety regulations.",
 };
 

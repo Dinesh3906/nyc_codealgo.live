@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { BLOG_POSTS } from '@/lib/blog-data';
 
 export const metadata: Metadata = {
-  title: "NYC Building Code Compliance Blog | PermitIQ ( by Aureon )",
+  title: "NYC Building Code Compliance Blog | PermitIQ by Aureon",
   description: "Read the latest guides, checklists, and deep dives on New York City building code compliance, DOB filing, and architectural best practices.",
   alternates: {
     canonical: "https://nyccodes.permitiq.live/blog",
   },
   openGraph: {
-    title: "NYC Building Code Compliance Blog | PermitIQ ( by Aureon )",
+    title: "NYC Building Code Compliance Blog | PermitIQ by Aureon",
     description: "Guides and checklists on New York City building code compliance.",
     url: "https://nyccodes.permitiq.live/blog",
     type: "website",

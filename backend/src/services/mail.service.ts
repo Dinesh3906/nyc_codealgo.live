@@ -109,13 +109,13 @@ export const sendAdminOtpEmail = async (email: string, otp: string) => {
   }
 
   const mailOptions = {
-    from: `"PermitIQ ( by Aureon ) Admin Portal" <${process.env.SMTP_USER}>`,
+    from: `"PermitIQ by Aureon Admin Portal" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `Admin Verification Code: ${otp}`,
     html: `
       <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="background-color: #0f172a; padding: 30px; text-align: center;">
-          <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">PermitIQ ( by Aureon ) Admin Panel</h1>
+          <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">PermitIQ by Aureon Admin Panel</h1>
         </div>
         <div style="padding: 40px 30px; text-align: center;">
           <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">Database Access Verification</h2>
@@ -147,7 +147,7 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
   }
 
   const mailOptions = {
-    from: `"PermitIQ ( by Aureon ) Pages" <${process.env.SMTP_USER}>`,
+    from: `"PermitIQ by Aureon Pages" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `🎁 You've received ${pages} free pages!`,
     html: `
@@ -157,7 +157,7 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
           <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.025em;">Pages Gifted!</h1>
         </div>
         <div style="padding: 40px 30px; text-align: center;">
-          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">PermitIQ ( by Aureon ) has gifted you pages</h2>
+          <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">PermitIQ by Aureon has gifted you pages</h2>
           <p style="color: #64748b; font-size: 15px; line-height: 24px; margin-bottom: 30px;">
             We've successfully credited <strong>${pages} pages</strong> to your account! You can now use these to scan and analyze your design blueprints against NYC Building Codes.
           </p>

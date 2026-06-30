@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "About PermitIQ: AI-Powered NYC Code Compliance | PermitIQ ( by Aureon )",
-  description: "PermitIQ ( by Aureon ) is the leading AI platform dedicated to simplifying New York City building code compliance for construction professionals.",
+  title: "About PermitIQ: AI-Powered NYC Code Compliance | PermitIQ by Aureon",
+  description: "PermitIQ by Aureon is the leading AI platform dedicated to simplifying New York City building code compliance for construction professionals.",
   alternates: {
     canonical: "https://nyccodes.permitiq.live/about",
   },
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About PermitIQ: AI-Powered NYC Code Compliance",
   },
-  keywords: ["about PermitIQ ( by Aureon )", "NYC building code company", "construction tech NYC"],
+  keywords: ["about PermitIQ by Aureon", "NYC building code company", "construction tech NYC"],
 };
 
 const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": "PermitIQ ( by Aureon )",
+  "name": "PermitIQ by Aureon",
   "image": "https://nyccodes.permitiq.live/logo.png",
   "description": "AI-powered NYC building code compliance checker.",
   "address": {

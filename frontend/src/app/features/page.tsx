@@ -1,20 +1,20 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "PermitIQ ( by Aureon ) Features: 112+ NYC Code Checks | PermitIQ ( by Aureon )",
-  description: "Explore PermitIQ ( by Aureon ) features: automated NYC building code checks, PDF violation reports, and pre-permit architectural readiness scoring. Try free today.",
+  title: "PermitIQ by Aureon Features: 112+ NYC Code Checks | PermitIQ by Aureon",
+  description: "Explore PermitIQ by Aureon features: automated NYC building code checks, PDF violation reports, and pre-permit architectural readiness scoring. Try free today.",
   alternates: {
     canonical: "https://nyccodes.permitiq.live/features",
   },
   openGraph: {
-    title: "PermitIQ ( by Aureon ) Features: 112+ NYC Code Requirements Checked",
+    title: "PermitIQ by Aureon Features: 112+ NYC Code Requirements Checked",
     description: "Automated NYC building code checks and PDF violation reports.",
     url: "https://nyccodes.permitiq.live/features",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PermitIQ ( by Aureon ) Features: 112+ NYC Code Requirements Checked",
+    title: "PermitIQ by Aureon Features: 112+ NYC Code Requirements Checked",
   },
   keywords: ["NYC code checks", "AI violation detection", "building code software", "architectural AI scanner"],
 };
@@ -38,7 +38,7 @@ export default function FeaturesPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
       />
       <div className="container mx-auto max-w-4xl text-center">
-        <h1 className="text-4xl font-bold mb-6 text-foreground">PermitIQ ( by Aureon ) Features: 112+ NYC Code Requirements Checked</h1>
+        <h1 className="text-4xl font-bold mb-6 text-foreground">PermitIQ by Aureon Features: 112+ NYC Code Requirements Checked</h1>
         <p className="text-xl text-muted-foreground">Automated plan checking against 112+ NYC building codes.</p>
       </div>
     </main>

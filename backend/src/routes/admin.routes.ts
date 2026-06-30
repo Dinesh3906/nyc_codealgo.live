@@ -175,7 +175,7 @@ router.post('/gift-pages', protect, requireAdmin, verifyAdminSession, async (req
         uuidv4(), 
         user.id, 
         'Pages Gifted', 
-        `You have been gifted ${pagesNum} pages by PermitIQ ( by Aureon )!`, 
+        `You have been gifted ${pagesNum} pages by PermitIQ by Aureon!`, 
         'gift'
       ]
     );

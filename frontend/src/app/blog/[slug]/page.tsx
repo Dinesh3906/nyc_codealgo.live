@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description = post.description ?? `Read our comprehensive guide on ${post.keyword}. We cover all NYC DOB regulations, safety rules, and architectural compliance standards.`;
 
   return {
-    title: `${post.title} | PermitIQ ( by Aureon )`,
+    title: `${post.title} | PermitIQ by Aureon`,
     description,
     alternates: {
       canonical: `https://nyccodes.permitiq.live/blog/${post.slug}`,
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       url: `https://nyccodes.permitiq.live/blog/${post.slug}`,
       type: "article",
       images: [`https://nyccodes.permitiq.live/blog/${post.slug}/opengraph-image`],
-      siteName: "PermitIQ ( by Aureon )",
+      siteName: "PermitIQ by Aureon",
       locale: "en_US",
       tags: [post.keyword],
       publishedTime: post.datePublished,
@@ -91,17 +91,17 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     "description": post.description ?? `Guide on ${post.keyword} for NYC DOB compliance`,
     "author": {
       "@type": "Person",
-      "name": "PermitIQ ( by Aureon ) Editorial Team",
+      "name": "PermitIQ by Aureon Editorial Team",
       "jobTitle": "NYC Building Code Specialists",
       "worksFor": {
         "@type": "Organization",
-        "name": "PermitIQ ( by Aureon )",
+        "name": "PermitIQ by Aureon",
         "url": "https://nyccodes.permitiq.live"
       }
     },
     "publisher": {
       "@type": "Organization",
-      "name": "PermitIQ ( by Aureon )",
+      "name": "PermitIQ by Aureon",
       "logo": {
         "@type": "ImageObject",
         "url": "https://nyccodes.permitiq.live/logo.png"
@@ -134,7 +134,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       },
       {
         question: `How can I automatically check my plans for ${post.keyword}?`,
-        answer: `You can upload your architectural plans to PermitIQ ( by Aureon )'s AI scanner, which instantly checks against ${post.keyword} and 112+ other NYC DOB requirements, generating a detailed violation report.`
+        answer: `You can upload your architectural plans to PermitIQ by Aureon's AI scanner, which instantly checks against ${post.keyword} and 112+ other NYC DOB requirements, generating a detailed violation report.`
       }
     ]).map(faq => ({
       "@type": "Question",
@@ -251,7 +251,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <li>Cross-check all dimensional callouts against the applicable BC section requirements</li>
           <li>Confirm all PW1 form fields are completed and consistent with drawings</li>
           <li>Coordinate with MEP consultants to resolve any interdisciplinary conflicts</li>
-          <li>Run a pre-submission compliance check using PermitIQ ( by Aureon ) or similar tools</li>
+          <li>Run a pre-submission compliance check using PermitIQ by Aureon or similar tools</li>
           <li>Review DOB NOW filing requirements for your specific job type (NB, Alt-1, Alt-2, Alt-3)</li>
         </ul>
 
@@ -285,7 +285,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
           <div>
             <h3 className="text-xl font-semibold">How can I automatically check my plans for {post.keyword}?</h3>
-            <p>PermitIQ ( by Aureon )&apos;s AI scanner checks uploaded architectural plans against {post.keyword} and 112+ other NYC DOB requirements instantly, generating a detailed violation report with specific code section references.</p>
+            <p>PermitIQ by Aureon&apos;s AI scanner checks uploaded architectural plans against {post.keyword} and 112+ other NYC DOB requirements instantly, generating a detailed violation report with specific code section references.</p>
           </div>
         </div>
 

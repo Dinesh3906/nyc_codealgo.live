@@ -20,7 +20,7 @@ export default function FreeCheckerPage() {
   return (
     <main className="min-h-screen py-24 px-6 bg-background">
       <div className="container mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-bold mb-4 text-foreground">Do I Need PermitIQ ( by Aureon )?</h1>
+        <h1 className="text-4xl font-bold mb-4 text-foreground">Do I Need PermitIQ by Aureon?</h1>
         <p className="text-xl text-muted-foreground mb-12">Find out the best compliance path for your NYC project.</p>
         
         <div className="bg-card border border-border rounded-2xl shadow-xl p-8 min-h-[400px] flex flex-col justify-center">
@@ -94,15 +94,15 @@ export default function FreeCheckerPage() {
               
               {answers[2] === 'design' ? (
                 <p className="text-lg text-muted-foreground mb-8">
-                  Since you are in early design, PermitIQ ( by Aureon ) can act as your automated Code Consultant. Run your plans through our AI weekly to catch egress and fire-rating issues before they are drafted into the final CDs.
+                  Since you are in early design, PermitIQ by Aureon can act as your automated Code Consultant. Run your plans through our AI weekly to catch egress and fire-rating issues before they are drafted into the final CDs.
                 </p>
               ) : answers[2] === 'dob' ? (
                 <p className="text-lg text-muted-foreground mb-8">
-                  You are ready for DOB NOW. Run a final Pre-Permit Audit with PermitIQ ( by Aureon ) to catch any missing TR1s, ZD1s, or egress errors that will trigger an examiner objection.
+                  You are ready for DOB NOW. Run a final Pre-Permit Audit with PermitIQ by Aureon to catch any missing TR1s, ZD1s, or egress errors that will trigger an examiner objection.
                 </p>
               ) : (
                 <p className="text-lg text-muted-foreground mb-8">
-                  For final construction documents, you need comprehensive safety checks. PermitIQ ( by Aureon ) evaluates your plans against 113 NYC Building Code chapters in minutes.
+                  For final construction documents, you need comprehensive safety checks. PermitIQ by Aureon evaluates your plans against 113 NYC Building Code chapters in minutes.
                 </p>
               )}
               
@@ -111,7 +111,7 @@ export default function FreeCheckerPage() {
                   <RotateCcw className="w-4 h-4" /> Start Over
                 </button>
                 <Link href="/register" className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition font-medium shadow">
-                  Try PermitIQ ( by Aureon ) Free
+                  Try PermitIQ by Aureon Free
                 </Link>
               </div>
             </div>

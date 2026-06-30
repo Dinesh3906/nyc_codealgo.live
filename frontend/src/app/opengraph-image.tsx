@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'PermitIQ ( by Aureon ) — NYC Building Code Compliance Checker';
+export const alt = 'PermitIQ by Aureon — NYC Building Code Compliance Checker';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -26,7 +26,7 @@ export default function OGImage() {
           color: '#ffffff', fontSize: 56, fontWeight: 700,
           lineHeight: 1.1, maxWidth: 800, marginBottom: 32,
         }}>
-          PermitIQ ( by Aureon )
+          PermitIQ by Aureon
         </div>
         <div style={{
           color: '#94a3b8', fontSize: 28, maxWidth: 700,

@@ -20,7 +20,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nyccodes.permitiq.live'),
-  title: "NYC Building Code AI Compliance Checker | PermitIQ ( by Aureon )",
+  title: "NYC Building Code AI Compliance Checker | PermitIQ by Aureon",
   description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
   keywords: [
     "NYC building code",
@@ -31,22 +31,22 @@ export const metadata: Metadata = {
     "building code checker",
     "NYC house codes list"
   ],
-  authors: [{ name: "PermitIQ ( by Aureon ) Editorial Team" }],
+  authors: [{ name: "PermitIQ by Aureon Editorial Team" }],
   alternates: {
     canonical: "https://nyccodes.permitiq.live",
   },
   openGraph: {
-    title: "NYC Building Code AI Compliance Checker | PermitIQ ( by Aureon )",
+    title: "NYC Building Code AI Compliance Checker | PermitIQ by Aureon",
     description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports.",
     type: "website",
     url: "https://nyccodes.permitiq.live",
-    siteName: "PermitIQ ( by Aureon )",
+    siteName: "PermitIQ by Aureon",
     images: [
       {
         url: "https://nyccodes.permitiq.live/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "PermitIQ ( by Aureon ) — NYC Building Code Compliance Checker",
+        alt: "PermitIQ by Aureon — NYC Building Code Compliance Checker",
       },
     ],
   },
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 const softwareAppSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "PermitIQ ( by Aureon )",
+  "name": "PermitIQ by Aureon",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "url": "https://nyccodes.permitiq.live",
@@ -90,7 +90,7 @@ const softwareAppSchema = {
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "PermitIQ ( by Aureon )",
+  "name": "PermitIQ by Aureon",
   "url": "https://nyccodes.permitiq.live",
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers",
   "potentialAction": {
@@ -120,7 +120,7 @@ const faqJsonLd = {
       "name": "How do I verify New York building compliance?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "You can use PermitIQ ( by Aureon )'s AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
+        "text": "You can use PermitIQ by Aureon's AI compliance platform to instantly verify your house plans, construction estimates, and architectural quotes against the latest NYC DOB codes."
       }
     },
     {

@@ -732,7 +732,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         doc.setFontSize(8);
         doc.text("PASSED", stampX + 20, stampY + 22, { align: 'center' });
         doc.setFontSize(4);
-        doc.text("NYC PERMITIQ ( BY AUREON ) LIVE", stampX + 20, stampY + 28, { align: 'center' });
+        doc.text("NYC PermitIQ by Aureon LIVE", stampX + 20, stampY + 28, { align: 'center' });
 
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');

@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { BLOG_POSTS } from '@/lib/blog-data';
 
 export const runtime = 'edge';
-export const alt = 'PermitIQ ( by Aureon ) Blog Post';
+export const alt = 'PermitIQ by Aureon Blog Post';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -27,7 +27,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
           marginBottom: 20, letterSpacing: 3,
           textTransform: 'uppercase' as const,
         }}>
-          PermitIQ ( by Aureon ) Blog
+          PermitIQ by Aureon Blog
         </div>
         <div style={{
           color: '#ffffff', fontSize: 44, fontWeight: 700,

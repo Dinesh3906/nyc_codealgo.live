@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: '#1 NYC Codes Checking | New York House Code Verification - PermitIQ ( by Aureon )',
+  title: '#1 NYC Codes Checking | New York House Code Verification - PermitIQ by Aureon',
   description: 'Complete NYC codes checking platform. Verify New York building regulations and house code compliance instantly with PermitIQ.',
 };
 
@@ -15,7 +15,7 @@ export default function NYCCodesCheckingPage() {
             #1 NYC Codes Checking & Verification
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Verify your New York building compliance and check residential house plans instantly. PermitIQ ( by Aureon ) is the premier NYC codes checking platform.
+            Verify your New York building compliance and check residential house plans instantly. PermitIQ by Aureon is the premier NYC codes checking platform.
           </p>
         </header>
 
@@ -49,7 +49,7 @@ export default function NYCCodesCheckingPage() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold">How do I verify New York building compliance?</h3>
-                <p className="text-muted-foreground mt-2">Use the PermitIQ ( by Aureon ) interactive tool to upload your house plan for instant code validation against NYC residential building rules.</p>
+                <p className="text-muted-foreground mt-2">Use the PermitIQ by Aureon interactive tool to upload your house plan for instant code validation against NYC residential building rules.</p>
               </div>
             </div>
           </article>

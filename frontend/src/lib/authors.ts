@@ -9,9 +9,9 @@ export interface Author {
 
 export const authors: Record<string, Author> = {
   'permitiq-team': {
-    name: 'PermitIQ ( by Aureon ) Editorial Team',
+    name: 'PermitIQ by Aureon Editorial Team',
     role: 'NYC Building Code Specialists',
-    bio: 'The PermitIQ ( by Aureon ) team includes licensed architects, registered engineers, and NYC permit expediters with combined 20+ years of DOB filing experience across all five boroughs.',
+    bio: 'The PermitIQ by Aureon team includes licensed architects, registered engineers, and NYC permit expediters with combined 20+ years of DOB filing experience across all five boroughs.',
     credentials: [
       'Verified against NYC DOB Code Library',
       'Updated for 2026 Existing Building Code',

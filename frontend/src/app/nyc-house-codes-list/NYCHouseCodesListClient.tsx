@@ -363,7 +363,7 @@ export default function NYCHouseCodesListClient() {
               Instant NYC Code Compliance Checking
             </h2>
             <p className="text-lg text-slate-300 mb-8 leading-relaxed">
-              Don&apos;t spend hours scrolling through thousands of pages of municipal PDF regulations or worrying about hidden structural traps. PermitIQ ( by Aureon )&apos;s AI compliance engine parses your architectural plans and instantly identifies potential code violations, saving time and preventing DOB design rejection.
+              Don&apos;t spend hours scrolling through thousands of pages of municipal PDF regulations or worrying about hidden structural traps. PermitIQ by Aureon&apos;s AI compliance engine parses your architectural plans and instantly identifies potential code violations, saving time and preventing DOB design rejection.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/dashboard" className="inline-flex justify-center items-center px-8 py-4 bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold text-lg rounded-xl shadow-lg hover:shadow-blue-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all">

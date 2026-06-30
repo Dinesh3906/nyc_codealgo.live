@@ -27,13 +27,13 @@ export default function TermsPage() {
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">1. Acceptance</h2>
             <p>
-              By accessing or using <strong>PermitIQ ( by Aureon )</strong>, you agree to these Terms and Conditions. If you do not agree, do not use the service.
+              By accessing or using <strong>PermitIQ by Aureon</strong>, you agree to these Terms and Conditions. If you do not agree, do not use the service.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">2. Service Description</h2>
-            <p className="mb-2">PermitIQ ( by Aureon ) provides AI-assisted building code analysis and compliance assistance. The service is informational only and does not constitute:</p>
+            <p className="mb-2">PermitIQ by Aureon provides AI-assisted building code analysis and compliance assistance. The service is informational only and does not constitute:</p>
             <ul className="list-disc pl-6 space-y-1 text-slate-400">
               <li>Legal advice</li>
               <li>Engineering advice</li>
@@ -82,7 +82,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">7. Limitation of Liability</h2>
-            <p className="mb-4">To the maximum extent permitted by law, PermitIQ ( by Aureon ) shall not be liable for:</p>
+            <p className="mb-4">To the maximum extent permitted by law, PermitIQ by Aureon shall not be liable for:</p>
             <ul className="list-disc pl-6 space-y-1 text-slate-400 mb-4">
               <li>Construction defects</li>
               <li>Permit rejections or delays by the DOB</li>

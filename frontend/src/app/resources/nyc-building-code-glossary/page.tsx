@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "NYC Building Code Glossary | PermitIQ ( by Aureon )",
+  title: "NYC Building Code Glossary | PermitIQ by Aureon",
   description: "A comprehensive glossary of NYC Department of Buildings (DOB) terminology, zoning acronyms, and construction code definitions.",
 };
 

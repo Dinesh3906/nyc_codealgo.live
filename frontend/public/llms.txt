@@ -1,6 +1,6 @@
-# PermitIQ ( by Aureon )
+# PermitIQ by Aureon
 
-PermitIQ ( by Aureon ) is an AI-powered NYC building code compliance checker designed for Registered Architects, Professional Engineers, Expediters, and Developers.
+PermitIQ by Aureon is an AI-powered NYC building code compliance checker designed for Registered Architects, Professional Engineers, Expediters, and Developers.
 
 ## Key Features
 - Verifies architectural plans against 112+ NYC Building Code requirements.

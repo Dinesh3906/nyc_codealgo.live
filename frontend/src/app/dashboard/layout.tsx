@@ -186,7 +186,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <div className="h-full flex flex-col">
           <div className="p-6 border-b border-border/60">
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <Image src="/logo.png" alt="PermitIQ ( by Aureon ) NYC Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
+              <Image src="/logo.png" alt="PermitIQ by Aureon NYC Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
               <span className="text-lg font-bold text-foreground tracking-tight">NYC House Code</span>
             </Link>
           </div>

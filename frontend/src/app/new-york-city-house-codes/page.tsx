@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: '#1 New York City House Codes | NYC Residential Building Rules - PermitIQ ( by Aureon )',
+  title: '#1 New York City House Codes | NYC Residential Building Rules - PermitIQ by Aureon',
   description: 'Understand the New York City house codes, zoning laws, and building regulations required for residential code checking and compliance.',
 };
 
