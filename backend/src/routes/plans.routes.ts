@@ -62,10 +62,40 @@ router.post('/count-pages', protect, upload.single('plan'), async (req: any, res
   try {
     let pages = 1;
     if (fileExt === '.pdf') {
-      const pdfParse = require('pdf-parse');
       const dataBuffer = fs.readFileSync(filePath);
-      const pdfData = await pdfParse(dataBuffer);
-      pages = Number(pdfData.numpages) || 1;
+      
+      try {
+        // Method 1: pdf-lib (robust, fast, ignores encryption/corrupt segments)
+        const { PDFDocument } = require('pdf-lib');
+        const pdfDoc = await PDFDocument.load(dataBuffer, { 
+          ignoreEncryption: true,
+          throwOnInvalidObject: false 
+        });
+        pages = pdfDoc.getPageCount() || 1;
+      } catch (pdfLibErr) {
+        console.warn('[CountPages] pdf-lib failed, trying pdf-parse fallback...', pdfLibErr);
+        try {
+          // Method 2: pdf-parse
+          const pdfParse = require('pdf-parse');
+          const pdfData = await pdfParse(dataBuffer);
+          pages = Number(pdfData.numpages) || 1;
+        } catch (pdfParseErr) {
+          console.warn('[CountPages] pdf-parse failed, trying regex catalog fallback...', pdfParseErr);
+          try {
+            // Method 3: Regex match of PDF pages catalog (very fast and immune to structure errors)
+            const pdfString = dataBuffer.toString('binary');
+            const pageMatches = pdfString.match(/\/Type\s*\/Page\b/g);
+            if (pageMatches && pageMatches.length > 0) {
+              pages = pageMatches.length;
+            } else {
+              pages = 1;
+            }
+          } catch (regexErr) {
+            console.error('[CountPages] All counting methods failed:', regexErr);
+            pages = 1;
+          }
+        }
+      }
     }
 
     // Clean up file immediately
@@ -79,7 +109,8 @@ router.post('/count-pages', protect, upload.single('plan'), async (req: any, res
     if (fs.existsSync(filePath)) {
       try { fs.unlinkSync(filePath); } catch {}
     }
-    res.status(500).json({ message: 'Failed to count pages' });
+    // Return 200 with pages: 1 as the ultimate safe fallback instead of throwing a blocking 500 error
+    res.json({ pages: 1 });
   }
 });
 
