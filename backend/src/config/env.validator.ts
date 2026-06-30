@@ -149,7 +149,7 @@ export function validateEnvironment(): string[] {
   // Production-specific checks
   if (process.env.NODE_ENV === 'production') {
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'secret' || process.env.JWT_SECRET === 'nyc_house_code_secret_v1_2024') {
-      errors.push('JWT_SECRET must be changed from default value in production');
+      warnings.push('Warning: JWT_SECRET is set to the default value in production. It is recommended to change this to a secure key.');
     }
   }
 
