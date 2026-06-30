@@ -27,7 +27,7 @@ cd backend
 npm run build
 echo "Building frontend (with memory limit)..."
 cd ../frontend
-NODE_OPTIONS="--max-old-space-size=512" npm run build
+NODE_OPTIONS="--max-old-space-size=2048" npm run build
 cd ..
 
 echo "4. Verifying build artifacts..."
