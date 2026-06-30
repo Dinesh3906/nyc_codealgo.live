@@ -53,7 +53,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
             border: '1px solid #334155', color: '#94a3b8',
             padding: '10px 24px', borderRadius: 8, fontSize: 16,
           }}>
-            nyccodes.codealgo.live
+            permitiq.codealgo.live
           </div>
         </div>
       </div>

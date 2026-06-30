@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "About PermitIQ: AI-Powered NYC Code Compliance | PermitIQ by Aureon",
   description: "PermitIQ by Aureon is the leading AI platform dedicated to simplifying New York City building code compliance for construction professionals.",
   alternates: {
-    canonical: "https://nyccodes.codealgo.live/about",
+    canonical: "https://permitiq.codealgo.live/about",
   },
   openGraph: {
     title: "About PermitIQ: AI-Powered NYC Code Compliance",
     description: "The leading AI platform for NYC building code compliance.",
-    url: "https://nyccodes.codealgo.live/about",
+    url: "https://permitiq.codealgo.live/about",
     type: "website",
   },
   twitter: {
@@ -23,7 +23,7 @@ const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "name": "PermitIQ by Aureon",
-  "image": "https://nyccodes.codealgo.live/logo.png",
+  "image": "https://permitiq.codealgo.live/logo.png",
   "description": "AI-powered NYC building code compliance checker.",
   "address": {
     "@type": "PostalAddress",

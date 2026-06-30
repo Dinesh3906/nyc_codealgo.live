@@ -42,7 +42,7 @@ export default function RegisterPage() {
     const backendUrl = typeof window !== 'undefined' && 
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5000'
-      : 'https://api.codealgo.live';
+      : 'https://api-permitiq.codealgo.live';
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 

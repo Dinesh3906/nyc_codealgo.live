@@ -9,11 +9,11 @@ PermitIQ by Aureon is an AI-powered NYC building code compliance checker designe
 - Generates detailed PDF compliance reports to assist with DOB NOW submissions.
 
 ## Important Links
-- Home: https://nyccodes.codealgo.live
-- Features: https://nyccodes.codealgo.live/features
-- Pricing: https://nyccodes.codealgo.live/pricing
-- Blog: https://nyccodes.codealgo.live/blog
-- Use Cases: https://nyccodes.codealgo.live/use-cases
+- Home: https://permitiq.codealgo.live
+- Features: https://permitiq.codealgo.live/features
+- Pricing: https://permitiq.codealgo.live/pricing
+- Blog: https://permitiq.codealgo.live/blog
+- Use Cases: https://permitiq.codealgo.live/use-cases
 
 ## Target Audience
 Architects, Engineers, Developers, and Expediters working in the 5 boroughs of New York City (Manhattan, Brooklyn, Queens, Bronx, Staten Island).

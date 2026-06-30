@@ -1,6 +1,6 @@
 # 🚀 NYC PermitIQ: The World's Premier AI-Powered Building Code Compliance & Automation Platform
 
-Welcome to the definitive self-introduction of **NYC PermitIQ by Aureon**, hosted at [nyccodes.codealgo.live](https://nyccodes.codealgo.live). PermitIQ by Aureon is an enterprise-grade compliance-auditing platform built to automate the dense, complex, and time-consuming process of verifying architectural drawings and construction plans against the regulations of the **New York City Department of Buildings (DOB)**.
+Welcome to the definitive self-introduction of **NYC PermitIQ by Aureon**, hosted at [permitiq.codealgo.live](https://permitiq.codealgo.live). PermitIQ by Aureon is an enterprise-grade compliance-auditing platform built to automate the dense, complex, and time-consuming process of verifying architectural drawings and construction plans against the regulations of the **New York City Department of Buildings (DOB)**.
 
 By combining advanced Retrieval-Augmented Generation (RAG), local neural embeddings, real-time WebSocket state streaming, and auto-repairing parsers, PermitIQ by Aureon does in 30 seconds what traditionally takes plan examiners and architects weeks of manual labor.
 

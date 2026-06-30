@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { BLOG_POSTS } from '@/lib/blog-data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://nyccodes.codealgo.live';
+  const baseUrl = 'https://permitiq.codealgo.live';
   
   const staticPages: MetadataRoute.Sitemap = [
     {

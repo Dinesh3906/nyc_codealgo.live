@@ -19,7 +19,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nyccodes.codealgo.live'),
+  metadataBase: new URL('https://permitiq.codealgo.live'),
   title: "NYC Building Code AI Compliance Checker | PermitIQ by Aureon",
   description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
   keywords: [
@@ -33,17 +33,17 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "PermitIQ by Aureon Editorial Team" }],
   alternates: {
-    canonical: "https://nyccodes.codealgo.live",
+    canonical: "https://permitiq.codealgo.live",
   },
   openGraph: {
     title: "NYC Building Code AI Compliance Checker | PermitIQ by Aureon",
     description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports.",
     type: "website",
-    url: "https://nyccodes.codealgo.live",
+    url: "https://permitiq.codealgo.live",
     siteName: "PermitIQ by Aureon",
     images: [
       {
-        url: "https://nyccodes.codealgo.live/opengraph-image",
+        url: "https://permitiq.codealgo.live/opengraph-image",
         width: 1200,
         height: 630,
         alt: "PermitIQ by Aureon — NYC Building Code Compliance Checker",
@@ -75,7 +75,7 @@ const softwareAppSchema = {
   "name": "PermitIQ by Aureon",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
-  "url": "https://nyccodes.codealgo.live",
+  "url": "https://permitiq.codealgo.live",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers across all 5 NYC boroughs",
   "areaServed": { "@type": "City", "name": "New York City" },
@@ -91,13 +91,13 @@ const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "PermitIQ by Aureon",
-  "url": "https://nyccodes.codealgo.live",
+  "url": "https://permitiq.codealgo.live",
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": "https://nyccodes.codealgo.live/blog?q={search_term_string}"
+      "urlTemplate": "https://permitiq.codealgo.live/blog?q={search_term_string}"
     },
     "query-input": "required name=search_term_string"
   }

@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "Contact Us - NYC Code Compliance Support | PermitIQ by Aureon",
   description: "Get in touch with the PermitIQ by Aureon team for enterprise pricing, API access, or support regarding our NYC building code AI scanner.",
   alternates: {
-    canonical: "https://nyccodes.codealgo.live/contact",
+    canonical: "https://permitiq.codealgo.live/contact",
   },
   openGraph: {
     title: "Contact Us - PermitIQ by Aureon Support",
     description: "Get in touch with the PermitIQ by Aureon team for enterprise pricing and support.",
-    url: "https://nyccodes.codealgo.live/contact",
+    url: "https://permitiq.codealgo.live/contact",
     type: "website",
   },
   twitter: {
@@ -23,9 +23,9 @@ const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "name": "PermitIQ by Aureon",
-  "image": "https://nyccodes.codealgo.live/logo.png",
+  "image": "https://permitiq.codealgo.live/logo.png",
   "telephone": "+1-800-555-0199",
-  "email": "support@codealgo.live",
+  "email": "support@permitiq.codealgo.live",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "123 Tech Lane",

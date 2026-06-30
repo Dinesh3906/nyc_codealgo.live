@@ -6,12 +6,12 @@ export const metadata: Metadata = {
   title: "NYC Building Code Compliance Blog | PermitIQ by Aureon",
   description: "Read the latest guides, checklists, and deep dives on New York City building code compliance, DOB filing, and architectural best practices.",
   alternates: {
-    canonical: "https://nyccodes.codealgo.live/blog",
+    canonical: "https://permitiq.codealgo.live/blog",
   },
   openGraph: {
     title: "NYC Building Code Compliance Blog | PermitIQ by Aureon",
     description: "Guides and checklists on New York City building code compliance.",
-    url: "https://nyccodes.codealgo.live/blog",
+    url: "https://permitiq.codealgo.live/blog",
     type: "website",
   },
   twitter: {

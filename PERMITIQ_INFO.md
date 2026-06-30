@@ -1,6 +1,6 @@
 # NYC PermitIQ: Complete System Documentation
 
-Welcome to the comprehensive technical documentation for **PermitIQ by Aureon (NYC Building Code Compliance Analyzer)**, hosted at [nyccodes.codealgo.live](https://nyccodes.codealgo.live).
+Welcome to the comprehensive technical documentation for **PermitIQ by Aureon (NYC Building Code Compliance Analyzer)**, hosted at [permitiq.codealgo.live](https://permitiq.codealgo.live).
 
 PermitIQ by Aureon is an enterprise-grade, AI-powered compliance-checking platform designed to automate the review of architectural plans against the dense and complex **New York City Building Codes**. Using an advanced Retrieval-Augmented Generation (RAG) architecture, local neural embeddings, multi-model Google Gemini APIs, and real-time WebSockets, PermitIQ by Aureon analyzes uploaded plans (PDFs or drawings) and produces standard compliance reviews, issue logs, architectural appreciations, and layout betterments in seconds.
 
@@ -186,7 +186,7 @@ CREATE TABLE `plan` (
 PermitIQ by Aureon is deployed on an **AWS EC2 server** with live builds managed via Git.
 
 ### 1. Server Configuration
-*   **Folder Location**: `~/nyc_codealgo.live`
+*   **Folder Location**: `~/nyc_permitiq.codealgo.live`
 *   **Port Config**: Backend runs on `5000` (reverse-proxied), Frontend runs on Next.js default `3000`.
 *   **Process Managers**: Processes are managed via `PM2` for active daemon monitoring and automatic crash recovery.
 
@@ -195,7 +195,7 @@ To roll out updates to the live server, access the server terminal and run:
 
 ```bash
 # 1. Update backend files & rebuild TypeScript
-cd ~/nyc_codealgo.live
+cd ~/nyc_permitiq.codealgo.live
 git pull origin main
 cd backend
 npm install
@@ -203,7 +203,7 @@ npm run build
 pm2 restart nyc-backend
 
 # 3. Update frontend files & rebuild Next.js static bundles
-cd ~/nyc_codealgo.live/frontend
+cd ~/nyc_permitiq.codealgo.live/frontend
 npm install
 npm run build
 pm2 restart nyc-frontend

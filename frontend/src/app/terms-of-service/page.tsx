@@ -132,7 +132,7 @@ export default function TermsPage() {
             <p>
               For terms and legal inquiries, please contact:
               <br />
-              <strong>Email:</strong> <a href="mailto:support@nyccodes.codealgo.live" className="text-blue-400 hover:underline">support@nyccodes.codealgo.live</a>
+              <strong>Email:</strong> <a href="mailto:support@permitiq.codealgo.live" className="text-blue-400 hover:underline">support@permitiq.codealgo.live</a>
             </p>
           </section>
 

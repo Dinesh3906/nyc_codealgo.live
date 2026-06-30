@@ -24,14 +24,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${post.title} | PermitIQ by Aureon`,
     description,
     alternates: {
-      canonical: `https://nyccodes.codealgo.live/blog/${post.slug}`,
+      canonical: `https://permitiq.codealgo.live/blog/${post.slug}`,
     },
     openGraph: {
       title: post.title,
       description,
-      url: `https://nyccodes.codealgo.live/blog/${post.slug}`,
+      url: `https://permitiq.codealgo.live/blog/${post.slug}`,
       type: "article",
-      images: [`https://nyccodes.codealgo.live/blog/${post.slug}/opengraph-image`],
+      images: [`https://permitiq.codealgo.live/blog/${post.slug}/opengraph-image`],
       siteName: "PermitIQ by Aureon",
       locale: "en_US",
       tags: [post.keyword],
@@ -96,7 +96,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       "worksFor": {
         "@type": "Organization",
         "name": "PermitIQ by Aureon",
-        "url": "https://nyccodes.codealgo.live"
+        "url": "https://permitiq.codealgo.live"
       }
     },
     "publisher": {
@@ -104,15 +104,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       "name": "PermitIQ by Aureon",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://nyccodes.codealgo.live/logo.png"
+        "url": "https://permitiq.codealgo.live/logo.png"
       }
     },
     "datePublished": formatSchemaDate(post.datePublished),
     "dateModified": formatSchemaDate(post.dateModified || post.datePublished),
-    "image": `https://nyccodes.codealgo.live/blog/${post.slug}/opengraph-image`,
+    "image": `https://permitiq.codealgo.live/blog/${post.slug}/opengraph-image`,
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://nyccodes.codealgo.live/blog/${post.slug}`
+      "@id": `https://permitiq.codealgo.live/blog/${post.slug}`
     }
   };
 
@@ -154,19 +154,19 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://nyccodes.codealgo.live/"
+        "item": "https://permitiq.codealgo.live/"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Blog",
-        "item": "https://nyccodes.codealgo.live/blog"
+        "item": "https://permitiq.codealgo.live/blog"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": post.title,
-        "item": `https://nyccodes.codealgo.live/blog/${post.slug}`
+        "item": `https://permitiq.codealgo.live/blog/${post.slug}`
       }
     ]
   };

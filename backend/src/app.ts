@@ -27,8 +27,8 @@ app.use(helmet({
 }));
 
 const allowedOrigins = [
-  'https://nyccodes.codealgo.live',
-  'https://www.nyccodes.codealgo.live',
+  'https://permitiq.codealgo.live',
+  'https://www.permitiq.codealgo.live',
   'http://localhost:3000',
   process.env.CORS_ORIGIN,
   process.env.FRONTEND_URL
