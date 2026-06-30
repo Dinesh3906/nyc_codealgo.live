@@ -136,21 +136,22 @@ export class CompliancePipeline {
 
       let finalScore: number | null = checkedSteps.length > 0
         ? Math.round(checkedSteps.reduce((acc: number, r: any) => acc + r.score!, 0) / checkedSteps.length)
-        : 100;
+        : 100;      let severity = { critical: 0, major: 0, minor: 0 };
 
-      let severity = { critical: 0, major: 0, minor: 0 };
       const combinedIssues: AnalysisIssue[] = checkedSteps.flatMap((r: any) =>
         r.issues.map((iss: any) => ({
           title: iss.title || `${r.name} Compliance Issue`,
           description: iss.description || "Violation detail not provided",
           severity: (iss.severity || 'minor') as 'critical' | 'major' | 'minor',
-          rule: iss.rule || "NYC Building Code 2022",
-          suggestion: iss.suggestion || "Review with a licensed professional",
+          rule: iss.rule || iss.code || "NYC Building Code 2022",
+          suggestion: iss.suggestion || iss.recommendation || "Review with a licensed professional",
           stepId: r.id,
-          deductionPercentage: iss.deductionPercentage,
-          exactPdfCitation: iss.exactPdfCitation,
-          loopholeDetails: iss.loopholeDetails,
-          requiredElements: iss.requiredElements
+          deductionPercentage: typeof iss.deductionPercentage === 'number' 
+            ? iss.deductionPercentage 
+            : (typeof iss.deduction_percentage === 'number' ? iss.deduction_percentage : 0),
+          exactPdfCitation: iss.exactPdfCitation || iss.exact_pdf_citation || "N/A",
+          loopholeDetails: iss.loopholeDetails || iss.loophole_details || "N/A",
+          requiredElements: iss.requiredElements || iss.required_elements || "N/A"
         }))
       );
 
