@@ -228,7 +228,7 @@ export const googleAuthRedirect = async (req: Request, res: Response) => {
     ? 'http://localhost:5000/api/auth/google/callback'
     : 'https://api-permitiq.codealgo.live/api/auth/google/callback';
 
-  const clientId = '782344767987-5kvji7i83jmo6qq0m1r59vpbns0elu62.apps.googleusercontent.com';
+  const clientId = process.env.GOOGLE_CLIENT_ID || '478768691895-trfthmio16akr9iaq60s6f6422jb183k.apps.googleusercontent.com';
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email`;
   
   res.redirect(authUrl);
@@ -247,11 +247,12 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
   }
 
   try {
-    const clientId = '782344767987-5kvji7i83jmo6qq0m1r59vpbns0elu62.apps.googleusercontent.com';
-    const clientSecret = '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';
+    const clientId = process.env.GOOGLE_CLIENT_ID || '478768691895-trfthmio16akr9iaq60s6f6422jb183k.apps.googleusercontent.com';
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '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';
 
     // 1. Exchange OAuth authorization code for Access Token
     const axios = require('axios');
+
     const tokenRes = await axios.post('https://oauth2.googleapis.com/token', {
       code,
       client_id: clientId,
