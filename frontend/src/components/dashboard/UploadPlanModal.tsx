@@ -507,13 +507,14 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           didDrawCell: (data: any) => {
             if (data.section === 'body' && data.column.index === 1) {
               const status = data.cell.raw;
+              const statusUpper = String(status || '').toUpperCase();
               let bgColor = colors.minorBg;
               let txtColor = colors.minor;
 
-              if (status === 'PRESENT' || status === 'COMPLIANT') {
+              if (statusUpper === 'PRESENT' || statusUpper === 'COMPLIANT' || statusUpper === 'VERIFIED' || statusUpper === 'VERIFIED PRESENT') {
                 bgColor = colors.compliantBg;
                 txtColor = colors.compliant;
-              } else if (status === 'MISSING' || status === 'NON-COMPLIANT') {
+              } else if (statusUpper === 'MISSING' || statusUpper === 'NON-COMPLIANT' || statusUpper === 'WARNING') {
                 bgColor = colors.criticalBg;
                 txtColor = colors.critical;
               }

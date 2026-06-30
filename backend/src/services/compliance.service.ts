@@ -142,7 +142,7 @@ export class CompliancePipeline {
         r.issues.map((iss: any) => ({
           title: iss.title || `${r.name} Compliance Issue`,
           description: iss.description || "Violation detail not provided",
-          severity: (iss.severity || 'minor') as 'critical' | 'major' | 'minor',
+          severity: String(iss.severity || 'minor').toLowerCase() as 'critical' | 'major' | 'minor',
           rule: iss.rule || iss.code || "NYC Building Code 2022",
           suggestion: iss.suggestion || iss.recommendation || "Review with a licensed professional",
           stepId: r.id,

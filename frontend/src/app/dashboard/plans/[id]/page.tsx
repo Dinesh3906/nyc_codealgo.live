@@ -319,7 +319,7 @@ export default function PlanDetailPage() {
             const correction = i.suggestion || i.recommendation || i.requiredElements || i.required_elements || 'N/A';
             return [
               `${i.title}\nPenalty: -${deduction}%`,
-              i.severity.toUpperCase(),
+              String(i.severity || 'minor').toUpperCase(),
               `${i.rule || i.code || 'N/A'}\n\nPDF Ref:\n${citation}`,
               `Loophole:\n${loophole}\n\nRequired Correction:\n${correction}`
             ];
@@ -331,10 +331,11 @@ export default function PlanDetailPage() {
           didDrawCell: (data: any) => {
             if (data.section === 'body' && data.column.index === 1) {
               const severity = data.cell.raw;
+              const severityUpper = String(severity || '').toUpperCase();
               let bgColor = colors.minorBg;
               let txtColor = colors.minor;
-              if (severity === 'CRITICAL') { bgColor = colors.criticalBg; txtColor = colors.critical; }
-              else if (severity === 'MAJOR') { bgColor = colors.majorBg; txtColor = colors.major; }
+              if (severityUpper === 'CRITICAL') { bgColor = colors.criticalBg; txtColor = colors.critical; }
+              else if (severityUpper === 'MAJOR') { bgColor = colors.majorBg; txtColor = colors.major; }
               doc.setFillColor(255, 255, 255);
               doc.rect(data.cell.x + 1, data.cell.y + 1, data.cell.width - 2, data.cell.height - 2, 'F');
               drawBadge(severity, data.cell.x + 2, data.cell.y + 2, 21, 6, bgColor, txtColor);
