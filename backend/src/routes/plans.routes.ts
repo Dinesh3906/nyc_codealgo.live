@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 35 * 1024 * 1024 }, // 35MB limit
+  limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB limit
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const allowedExtensions = ['.pdf'];
@@ -118,7 +118,7 @@ router.post('/upload', protect, (req: any, res: any) => {
   upload.single('plan')(req, res, async (err: any) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ message: 'File too large. Maximum size is 35MB.' });
+        return res.status(400).json({ message: 'File too large. Maximum size is 1GB.' });
       }
       return res.status(400).json({ message: `Upload error: ${err.message}` });
     } else if (err) {
