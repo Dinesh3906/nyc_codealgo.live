@@ -7,12 +7,31 @@ export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
 
-  const connectSrc = [
+  const origins = [
     "'self'",
     'https://api-permitiq.codealgo.live',
     'wss://api-permitiq.codealgo.live',
+    'https://api.codealgo.live',
+    'wss://api.codealgo.live',
     ...(isDev ? ['http://localhost:5000', 'ws://localhost:5000'] : []),
-  ].join(' ');
+  ];
+
+  const publicApiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (publicApiUrl) {
+    try {
+      const parsed = new URL(publicApiUrl);
+      if (!origins.includes(parsed.origin)) {
+        origins.push(parsed.origin);
+      }
+      const wsProto = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsOrigin = `${wsProto}//${parsed.host}`;
+      if (!origins.includes(wsOrigin)) {
+        origins.push(wsOrigin);
+      }
+    } catch {}
+  }
+
+  const connectSrc = origins.join(' ');
 
   const csp = [
     "default-src 'self'",
