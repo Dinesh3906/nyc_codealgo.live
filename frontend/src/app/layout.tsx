@@ -160,6 +160,7 @@ export default async function RootLayout({
           defaultTheme="light"
           enableSystem={false}
           disableTransitionOnChange
+          nonce={nonce}
         >
           <a href="#main-content" className="skip-to-content">
             Skip to main content
