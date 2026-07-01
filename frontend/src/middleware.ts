@@ -35,7 +35,7 @@ export function middleware(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://checkout.razorpay.com`,
+    `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https://checkout.razorpay.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://lh3.googleusercontent.com",
     `connect-src ${connectSrc}`,
