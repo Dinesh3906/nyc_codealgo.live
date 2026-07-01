@@ -21,7 +21,7 @@ const ENV_RULES: EnvRule[] = [
   { name: 'PINECONE_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
   { name: 'JWT_SECRET', required: true, type: 'string', minLength: 32, sensitive: true },
   { name: 'GROQ_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
-  { name: 'OPENROUTER_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
+  { name: 'OPENROUTER_API_KEY', required: false, type: 'string', minLength: 10, sensitive: true },
   { name: 'GOOGLE_CLIENT_ID', required: true, type: 'string', minLength: 10, sensitive: true },
   { name: 'GOOGLE_CLIENT_SECRET', required: true, type: 'string', minLength: 10, sensitive: true },
   { name: 'RAZORPAY_KEY_ID', required: true, type: 'string', minLength: 5, sensitive: true },
