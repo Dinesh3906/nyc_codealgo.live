@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 
 const sslConfig = process.env.NODE_ENV === 'production' 
-  ? { rejectUnauthorized: true } 
+  ? { rejectUnauthorized: false } 
   : undefined;
 
 const poolConfig: mysql.PoolOptions = process.env.DATABASE_URL
