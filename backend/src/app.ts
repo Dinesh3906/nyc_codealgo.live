@@ -71,9 +71,18 @@ if (!IS_PRODUCTION) {
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin) {
-    return true; // Allow direct navigation, local health checks (curl), and server-to-server requests
+    return true; // Allow direct navigation, local health checks (curl), same-origin
   }
-  return allowedOrigins.includes(origin);
+  
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  // Support all subdomains of codealgo.live and all vercel.app deployments (previews, staging)
+  const isMatch = /^https:\/\/(?:[a-zA-Z0-9-]+\.)*codealgo\.live$/.test(origin) ||
+                  /^https:\/\/(?:[a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin);
+                  
+  return isMatch;
 };
 
 const httpServer = createServer(app);
@@ -83,7 +92,7 @@ const io = new Server(httpServer, {
       if (isOriginAllowed(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error(`Not allowed by CORS (Socket.IO): ${origin}`));
       }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -96,7 +105,7 @@ app.use(cors({
     if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Not allowed by CORS (Express): ${origin}`));
     }
   },
   credentials: true,
