@@ -70,9 +70,8 @@ if (!IS_PRODUCTION) {
 }
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
-  // Reject null/undefined/missing origins in production (blocks CSRF via null origin)
   if (!origin) {
-    return !IS_PRODUCTION; // Allow in dev for tools like curl/Postman
+    return true; // Allow direct navigation, local health checks (curl), and server-to-server requests
   }
   return allowedOrigins.includes(origin);
 };
