@@ -8,7 +8,19 @@ const api = axios.create({
   timeout: 300000, // 5 minutes for AI processing
   withCredentials: true, // Crucial for sending and receiving HttpOnly auth cookies
 });
-
+// Request interceptor to attach CSRF token from cookie
+api.interceptors.request.use(
+  (config) => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]*)'));
+      if (match && match[2]) {
+        config.headers['X-CSRF-Token'] = decodeURIComponent(match[2]);
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 // Auto-logout on 401 responses — purge stale/rotated tokens immediately
 api.interceptors.response.use(
   (response) => response,

@@ -15,7 +15,7 @@ const ADMIN_EMAILS = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
 
 // Helper middleware to check if user is in authorized admin list
 const requireAdmin = (req: any, res: Response, next: NextFunction) => {
-  if (!req.user || !ADMIN_EMAILS.includes(req.user.email)) {
+  if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied. Authorized administrators only.' });
   }
   next();
@@ -23,7 +23,7 @@ const requireAdmin = (req: any, res: Response, next: NextFunction) => {
 
 // Middleware to verify the short-lived admin OTP session token
 const verifyAdminSession = (req: any, res: Response, next: NextFunction) => {
-  const adminToken = req.headers['x-admin-token'] as string;
+  const adminToken = req.cookies?.admin_session || req.headers['x-admin-token'];
   
   if (!adminToken) {
     return res.status(401).json({ message: 'Verification required. Admin OTP token missing.' });
@@ -32,7 +32,7 @@ const verifyAdminSession = (req: any, res: Response, next: NextFunction) => {
   try {
     const decoded = JwtService.verifyAdminToken(adminToken);
 
-    if (decoded.email !== req.user.email || !ADMIN_EMAILS.includes(decoded.email)) {
+    if (decoded.email !== req.user.email) {
       return res.status(403).json({ message: 'Invalid or expired admin session.' });
     }
 
@@ -121,6 +121,22 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
 
     // Generate short-lived admin session token (2 hours)
     const adminSessionToken = JwtService.signAdminToken(req.user.id, req.user.email);
+
+    res.cookie('admin_session', adminSessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 2 * 60 * 60 * 1000, // 2 hours
+      path: '/',
+    });
+
+    res.cookie('admin_verified', 'true', {
+      httpOnly: false, // Read by frontend
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 2 * 60 * 60 * 1000, // 2 hours
+      path: '/',
+    });
 
     res.json({ adminSessionToken });
   } catch (error) {

@@ -246,7 +246,8 @@ router.get('/:id/download', protect, async (req: any, res) => {
     const absolutePath = path.resolve(plan.fileUrl);
     // Path traversal guard: ensure file is within uploads directory
     const uploadsDir = path.resolve('uploads');
-    if (!absolutePath.startsWith(uploadsDir)) {
+    const relativePath = path.relative(uploadsDir, absolutePath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       return res.status(403).json({ message: 'Access denied.' });
     }
 

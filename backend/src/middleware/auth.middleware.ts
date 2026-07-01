@@ -52,7 +52,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
     while (attempts < 2) {
       try {
         const [rows]: any = await pool.query(
-          'SELECT id, name, email, subStatus, scanLimit, pagesUsed, subPeriodEnd, introSubscriptionCount, trialClaimed, tokenVersion FROM `user` WHERE id = ?',
+          'SELECT id, name, email, role, subStatus, scanLimit, pagesUsed, subPeriodEnd, introSubscriptionCount, trialClaimed, tokenVersion FROM `user` WHERE id = ?',
           [decoded.id]
         );
         users = rows;

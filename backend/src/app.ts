@@ -12,6 +12,7 @@ import { metrics, updateSystemMetrics } from './services/metrics.service';
 import { geminiCircuitBreaker, pineconeCircuitBreaker } from './services/circuit-breaker';
 import { Logger } from './services/logger';
 import { JwtService } from './services/jwt.service';
+import { csrfProtection } from './middleware/csrf.middleware';
 import authRoutes from './routes/auth.routes';
 import planRoutes from './routes/plans.routes';
 import billingRoutes from './routes/billing.routes';
@@ -134,6 +135,9 @@ app.use(requestLoggingMiddleware);
 
 // Abuse detection
 app.use(abuseDetectionMiddleware);
+
+// CSRF Protection
+app.use(csrfProtection);
 
 // Rate limiting
 app.use('/api', apiLimiter);

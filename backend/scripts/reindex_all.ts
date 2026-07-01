@@ -9,7 +9,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import * as fs from "fs";
 import * as path from "path";
 import dotenv from "dotenv";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
@@ -77,7 +77,8 @@ async function runReindexing() {
     console.log(`\n[${i + 1}/${files.length}] Indexing: ${relativePath}...`);
     
     try {
-      execSync(`npx tsx scripts/ingest_code.ts "${filePath}"`, { stdio: "inherit" });
+      const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+      execFileSync(npxCmd, ['tsx', 'scripts/ingest_code.ts', filePath], { stdio: 'inherit' });
       successCount++;
     } catch (e: any) {
       console.error(`✗ Failed to index ${relativePath}:`, e.message);

@@ -90,11 +90,12 @@ export default function RegisterPage() {
         otp
       });
 
-      if (response.data.token) {
+      if (response.data && response.data.id) {
         const userData = {
           id: response.data.id,
           name: response.data.name,
-          email: response.data.email
+          email: response.data.email,
+          role: response.data.role
         };
         login(userData);
         toast.success("Account created successfully!");

@@ -282,18 +282,21 @@ router.post('/webhook', async (req: Request, res: Response) => {
     }
 
     // Verify HMAC signature
-    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(String(req.body));
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(rawBody)
       .digest('hex');
 
-    if (!crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature))) {
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const signatureBuffer = Buffer.from(signature);
+
+    if (expectedBuffer.length !== signatureBuffer.length || !crypto.timingSafeEqual(expectedBuffer, signatureBuffer)) {
       logger.warn('Webhook signature verification failed');
       return res.status(400).json({ received: false });
     }
 
-    const event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const event = JSON.parse(rawBody.toString('utf8'));
     const eventType = event?.event;
 
     logger.info('Razorpay webhook received', { eventType });

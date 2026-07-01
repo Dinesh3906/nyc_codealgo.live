@@ -72,7 +72,7 @@ export default function AdminDatabasePage() {
   const [broadcastType, setBroadcastType] = useState("news");
   const [broadcasting, setBroadcasting] = useState(false);
 
-  const isAdmin = user?.email === 'chalams115@gmail.com' || user?.email === 'sathvi2018@gmail.com';
+  const isAdmin = user?.role === 'admin';
 
   // 1. Initial Authorization Verification
   useEffect(() => {
@@ -83,10 +83,9 @@ export default function AdminDatabasePage() {
         return;
       }
       
-      // Check for cached admin OTP session token (valid for 2 hours)
-      const cachedToken = sessionStorage.getItem("permitiq-admin-otp-token");
-      if (cachedToken) {
-        setAdminToken(cachedToken);
+      // Check for cached admin OTP session status (valid for 2 hours)
+      const isVerifiedCached = document.cookie.includes('admin_verified=true');
+      if (isVerifiedCached) {
         setIsVerified(true);
       } else {
         // Automatically request security OTP on page enter
@@ -98,18 +97,21 @@ export default function AdminDatabasePage() {
   // 2. Fetch Users Directory once OTP is verified
   const fetchUsers = async (tokenOverride?: string) => {
     const activeToken = tokenOverride || adminToken;
-    if (!activeToken) return;
     
     setLoading(true);
     try {
+      const headersConfig: any = {};
+      if (activeToken) {
+        headersConfig["X-Admin-Token"] = activeToken;
+      }
       const response = await api.get("/admin/users", {
-        headers: { "X-Admin-Token": activeToken }
+        headers: headersConfig
       });
       setUsersList(response.data);
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 403) {
         toast.error("Admin session expired. Please verify OTP again.");
-        sessionStorage.removeItem("permitiq-admin-otp-token");
+        document.cookie = "admin_verified=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
         setAdminToken(null);
         setIsVerified(false);
       } else {
@@ -121,10 +123,10 @@ export default function AdminDatabasePage() {
   };
 
   useEffect(() => {
-    if (isVerified && adminToken) {
+    if (isVerified) {
       fetchUsers();
     }
-  }, [isVerified, adminToken]);
+  }, [isVerified]);
 
   // 3. Cooldown timer for OTP Resend
   useEffect(() => {
@@ -158,7 +160,6 @@ export default function AdminDatabasePage() {
       const res = await api.post("/admin/verify-otp", { otp: otpCode });
       const receivedToken = res.data.adminSessionToken;
       
-      sessionStorage.setItem("permitiq-admin-otp-token", receivedToken);
       setAdminToken(receivedToken);
       setIsVerified(true);
       toast.success("Security authorization complete. Welcome back!");

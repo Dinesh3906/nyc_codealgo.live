@@ -14,7 +14,7 @@ const logger = new Logger({ stage: 'auth-controller' });
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined; // e.g. '.codealgo.live'
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string) {
   res.cookie('access_token', accessToken, {
     httpOnly: true,
     secure: IS_PRODUCTION,
@@ -31,18 +31,34 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/api/auth', // Only sent to auth endpoints
   });
+  res.cookie('csrf_token', csrfToken, {
+    httpOnly: false, // Must be readable by client JS to send in header
+    secure: IS_PRODUCTION,
+    sameSite: 'lax',
+    domain: COOKIE_DOMAIN,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/',
+  });
 }
 
 function clearAuthCookies(res: Response) {
   res.clearCookie('access_token', { domain: COOKIE_DOMAIN, path: '/' });
   res.clearCookie('refresh_token', { domain: COOKIE_DOMAIN, path: '/api/auth' });
+  res.clearCookie('csrf_token', { domain: COOKIE_DOMAIN, path: '/' });
 }
 
 // ─── Helpers ───
 
-const generateTokens = (id: string, email: string, tokenVersion: number) => {
+const generateTokens = async (id: string, email: string, tokenVersion: number) => {
   const accessToken = JwtService.signUserToken(id, email, tokenVersion);
   const refreshToken = JwtService.signRefreshToken(id, email, tokenVersion);
+
+  const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+  await pool.query(
+    'UPDATE `user` SET refreshTokenHash = ? WHERE id = ?',
+    [hash, id]
+  );
+
   return { accessToken, refreshToken };
 };
 
@@ -136,16 +152,18 @@ export const register = async (req: Request, res: Response) => {
       [name, hashedPassword, dob || null, phone || null, email]
     );
 
-    const [updatedUsers]: any = await pool.query('SELECT id, name, email, tokenVersion FROM `user` WHERE email = ?', [email]);
+    const [updatedUsers]: any = await pool.query('SELECT id, name, email, role, tokenVersion FROM `user` WHERE email = ?', [email]);
     const updatedUser = updatedUsers[0];
 
-    const { accessToken, refreshToken } = generateTokens(updatedUser.id, updatedUser.email, updatedUser.tokenVersion || 1);
-    setAuthCookies(res, accessToken, refreshToken);
+    const { accessToken, refreshToken } = await generateTokens(updatedUser.id, updatedUser.email, updatedUser.tokenVersion || 1);
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+    setAuthCookies(res, accessToken, refreshToken, csrfToken);
 
     res.status(201).json({
       id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
+      role: updatedUser.role || 'user',
     });
   } catch (error: any) {
     logger.error('Registration Error', error);
@@ -159,17 +177,19 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    const [users]: any = await pool.query('SELECT id, name, email, password, tokenVersion FROM `user` WHERE email = ?', [email]);
+    const [users]: any = await pool.query('SELECT id, name, email, role, password, tokenVersion FROM `user` WHERE email = ?', [email]);
     const user = users[0];
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { accessToken, refreshToken } = generateTokens(user.id, user.email, user.tokenVersion || 1);
-      setAuthCookies(res, accessToken, refreshToken);
+      const { accessToken, refreshToken } = await generateTokens(user.id, user.email, user.tokenVersion || 1);
+      const csrfToken = crypto.randomBytes(32).toString('hex');
+      setAuthCookies(res, accessToken, refreshToken, csrfToken);
 
       res.json({
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -209,9 +229,9 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
   try {
     const decoded = JwtService.verifyRefreshToken(refreshTokenValue);
 
-    // Fetch user to validate token version
+    // Fetch user to validate token version and current refresh token hash
     const [users]: any = await pool.query(
-      'SELECT id, email, tokenVersion FROM `user` WHERE id = ?',
+      'SELECT id, email, tokenVersion, refreshTokenHash FROM `user` WHERE id = ?',
       [decoded.id]
     );
 
@@ -228,9 +248,23 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Session invalidated. Please log in again.', code: 'TOKEN_VERSION_MISMATCH' });
     }
 
+    // Validate refresh token against hash stored in database (reuse detection)
+    const incomingHash = crypto.createHash('sha256').update(refreshTokenValue).digest('hex');
+    if (!user.refreshTokenHash || user.refreshTokenHash !== incomingHash) {
+      logger.warn('Refresh token reuse detected. Revoking all sessions for user.', { userId: user.id });
+      // Invalidate all tokens
+      await pool.query(
+        'UPDATE `user` SET tokenVersion = tokenVersion + 1, refreshTokenHash = NULL WHERE id = ?',
+        [user.id]
+      );
+      clearAuthCookies(res);
+      return res.status(403).json({ message: 'Session expired or invalidated. Please log in again.', code: 'TOKEN_REUSE_DETECTED' });
+    }
+
     // Issue new tokens (rotation)
-    const { accessToken, refreshToken } = generateTokens(user.id, user.email, user.tokenVersion);
-    setAuthCookies(res, accessToken, refreshToken);
+    const { accessToken, refreshToken } = await generateTokens(user.id, user.email, user.tokenVersion);
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+    setAuthCookies(res, accessToken, refreshToken, csrfToken);
 
     res.json({ message: 'Token refreshed.' });
   } catch (error: any) {
@@ -431,8 +465,9 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     }
 
     // 4. Set JWT in HttpOnly cookies — NEVER in URL
-    const { accessToken, refreshToken } = generateTokens(user.id, user.email, user.tokenVersion || 1);
-    setAuthCookies(res, accessToken, refreshToken);
+    const { accessToken, refreshToken } = await generateTokens(user.id, user.email, user.tokenVersion || 1);
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+    setAuthCookies(res, accessToken, refreshToken, csrfToken);
 
     // Redirect to dashboard with minimal, non-sensitive user info
     res.redirect(`${frontendUrl}/dashboard?oauth=success&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`);

@@ -58,7 +58,7 @@ export default function LoginPage() {
         password
       });
 
-      if (response.data.token) {
+      if (response.data && response.data.id) {
         if (rememberMe) {
           localStorage.setItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL", email);
         } else {
@@ -68,7 +68,8 @@ export default function LoginPage() {
         const userData = {
           id: response.data.id,
           name: response.data.name,
-          email: response.data.email
+          email: response.data.email,
+          role: response.data.role
         };
         login(userData);
         const pendingSessionId = sessionStorage.getItem('nyc-house-code-pending-checkout-session');

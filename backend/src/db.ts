@@ -1,7 +1,12 @@
+import fs from 'fs';
+import path from 'path';
 import mysql from 'mysql2/promise';
 
 const sslConfig = process.env.NODE_ENV === 'production' 
-  ? { rejectUnauthorized: false } 
+  ? { 
+      ca: fs.readFileSync(path.resolve(__dirname, '../certs/global-bundle.pem')),
+      rejectUnauthorized: true 
+    } 
   : undefined;
 
 const poolConfig: mysql.PoolOptions = process.env.DATABASE_URL

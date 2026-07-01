@@ -10,6 +10,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export const sendFeedbackEmail = async (data: {
   type: string;
   subject: string;
@@ -35,18 +44,18 @@ export const sendFeedbackEmail = async (data: {
     from: `"NYC House Code Feedback" <${process.env.SMTP_USER}>`,
     to: destination,
     replyTo: data.userEmail,
-    subject: `[${data.type.toUpperCase()}] ${data.subject}`,
+    subject: `[${data.type.toUpperCase()}] ${escapeHtml(data.subject)}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #10b981; color: white; padding: 20px; text-align: center;">
           <h2 style="margin: 0;">New Support Message</h2>
         </div>
         <div style="padding: 24px; color: #1e293b;">
-          <p><strong>From:</strong> ${data.userName} (${data.userEmail})</p>
-          <p><strong>Type:</strong> ${data.type}</p>
-          <p><strong>Subject:</strong> ${data.subject}</p>
+          <p><strong>From:</strong> ${escapeHtml(data.userName)} (${escapeHtml(data.userEmail)})</p>
+          <p><strong>Type:</strong> ${escapeHtml(data.type)}</p>
+          <p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>
           <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="white-space: pre-wrap;">${data.message}</p>
+          <p style="white-space: pre-wrap;">${escapeHtml(data.message)}</p>
           ${data.attachments && data.attachments.length > 0 ? `
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
             <p><strong>Attachments:</strong> ${data.attachments.length} files included.</p>
