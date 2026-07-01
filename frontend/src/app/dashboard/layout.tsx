@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Image from 'next/image';
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
 import { usePlanStore } from "@/lib/store/planStore";
@@ -56,6 +56,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
+  const authCheckingRef = useRef(false);
+
   // Notification states
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -76,6 +78,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       const oauth = searchParams.get('oauth');
       
       if (oauth === 'success' || !user) {
+        if (authCheckingRef.current) return;
+        authCheckingRef.current = true;
         try {
           const res = await api.get('/auth/me');
           login(res.data);
@@ -87,6 +91,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           logout();
           router.replace('/login');
           return;
+        } finally {
+          authCheckingRef.current = false;
         }
       }
 
