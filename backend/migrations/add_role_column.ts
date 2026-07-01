@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import mysql from 'mysql2/promise';
 
+declare const process: any;
+
 async function migrate() {
-  const pool = mysql.createPool({
+  const pool: any = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
@@ -60,7 +62,7 @@ async function migrate() {
     // 4. Promote initial admin emails to admin role
     const adminEmails = (process.env.INITIAL_ADMIN_EMAILS || '')
       .split(',')
-      .map(email => email.trim().toLowerCase())
+      .map((email: string) => email.trim().toLowerCase())
       .filter(Boolean);
 
     if (adminEmails.length > 0) {
