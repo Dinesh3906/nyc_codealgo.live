@@ -36,12 +36,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com", "https://cdn.razorpay.com", "https://*.razorpay.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api-permitiq.codealgo.live", "wss://api-permitiq.codealgo.live", "https://api.codealgo.live", "wss://api.codealgo.live", "https://checkout.razorpay.com"],
-      frameSrc: ["'self'", "https://api.razorpay.com", "https://checkout.razorpay.com"],
+      connectSrc: ["'self'", "https://api-permitiq.codealgo.live", "wss://api-permitiq.codealgo.live", "https://api.codealgo.live", "wss://api.codealgo.live", "https://checkout.razorpay.com", "https://api.razorpay.com", "https://*.razorpay.com", "https://cdn.razorpay.com", "https://*.cdn.razorpay.com"],
+      frameSrc: ["'self'", "https://api.razorpay.com", "https://*.razorpay.com", "https://checkout.razorpay.com"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],

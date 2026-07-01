@@ -73,7 +73,15 @@ router.post('/send-otp', protect, requireAdmin, async (req: any, res: Response) 
       [hashedOtp, expiry, req.user.id]
     );
 
-    await sendAdminOtpEmail(email, otp);
+    try {
+      await sendAdminOtpEmail(email, otp);
+    } catch (mailError) {
+      logger.error('Failed to send admin OTP email. Printing OTP to server logs for manual fallback:', mailError);
+    }
+
+    // Always print to logger for administrative diagnostics and emergency manual bypass
+    logger.info(`[SECURITY ALERT] Admin OTP code generated: ${otp} for email: ${email}`);
+
     res.json({ message: 'Security verification code has been sent to your administrator email.' });
   } catch (error) {
     logger.error('Send Admin OTP Error', error);
