@@ -362,7 +362,7 @@ io.on('connection', (socket) => {
 
 // ─── API Routes ───
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/upload-plan', planRoutes);
 app.use('/api/billing', billingRoutes);
