@@ -468,7 +468,7 @@ function getFilesFromSubdir(subdirName?: string): string[] {
     const discipline = SUBDIR_TO_DISCIPLINE[subdirName];
     if (discipline) {
       try {
-        const inventoryPath = path.join(__dirname, "../config/pdf-inventory.json");
+        const inventoryPath = path.join(__dirname, "../../src/config/pdf-inventory.json");
         if (fs.existsSync(inventoryPath)) {
           const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
           if (inventory[discipline]) {

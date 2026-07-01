@@ -124,7 +124,7 @@ export class KnowledgeBaseValidationService {
     // Load inventory json fallback
     let pdfInventory: Record<string, { filename: string; pages: number }[]> = {};
     try {
-      const inventoryPath = path.join(__dirname, "../config/pdf-inventory.json");
+      const inventoryPath = path.join(__dirname, "../../src/config/pdf-inventory.json");
       if (fs.existsSync(inventoryPath)) {
         pdfInventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
       }
