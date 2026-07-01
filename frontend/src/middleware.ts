@@ -13,6 +13,8 @@ export function middleware(request: NextRequest) {
     'wss://api-permitiq.codealgo.live',
     'https://api.codealgo.live',
     'wss://api.codealgo.live',
+    'https://vercel.live',
+    'https://*.vercel.live',
     ...(isDev ? ['http://localhost:5000', 'ws://localhost:5000'] : []),
   ];
 
@@ -35,11 +37,11 @@ export function middleware(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https://checkout.razorpay.com`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://lh3.googleusercontent.com",
-    `connect-src ${connectSrc}`,
-    "frame-src 'self' https://checkout.razorpay.com",
+    `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https://checkout.razorpay.com https://vercel.live https://*.vercel.live`,
+    "style-src 'self' 'unsafe-inline' https://vercel.live https://*.vercel.live",
+    "img-src 'self' data: https://lh3.googleusercontent.com https://vercel.live https://vercel.com https://*.vercel.live https://*.vercel.com",
+    `connect-src ${connectSrc} https://vercel.live https://*.vercel.live`,
+    "frame-src 'self' https://checkout.razorpay.com https://vercel.live https://*.vercel.live",
     "font-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
