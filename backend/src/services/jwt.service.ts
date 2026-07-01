@@ -10,6 +10,13 @@ export interface UserTokenPayload extends jwt.JwtPayload {
   tokenVersion: number;
 }
 
+export interface RefreshTokenPayload extends jwt.JwtPayload {
+  id: string;
+  email: string;
+  tokenVersion: number;
+  type: 'refresh';
+}
+
 export interface AdminTokenPayload extends jwt.JwtPayload {
   id: string;
   email: string;
@@ -32,9 +39,11 @@ export class JwtService {
     return (process.env.JWT_ALGORITHM || 'HS256') as jwt.Algorithm;
   }
 
+  // ─── Access Token (Short-lived: 15 minutes) ───
+
   public static signUserToken(userId: string, email: string, tokenVersion: number): string {
     const secret = this.getSecret();
-    const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
+    const expiresIn = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
     const algorithm = this.getAlgorithm();
 
     const payload = {
@@ -67,7 +76,6 @@ export class JwtService {
 
     const decoded = jwt.verify(token, secret, options) as UserTokenPayload;
 
-    // Validate additional required claims manually to be 100% compliant with Task 8
     if (!decoded.iss || decoded.iss !== 'nyc-compliance-engine') {
       throw new jwt.JsonWebTokenError('jwt issuer invalid');
     }
@@ -87,6 +95,62 @@ export class JwtService {
     return decoded;
   }
 
+  // ─── Refresh Token (Longer-lived: 7 days) ───
+
+  public static signRefreshToken(userId: string, email: string, tokenVersion: number): string {
+    const secret = this.getSecret();
+    const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+    const algorithm = this.getAlgorithm();
+
+    const payload = {
+      id: userId,
+      email: email,
+      tokenVersion: tokenVersion,
+      type: 'refresh'
+    };
+
+    const options: jwt.SignOptions = {
+      algorithm,
+      expiresIn: expiresIn as any,
+      issuer: 'nyc-compliance-engine',
+      audience: 'nyc-compliance-refresh',
+      subject: userId,
+      jwtid: uuidv4()
+    };
+
+    return jwt.sign(payload, secret, options);
+  }
+
+  public static verifyRefreshToken(token: string): RefreshTokenPayload {
+    const secret = this.getSecret();
+    const algorithm = this.getAlgorithm();
+
+    const options: jwt.VerifyOptions = {
+      algorithms: [algorithm],
+      issuer: 'nyc-compliance-engine',
+      audience: 'nyc-compliance-refresh'
+    };
+
+    const decoded = jwt.verify(token, secret, options) as RefreshTokenPayload;
+
+    if (decoded.type !== 'refresh') {
+      throw new jwt.JsonWebTokenError('not a refresh token');
+    }
+    if (!decoded.sub || !decoded.id || decoded.sub !== decoded.id) {
+      throw new jwt.JsonWebTokenError('jwt subject mismatch');
+    }
+    if (!decoded.jti) {
+      throw new jwt.JsonWebTokenError('jwt id missing');
+    }
+    if (decoded.tokenVersion === undefined || decoded.tokenVersion === null) {
+      throw new jwt.JsonWebTokenError('jwt tokenVersion missing');
+    }
+
+    return decoded;
+  }
+
+  // ─── Admin Token (Short-lived: 2 hours) ───
+
   public static signAdminToken(userId: string, email: string): string {
     const secret = this.getSecret();
     const algorithm = this.getAlgorithm();
@@ -99,7 +163,7 @@ export class JwtService {
 
     const options: jwt.SignOptions = {
       algorithm,
-      expiresIn: '2h', // Short-lived admin session
+      expiresIn: '2h',
       issuer: 'nyc-compliance-engine',
       audience: 'nyc-compliance-admin',
       subject: userId,

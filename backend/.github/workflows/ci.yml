@@ -58,4 +58,4 @@ jobs:
 
       - name: Dependency Audit
         working-directory: backend
-        run: npm audit --production --audit-level=high || true
+        run: npm audit --production --audit-level=high

@@ -11,18 +11,18 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// Stricter Rate Limiter for Authentication and OTP routes
+// Stricter Rate Limiter for Authentication routes
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 authentication/OTP attempts per windowMs
+  max: 10, // Limit each IP to 10 attempts per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    message: 'Too many login or verification attempts. Please try again after 15 minutes to secure your account.',
+    message: 'Too many login attempts. Please try again after 15 minutes.',
   },
 });
 
-// Rate Limiter for Plan Uploads (Gemini usage protection)
+// Rate Limiter for Plan Uploads
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 25, // Limit each IP to 25 plan uploads per hour
@@ -30,5 +30,38 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     message: 'Upload limit exceeded. Please try again in an hour to protect compliance computing resources.',
+  },
+});
+
+// Specialized OTP rate limiter
+export const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit to 5 OTP requests per 15 minutes per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: 'Too many verification code requests. Please try again after 15 minutes.',
+  },
+});
+
+// Specialized Billing/Checkout rate limiter
+export const billingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit to 10 billing requests per 15 minutes per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: 'Too many billing requests. Please try again after 15 minutes.',
+  },
+});
+
+// Specialized AI/Analysis rate limiter (prevent resource exhaustion)
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Limit to 20 AI executions per hour per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: 'Too many compliance scans requested. Please try again in an hour.',
   },
 });

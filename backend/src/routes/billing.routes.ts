@@ -3,13 +3,16 @@ import { protect } from '../middleware/auth.middleware';
 import pool from '../db';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { Logger } from '../services/logger';
+
+const logger = new Logger({ stage: 'billing' });
 
 const getRazorpayConfig = () => {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keyId || !keySecret) {
-    console.error("FATAL CONFIGURATION ERROR: Razorpay API credentials (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET) are missing!");
+    logger.error('Razorpay API credentials missing');
     throw new Error("FATAL: Razorpay API credentials are missing!");
   }
 
@@ -103,7 +106,7 @@ router.get('/usage', protect, async (req: any, res) => {
       name
     });
   } catch (error) {
-    console.error('Failed to fetch billing usage:', error);
+    logger.error('Failed to fetch billing usage', error);
     res.status(500).json({ message: 'Failed to load billing usage.' });
   }
 });
@@ -154,7 +157,7 @@ router.post('/create-checkout', protect, async (req: any, res) => {
     return res.status(400).json({ message: 'Minimum custom top-up is 100 pages.' });
   }
   
-  console.log(`[RAZORPAY] Creating order for: ${userId} (${email}), plan: ${plan}, pages: ${pagesCount}`);
+  logger.info('Creating Razorpay order', { userId, plan, pages: pagesCount });
   
   const { unitAmount: baseAmount, productName } = getPlanPricing(plan, pagesCount);
   const { couponCode } = req.body || {};
@@ -165,7 +168,7 @@ router.post('/create-checkout', protect, async (req: any, res) => {
     const coupons: any = {};
     const discountAmount = coupons[couponCode.toUpperCase()] || 0;
     finalAmount = Math.max(0, baseAmount - discountAmount);
-    console.log(`[RAZORPAY] Coupon "${couponCode}" applied. Discount: ${discountAmount}, Final Amount: ${finalAmount}`);
+    logger.info('Coupon applied', { discountAmount, finalAmount });
   }
 
   try {
@@ -191,7 +194,7 @@ router.post('/create-checkout', protect, async (req: any, res) => {
       keyId: getRazorpayConfig().keyId
     });
   } catch (error) {
-    console.error('Razorpay error:', error);
+    logger.error('Razorpay order creation error', error);
     const detail = error instanceof Error ? error.message : 'Unknown Razorpay error';
     res.status(500).json({
       message: process.env.NODE_ENV === 'development'
@@ -221,21 +224,19 @@ router.post('/confirm-session', protect, async (req: any, res) => {
       .update(body.toString())
       .digest('hex');
 
-    console.log(`[RAZORPAY] Verifying signature for Order: ${razorpay_order_id}`);
-    console.log(`[RAZORPAY] Expected: ${expectedSignature.slice(0, 5)}..., Received: ${razorpay_signature.slice(0, 5)}...`);
+    logger.info('Verifying Razorpay signature', { orderId: razorpay_order_id });
 
     if (expectedSignature !== razorpay_signature) {
-      console.error(`[RAZORPAY] Signature mismatch for Order: ${razorpay_order_id}`);
+      logger.warn('Razorpay signature mismatch', { orderId: razorpay_order_id });
       return res.status(400).json({ message: 'Invalid payment signature.' });
     }
 
     const order = await razorpay.orders.fetch(razorpay_order_id);
-    console.log(`[RAZORPAY] Order fetched successfully: ${order.id}. Status: ${order.status}`);
-    console.log(`[RAZORPAY] Order Notes:`, order.notes);
+    logger.info('Razorpay order fetched', { orderId: order.id, status: order.status });
 
     const sessionUserId = order.notes?.userId;
     if (!sessionUserId || String(sessionUserId) !== String(req.user.id)) {
-      console.error(`[RAZORPAY] User mismatch. Expected: ${req.user.id}, Got: ${sessionUserId}`);
+      logger.warn('Razorpay user mismatch on order confirmation');
       return res.status(403).json({ message: 'Order does not belong to this user.' });
     }
 
@@ -260,14 +261,79 @@ router.post('/confirm-session', protect, async (req: any, res) => {
       used: updated.pagesUsed
     });
   } catch (error) {
-    console.error('Failed to confirm payment:', error);
+    logger.error('Failed to confirm payment', error);
     return res.status(500).json({ message: 'Could not confirm payment.' });
   }
 });
 
-// POST RAZORPAY WEBHOOK (Stubbed)
+// POST RAZORPAY WEBHOOK — Signature-verified server-to-server payment confirmation
 router.post('/webhook', async (req: Request, res: Response) => {
-  res.json({ received: true });
+  try {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    if (!webhookSecret) {
+      logger.error('Razorpay webhook secret not configured');
+      return res.status(503).json({ received: false });
+    }
+
+    const signature = req.headers['x-razorpay-signature'] as string;
+    if (!signature) {
+      logger.warn('Webhook received without signature');
+      return res.status(400).json({ received: false });
+    }
+
+    // Verify HMAC signature
+    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
+
+    if (!crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature))) {
+      logger.warn('Webhook signature verification failed');
+      return res.status(400).json({ received: false });
+    }
+
+    const event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const eventType = event?.event;
+
+    logger.info('Razorpay webhook received', { eventType });
+
+    if (eventType === 'payment.captured' || eventType === 'order.paid') {
+      const payment = event?.payload?.payment?.entity;
+      const orderId = payment?.order_id;
+
+      if (!orderId) {
+        logger.warn('Webhook missing order ID');
+        return res.json({ received: true });
+      }
+
+      // Fetch order details from Razorpay
+      const razorpay = getRazorpay();
+      if (!razorpay) {
+        return res.status(503).json({ received: false });
+      }
+
+      const order = await razorpay.orders.fetch(orderId);
+      const userId = order.notes?.userId ? String(order.notes.userId) : '';
+      const planType = order.notes?.planType ? String(order.notes.planType) : '';
+      const pagesCount = parseInt(String(order.notes?.pages || '0'));
+
+      if (!userId || (planType !== 'monthly-15k' && planType !== 'custom-topup')) {
+        logger.warn('Webhook order has invalid metadata', { orderId });
+        return res.json({ received: true });
+      }
+
+      // Apply purchase idempotently (orderId acts as idempotency key)
+      await applyPagesPurchase(userId, planType, pagesCount, orderId);
+      logger.info('Webhook purchase applied', { userId, planType, pages: pagesCount, orderId });
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    logger.error('Webhook processing error', error);
+    // Always return 200 to prevent Razorpay retries on our errors
+    res.json({ received: true });
+  }
 });
 
 export default router;

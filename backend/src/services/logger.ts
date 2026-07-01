@@ -84,8 +84,33 @@ export class Logger {
     return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[Logger.minLevel];
   }
 
+  private redact(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.redact(item));
+    }
+
+    const sensitiveKeys = [
+      'token', 'accesstoken', 'refreshtoken', 'password', 'apikey', 'secret',
+      'otp', 'emailotp', 'resetotp', 'adminotp', 'creditcard', 'authorization',
+      'cookie', 'cookies', 'keysecret', 'clientsecret', 'cvv', 'passwordhash'
+    ];
+
+    const redactedObj: any = {};
+    for (const key of Object.keys(obj)) {
+      const lowerKey = key.toLowerCase();
+      if (sensitiveKeys.some(sk => lowerKey.includes(sk))) {
+        redactedObj[key] = '[REDACTED]';
+      } else {
+        redactedObj[key] = this.redact(obj[key]);
+      }
+    }
+    return redactedObj;
+  }
+
   private formatEntry(level: LogLevel, message: string, extra?: LogContext & { error?: Error }): LogEntry {
-    const entry: LogEntry = {
+    const rawEntry: LogEntry = {
       timestamp: new Date().toISOString(),
       severity: level,
       message,
@@ -98,15 +123,16 @@ export class Logger {
 
     // Convert Error objects to serializable format
     if (extra?.error) {
-      entry.error = {
+      rawEntry.error = {
         message: extra.error.message,
         stack: extra.error.stack,
         name: extra.error.name
       };
-      delete (entry as any).error_raw;
+      delete (rawEntry as any).error_raw;
     }
 
-    return entry;
+    // Redact sensitive fields
+    return this.redact(rawEntry);
   }
 
   private emit(level: LogLevel, message: string, extra?: LogContext & { error?: Error }) {

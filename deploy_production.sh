@@ -14,7 +14,7 @@ git pull origin main
 
 echo "2. Installing backend dependencies..."
 cd backend
-npm install --no-audit --no-fund --prefer-offline
+npm ci --no-audit --no-fund --prefer-offline
 cd ..
 
 echo "3. Building backend..."

@@ -268,15 +268,7 @@ export class AiProviderService {
         case 'openai': {
           const key = process.env.OPENAI_API_KEY;
           if (!key) {
-            // Mock response if key is missing (for unit testing / failover verification)
-            responseText = JSON.stringify({
-              score: 95,
-              compliant: true,
-              summary: 'OpenAI Mock Analysis: Structural elements comply with standard egress and spacing rules.',
-              compliant_features: ['Egress - Width matches standard parameters'],
-              issues: []
-            });
-            break;
+            throw new Error('OPENAI_API_KEY is not configured');
           }
           actualModel = 'gpt-4o';
           const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -304,15 +296,7 @@ export class AiProviderService {
         case 'anthropic': {
           const key = process.env.ANTHROPIC_API_KEY;
           if (!key) {
-            // Mock response
-            responseText = JSON.stringify({
-              score: 90,
-              compliant: true,
-              summary: 'Anthropic Mock Analysis: General code parameters verified successfully.',
-              compliant_features: ['General - Clear clearances detected'],
-              issues: []
-            });
-            break;
+            throw new Error('ANTHROPIC_API_KEY is not configured');
           }
           actualModel = 'claude-3-5-sonnet-latest';
           const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -342,15 +326,7 @@ export class AiProviderService {
         case 'deepseek': {
           const key = process.env[`${provider.toUpperCase()}_API_KEY`];
           if (!key) {
-            // Return simulated fallback response if key is missing to verify rotation paths
-            responseText = JSON.stringify({
-              score: 85,
-              compliant: true,
-              summary: `${provider.toUpperCase()} Mock Analysis: All disciplines analyzed.`,
-              compliant_features: [`${provider.toUpperCase()} - Verification complete`],
-              issues: []
-            });
-            break;
+            throw new Error(`${provider.toUpperCase()}_API_KEY is not configured`);
           }
           // Real HTTP integrations for Deepseek or Azure OpenAI if keys are present
           const url = provider === 'deepseek' 
@@ -418,8 +394,7 @@ export class AiProviderService {
     let lastError: any = null;
 
     for (const provider of this.providerPriority) {
-      if (!this.hasApiKey(provider) && provider !== 'openai' && provider !== 'anthropic' && provider !== 'deepseek' && provider !== 'azure' && provider !== 'vertex') {
-        // Only skip if there is no key and it is not a simulated provider
+      if (!this.hasApiKey(provider)) {
         continue;
       }
 

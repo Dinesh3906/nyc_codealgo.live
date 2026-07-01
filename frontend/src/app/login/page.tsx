@@ -70,7 +70,7 @@ export default function LoginPage() {
           name: response.data.name,
           email: response.data.email
         };
-        login(userData, response.data.token);
+        login(userData);
         const pendingSessionId = sessionStorage.getItem('nyc-house-code-pending-checkout-session');
         if (pendingSessionId) {
           sessionStorage.removeItem('nyc-house-code-pending-checkout-session');

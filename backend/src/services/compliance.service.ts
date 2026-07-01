@@ -68,6 +68,22 @@ export class CompliancePipeline {
   static async run(planId: string, filePath: string, fileType: string, selectedSteps?: string[]): Promise<ComplianceResult> {
     const pipelineLogger = logger.child({ auditId: planId });
 
+    let userId: string | null = null;
+    try {
+      const [planRows]: any = await pool.query("SELECT userId FROM `plan` WHERE id = ?", [planId]);
+      userId = planRows[0]?.userId || null;
+    } catch (err) {
+      pipelineLogger.warn('Failed to fetch plan owner for socket routing');
+    }
+
+    const emitStatus = (data: any) => {
+      if (userId) {
+        io.to(`user:${userId}`).emit('analysis-status', data);
+      } else {
+        io.emit('analysis-status', data);
+      }
+    };
+
     try {
       pipelineLogger.info('Starting NYC compliance pipeline');
 
@@ -90,7 +106,7 @@ export class CompliancePipeline {
       }
 
       // STEP 1: Initialization progress
-      io.emit('analysis-status', {
+      emitStatus({
         planId,
         status: 'INITIALIZING',
         progress: 10,
@@ -110,7 +126,7 @@ export class CompliancePipeline {
       const pipelineMetrics = pipelineRun.metrics;
 
       // STEP 4: Progress update
-      io.emit('analysis-status', {
+      emitStatus({
         planId,
         status: 'GENERATING_REPORT',
         progress: 90,
@@ -238,7 +254,7 @@ export class CompliancePipeline {
         }
       }
 
-      io.emit('analysis-status', {
+      emitStatus({
         planId,
         status: 'COMPLETE',
         progress: 100,
@@ -263,7 +279,7 @@ export class CompliancePipeline {
 
     } catch (error: any) {
       pipelineLogger.error('Fatal pipeline error', error);
-      io.emit('analysis-status', { planId, status: 'FAILED', error: error.message });
+      emitStatus({ planId, status: 'FAILED', error: error.message });
 
       // Update DB to failed
       try {

@@ -6,7 +6,9 @@ import { protect } from '../middleware/auth.middleware';
 import { sendFeedbackEmail } from '../services/mail.service';
 import pool from '../db';
 import { v4 as uuidv4 } from 'uuid';
+import { Logger } from '../services/logger';
 
+const logger = new Logger({ stage: 'feedback-routes' });
 const router = Router();
 
 // Configure disk storage
@@ -19,50 +21,40 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${uuidv4()}${ext}`);
   }
 });
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit per file
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PNG, JPG, JPEG and WEBP image files are allowed.'));
+    }
+  }
 });
 
-router.post('/submit', protect, (req, res, next) => {
-  console.log('[DEBUG] Incoming feedback submission...');
-  next();
-}, upload.array('images', 3), async (req: any, res) => {
+router.post('/submit', protect, upload.array('images', 3), async (req: any, res) => {
   try {
-    console.log('[DEBUG] Body:', req.body);
-    console.log('[DEBUG] Files received:', req.files?.length || 0);
     const { type, subject, message } = req.body;
     const { id: userId, email: userEmail, name: userName } = req.user;
     const files = req.files as Express.Multer.File[];
 
-    // Ensure table exists with images column
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS feedback (
-        id VARCHAR(36) PRIMARY KEY,
-        userId VARCHAR(36),
-        type VARCHAR(50),
-        subject VARCHAR(255),
-        message TEXT,
-        images TEXT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-    `);
-
-    // Check if images column exists (in case table was created without it)
-    try {
-      await pool.query('SELECT images FROM feedback LIMIT 1');
-    } catch (e) {
-      await pool.query('ALTER TABLE feedback ADD COLUMN images TEXT AFTER message');
+    if (!type || !subject || !message) {
+      return res.status(400).json({ message: 'Type, subject, and message are required.' });
     }
 
     const imageUrls = files.map(file => `/uploads/feedback/${file.filename}`);
     const imagesJson = JSON.stringify(imageUrls);
-    console.log(`[FEEDBACK] Received ${files.length} images. JSON: ${imagesJson}`);
+    
+    logger.info('Feedback submission received', { userId, imageCount: files.length });
 
     // Save to DB
     const feedbackId = uuidv4();
@@ -86,10 +78,9 @@ router.post('/submit', protect, (req, res, next) => {
 
     res.json({ message: 'Feedback sent successfully' });
   } catch (error: any) {
-    console.error('Feedback submission error:', error);
+    logger.error('Feedback submission error', error);
     res.status(500).json({ 
-      message: 'Failed to send feedback', 
-      error: error.message 
+      message: 'Failed to send feedback'
     });
   }
 });
@@ -100,21 +91,8 @@ router.get('/', protect, async (req: any, res) => {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 
-    // Ensure table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS feedback (
-        id VARCHAR(36) PRIMARY KEY,
-        userId VARCHAR(36),
-        type VARCHAR(50),
-        subject VARCHAR(255),
-        message TEXT,
-        images TEXT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-    `);
-
     const [feedbacks]: any = await pool.query(
-      'SELECT f.*, u.name as userName, u.email as userEmail FROM feedback f LEFT JOIN user u ON f.userId = u.id ORDER BY f.createdAt DESC'
+      'SELECT f.id, f.userId, f.type, f.subject, f.message, f.images, f.createdAt, u.name as userName, u.email as userEmail FROM feedback f LEFT JOIN user u ON f.userId = u.id ORDER BY f.createdAt DESC'
     );
 
     // Parse images JSON for each feedback safely
@@ -123,19 +101,26 @@ router.get('/', protect, async (req: any, res) => {
       try {
         parsedImages = fb.images ? JSON.parse(fb.images) : [];
       } catch (e) {
-        console.warn(`[FEEDBACK] Failed to parse images for feedback ${fb.id}:`, fb.images);
+        logger.warn(`Failed to parse images for feedback ${fb.id}`, { images: fb.images });
       }
       return {
-        ...fb,
-        images: parsedImages
+        id: fb.id,
+        userId: fb.userId,
+        type: fb.type,
+        subject: fb.subject,
+        message: fb.message,
+        images: parsedImages,
+        createdAt: fb.createdAt,
+        userName: fb.userName,
+        userEmail: fb.userEmail
       };
     });
 
-    console.log(`[ADMIN] Fetched ${formattedFeedbacks.length} feedbacks.`);
+    logger.info('Admin fetched feedbacks', { count: formattedFeedbacks.length });
     res.json(formattedFeedbacks);
   } catch (error: any) {
-    console.error('Fetch feedback error details:', error);
-    res.status(500).json({ message: 'Failed to fetch feedbacks', error: error.message });
+    logger.error('Fetch feedback error details', error);
+    res.status(500).json({ message: 'Failed to fetch feedbacks' });
   }
 });
 

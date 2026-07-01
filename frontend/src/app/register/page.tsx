@@ -96,7 +96,7 @@ export default function RegisterPage() {
           name: response.data.name,
           email: response.data.email
         };
-        login(userData, response.data.token);
+        login(userData);
         toast.success("Account created successfully!");
         router.push("/dashboard");
       }

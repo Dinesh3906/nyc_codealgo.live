@@ -20,6 +20,12 @@ const ENV_RULES: EnvRule[] = [
   { name: 'GOOGLE_AI_STUDIO_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
   { name: 'PINECONE_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
   { name: 'JWT_SECRET', required: true, type: 'string', minLength: 32, sensitive: true },
+  { name: 'GROQ_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
+  { name: 'OPENROUTER_API_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
+  { name: 'GOOGLE_CLIENT_ID', required: true, type: 'string', minLength: 10, sensitive: true },
+  { name: 'GOOGLE_CLIENT_SECRET', required: true, type: 'string', minLength: 10, sensitive: true },
+  { name: 'RAZORPAY_KEY_ID', required: true, type: 'string', minLength: 5, sensitive: true },
+  { name: 'RAZORPAY_KEY_SECRET', required: true, type: 'string', minLength: 5, sensitive: true },
 
   // Database
   { name: 'DB_HOST', required: true, type: 'string' },
@@ -149,7 +155,7 @@ export function validateEnvironment(): string[] {
   // Production-specific checks
   if (process.env.NODE_ENV === 'production') {
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'secret' || process.env.JWT_SECRET === 'nyc_house_code_secret_v1_2024') {
-      warnings.push('Warning: JWT_SECRET is set to the default value in production. It is recommended to change this to a secure key.');
+      errors.push('CRITICAL: JWT_SECRET cannot be the default or a weak key in production!');
     }
   }
 

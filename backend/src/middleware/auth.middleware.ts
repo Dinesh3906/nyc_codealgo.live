@@ -7,9 +7,14 @@ import { JwtService } from '../services/jwt.service';
 const logger = new Logger({ stage: 'auth' });
 
 export const protect = async (req: any, res: Response, next: NextFunction) => {
-  let token;
+  let token: string | undefined;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // Priority 1: HttpOnly cookie (secure, preferred)
+  if (req.cookies?.access_token) {
+    token = req.cookies.access_token;
+  }
+  // Priority 2: Authorization header (backward compatibility during migration)
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
@@ -56,7 +61,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
         attempts++;
         if (attempts >= 2) {
           logger.error('Database error in auth middleware after retries:', dbError);
-          return res.status(500).json({ message: 'Database connection failed. Please check your DB settings.', error: 'DB_CONNECTION_ERROR' });
+          return res.status(500).json({ message: 'Authentication service temporarily unavailable.', error: 'DB_CONNECTION_ERROR' });
         }
         logger.warn(`Auth DB retry ${attempts}...`);
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -91,7 +96,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
           newScanLimit = 0;
         }
 
-        logger.info(`[AUTH MIDDLEWARE] Billing period expired for user ${user.id}. Resetting pagesUsed to 0, setting scanLimit to ${newScanLimit}, nextPeriodEnd to ${nextPeriodEnd}`);
+        logger.info(`Billing period expired for user. Resetting pagesUsed.`, { userId: user.id });
         await pool.query(
           'UPDATE `user` SET pagesUsed = 0, scanLimit = ?, subPeriodEnd = ? WHERE id = ?',
           [newScanLimit, nextPeriodEnd, user.id]
@@ -101,7 +106,7 @@ export const protect = async (req: any, res: Response, next: NextFunction) => {
         user.scanLimit = newScanLimit;
         user.subPeriodEnd = nextPeriodEnd;
       } catch (resetErr) {
-        logger.error('[AUTH MIDDLEWARE] Failed to reset monthly pages balance:', resetErr);
+        logger.error('Failed to reset monthly pages balance', resetErr);
       }
     }
 

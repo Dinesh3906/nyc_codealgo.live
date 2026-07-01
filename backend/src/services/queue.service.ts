@@ -208,13 +208,25 @@ export class QueueWorker {
           metrics.incrementCounter('nyc_retries_total');
         }
 
-        io.emit('analysis-status', {
+        let userId: string | null = null;
+        try {
+          const [planRows]: any = await pool.query("SELECT userId FROM `plan` WHERE id = ?", [job.id]);
+          userId = planRows[0]?.userId || null;
+        } catch {}
+
+        const socketData = {
           planId: job.id,
           status: retryCount + 1 >= MAX_JOB_RETRIES ? 'FAILED' : 'RETRYING',
           error: retryCount + 1 >= MAX_JOB_RETRIES
             ? 'Scan processing failed after maximum retries.'
             : `Retrying analysis (attempt ${retryCount + 2}/${MAX_JOB_RETRIES})...`
-        });
+        };
+
+        if (userId) {
+          io.to(`user:${userId}`).emit('analysis-status', socketData);
+        } else {
+          io.emit('analysis-status', socketData);
+        }
       } finally {
         metrics.decrementGauge('nyc_active_audits');
       }

@@ -13,7 +13,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'lh3.googleusercontent.com',
       },
     ],
   },
@@ -41,6 +41,10 @@ const nextConfig = {
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self' http://localhost:5000 https://api-permitiq.codealgo.live wss://api-permitiq.codealgo.live ws://localhost:5000; frame-src 'self' https://checkout.razorpay.com; font-src 'self' https://fonts.gstatic.com;",
           },
         ],
       },

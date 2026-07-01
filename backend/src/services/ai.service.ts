@@ -1,7 +1,12 @@
 import Groq from 'groq-sdk';
 
+const groqApiKey = process.env.GROQ_API_KEY;
+if (!groqApiKey) {
+  throw new Error('GROQ_API_KEY environment variable is required');
+}
+
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || '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',
+  apiKey: groqApiKey,
 });
 
 export interface ComplianceReport {

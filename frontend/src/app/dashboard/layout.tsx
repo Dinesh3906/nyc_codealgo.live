@@ -72,36 +72,40 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted || !hasHydrated) return;
 
-    // Check if we have social login tokens in the URL parameters
-    const paramToken = searchParams.get('token');
-    const paramId = searchParams.get('id');
-    const paramName = searchParams.get('name');
-    const paramEmail = searchParams.get('email');
-
-    if (paramToken && paramId && paramName && paramEmail) {
-      const userData = {
-        id: paramId,
-        name: decodeURIComponent(paramName),
-        email: decodeURIComponent(paramEmail)
-      };
-      login(userData, paramToken);
-      router.replace('/dashboard');
-      return;
-    }
-
-    if (!isAuthenticated) {
-      const success = searchParams.get('success');
-      const sessionId = searchParams.get('session_id');
-      if (pathname === '/dashboard/billing' && success === 'true' && sessionId) {
-        sessionStorage.setItem('nyc-house-code-pending-checkout-session', sessionId);
+    const checkAuthStatus = async () => {
+      const oauth = searchParams.get('oauth');
+      
+      if (oauth === 'success' || (isAuthenticated && !user)) {
+        try {
+          const res = await api.get('/auth/me');
+          login(res.data);
+          if (oauth === 'success') {
+            router.replace('/dashboard');
+          }
+          return;
+        } catch (err) {
+          logout();
+          router.replace('/login');
+          return;
+        }
       }
 
-      router.replace('/login');
-      return;
-    }
+      if (!isAuthenticated) {
+        const success = searchParams.get('success');
+        const sessionId = searchParams.get('session_id');
+        if (pathname === '/dashboard/billing' && success === 'true' && sessionId) {
+          sessionStorage.setItem('nyc-house-code-pending-checkout-session', sessionId);
+        }
 
-    initSocket();
-  }, [mounted, hasHydrated, isAuthenticated, initSocket, pathname, router, searchParams, login]);
+        router.replace('/login');
+        return;
+      }
+
+      initSocket();
+    };
+
+    checkAuthStatus();
+  }, [mounted, hasHydrated, isAuthenticated, user, initSocket, pathname, router, searchParams, login, logout]);
 
   const fetchNotifications = async () => {
     if (!isAuthenticated) return;
@@ -143,7 +147,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      // Ignore network errors on logout
+    }
     logout();
     router.push("/login");
   };

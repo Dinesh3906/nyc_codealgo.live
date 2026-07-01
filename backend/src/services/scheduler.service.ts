@@ -95,6 +95,23 @@ export class SchedulerService {
     mimeType: string,
     selectedSteps?: string[]
   ): Promise<any> {
+    let userId: string | null = null;
+    try {
+      const dbPool = require('../db').default;
+      const [planRows]: any = await dbPool.query("SELECT userId FROM `plan` WHERE id = ?", [planId]);
+      userId = planRows[0]?.userId || null;
+    } catch (err) {
+      console.error('[SchedulerService] Failed to fetch plan owner for socket routing:', err);
+    }
+
+    const emitStatus = (data: any) => {
+      if (userId) {
+        io.to(`user:${userId}`).emit('analysis-status', data);
+      } else {
+        io.emit('analysis-status', data);
+      }
+    };
+
     ProfilerService.startPlan(planId);
     RagOptimizerService.startTrace(planId);
     AiProviderService.startAuditTracking(planId);
@@ -278,7 +295,7 @@ export class SchedulerService {
     let completedCount = 0;
     const tasks = stepsToRun.map(step => {
       return async () => {
-        io.emit('analysis-status', {
+        emitStatus({
           planId,
           status: step.statusKey,
           progress: Math.round(20 + (completedCount / stepsToRun.length) * 70),
@@ -302,7 +319,7 @@ export class SchedulerService {
             globalFacts
           );
           completedCount++;
-          io.emit('analysis-status', {
+          emitStatus({
             planId,
             status: step.statusKey,
             progress: Math.round(20 + (completedCount / stepsToRun.length) * 70),

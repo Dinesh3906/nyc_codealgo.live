@@ -70,7 +70,9 @@ export const usePlanStore = create<PlanState>((set, get) => ({
         : 'https://api-permitiq.codealgo.live'
     );
 
-    const socket = io(socketUrl);
+    const socket = io(socketUrl, {
+      withCredentials: true
+    });
 
     socket.on('connect', () => {
       set({ socketConnected: true });

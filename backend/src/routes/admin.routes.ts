@@ -1,11 +1,14 @@
 import { Router, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../db';
 import { protect } from '../middleware/auth.middleware';
 import { JwtService } from '../services/jwt.service';
 import { sendAdminOtpEmail, sendGiftPagesEmail } from '../services/mail.service';
+import { Logger } from '../services/logger';
+
+const logger = new Logger({ stage: 'admin-routes' });
 
 const router = Router();
 const ADMIN_EMAILS = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
@@ -48,17 +51,18 @@ router.post('/send-otp', protect, requireAdmin, async (req: any, res: Response) 
 
   try {
     const otp = crypto.randomInt(100000, 999999).toString();
+    const hashedOtp = await bcrypt.hash(otp, 10);
     const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
     await pool.query(
-      'UPDATE `user` SET adminOtp = ?, adminOtpExpiry = ? WHERE id = ?',
-      [otp, expiry, req.user.id]
+      'UPDATE `user` SET adminOtp = ?, adminOtpExpiry = ?, adminOtpAttempts = 0 WHERE id = ?',
+      [hashedOtp, expiry, req.user.id]
     );
 
     await sendAdminOtpEmail(email, otp);
     res.json({ message: 'Security verification code has been sent to your administrator email.' });
   } catch (error) {
-    console.error('Send Admin OTP Error:', error);
+    logger.error('Send Admin OTP Error', error);
     res.status(500).json({ message: 'Failed to generate verification code.' });
   }
 });
@@ -75,7 +79,7 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
 
   try {
     const [users]: any = await pool.query(
-      'SELECT adminOtp, adminOtpExpiry FROM `user` WHERE id = ?',
+      'SELECT adminOtp, adminOtpExpiry, adminOtpAttempts FROM `user` WHERE id = ?',
       [req.user.id]
     );
 
@@ -83,19 +87,35 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
       return res.status(404).json({ message: 'Admin account not found.' });
     }
 
-    const { adminOtp, adminOtpExpiry } = users[0];
+    const { adminOtp, adminOtpExpiry, adminOtpAttempts } = users[0];
 
     if (!adminOtp || !adminOtpExpiry || new Date(adminOtpExpiry) < new Date()) {
       return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
     }
 
-    if (adminOtp !== otp) {
+    // Check attempt limit
+    if (adminOtpAttempts >= 5) {
+      // Clear OTP to force re-send
+      await pool.query(
+        'UPDATE `user` SET adminOtp = NULL, adminOtpExpiry = NULL, adminOtpAttempts = 0 WHERE id = ?',
+        [req.user.id]
+      );
+      return res.status(429).json({ message: 'Too many failed attempts. Please request a new code.' });
+    }
+
+    // Compare hashed OTP
+    const otpMatch = await bcrypt.compare(otp, adminOtp);
+    if (!otpMatch) {
+      await pool.query(
+        'UPDATE `user` SET adminOtpAttempts = COALESCE(adminOtpAttempts, 0) + 1 WHERE id = ?',
+        [req.user.id]
+      );
       return res.status(400).json({ message: 'Invalid verification code.' });
     }
 
     // Clear OTP upon successful verification
     await pool.query(
-      'UPDATE `user` SET adminOtp = NULL, adminOtpExpiry = NULL WHERE id = ?',
+      'UPDATE `user` SET adminOtp = NULL, adminOtpExpiry = NULL, adminOtpAttempts = 0 WHERE id = ?',
       [req.user.id]
     );
 
@@ -104,7 +124,7 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
 
     res.json({ adminSessionToken });
   } catch (error) {
-    console.error('Verify Admin OTP Error:', error);
+    logger.error('Verify Admin OTP Error', error);
     res.status(500).json({ message: 'Failed to verify OTP.' });
   }
 });
@@ -129,7 +149,7 @@ router.get('/users', protect, requireAdmin, verifyAdminSession, async (req: any,
 
     res.json(users);
   } catch (error) {
-    console.error('Fetch Admin Users Error:', error);
+    logger.error('Fetch Admin Users Error', error);
     res.status(500).json({ message: 'Failed to retrieve user directory.' });
   }
 });
@@ -188,7 +208,7 @@ router.post('/gift-pages', protect, requireAdmin, verifyAdminSession, async (req
       newLimit: user.scanLimit + pagesNum 
     });
   } catch (error) {
-    console.error('Gift Pages Error:', error);
+    logger.error('Gift Pages Error', error);
     res.status(500).json({ message: 'Failed to allocate gifted pages.' });
   }
 });
@@ -224,7 +244,7 @@ router.post('/broadcast-notification', protect, requireAdmin, verifyAdminSession
 
     res.json({ message: `Broadcast sent successfully to ${users.length} users.` });
   } catch (error) {
-    console.error('Broadcast Notification Error:', error);
+    logger.error('Broadcast Notification Error', error);
     res.status(500).json({ message: 'Failed to broadcast system notification.' });
   }
 });
@@ -247,7 +267,7 @@ router.post('/users/:id/revoke', protect, requireAdmin, verifyAdminSession, asyn
 
     res.json({ message: `Successfully revoked all sessions for user ${userId}.` });
   } catch (error) {
-    console.error('Revoke User Session Error:', error);
+    logger.error('Revoke User Session Error', error);
     res.status(500).json({ message: 'Failed to revoke user session.' });
   }
 });

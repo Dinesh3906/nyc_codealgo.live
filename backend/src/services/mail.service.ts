@@ -18,7 +18,10 @@ export const sendFeedbackEmail = async (data: {
   userName: string;
   attachments?: any[];
 }) => {
-  const destination = process.env.FEEDBACK_EMAIL || 'lucky810307@gmail.com';
+  const destination = process.env.FEEDBACK_EMAIL;
+  if (!destination) {
+    throw new Error('FEEDBACK_EMAIL environment variable is not configured');
+  }
 
   console.log(`[FEEDBACK] New message from ${data.userName} (${data.userEmail}): ${data.subject}`);
 

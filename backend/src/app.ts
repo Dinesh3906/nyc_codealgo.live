@@ -2,14 +2,16 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { apiLimiter, authLimiter } from './middleware/rateLimit.middleware';
+import { apiLimiter, authLimiter, uploadLimiter } from './middleware/rateLimit.middleware';
 import { requestIdMiddleware, requestLoggingMiddleware, abuseDetectionMiddleware } from './middleware/security.middleware';
 import { sanitizeRequestBody } from './middleware/input-validation.middleware';
 import { metrics, updateSystemMetrics } from './services/metrics.service';
 import { geminiCircuitBreaker, pineconeCircuitBreaker } from './services/circuit-breaker';
 import { Logger } from './services/logger';
+import { JwtService } from './services/jwt.service';
 import authRoutes from './routes/auth.routes';
 import planRoutes from './routes/plans.routes';
 import billingRoutes from './routes/billing.routes';
@@ -21,26 +23,58 @@ import notificationRoutes from './routes/notification.routes';
 const logger = new Logger({ stage: 'app' });
 const app = express();
 
-// Secure HTTP Headers with Helmet
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// ─── Security Headers with Helmet ───
+
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api-permitiq.codealgo.live", "wss://api-permitiq.codealgo.live", "https://checkout.razorpay.com"],
+      frameSrc: ["'self'", "https://api.razorpay.com", "https://checkout.razorpay.com"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
 }));
 
-const allowedOrigins = [
+// ─── CORS: Exact production allowlist ───
+
+const allowedOrigins: string[] = [
   'https://permitiq.codealgo.live',
   'https://www.permitiq.codealgo.live',
-  'http://localhost:3000',
-  process.env.CORS_ORIGIN,
-  process.env.FRONTEND_URL
-].filter(Boolean) as string[];
+];
+
+// Add configured origins
+if (process.env.CORS_ORIGIN) allowedOrigins.push(process.env.CORS_ORIGIN);
+if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+
+// Allow localhost only in non-production
+if (!IS_PRODUCTION) {
+  allowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000');
+}
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
-  if (!origin || origin === 'undefined' || origin === 'null') return true; // Allow mobile apps, server-to-server, or missing headers
-  return allowedOrigins.includes(origin) ||
-    origin.includes('codealgo.live') ||
-    origin.includes('vercel.app') ||
-    origin.includes('localhost') ||
-    origin.includes('127.0.0.1');
+  // Reject null/undefined/missing origins in production (blocks CSRF via null origin)
+  if (!origin) {
+    return !IS_PRODUCTION; // Allow in dev for tools like curl/Postman
+  }
+  return allowedOrigins.includes(origin);
 };
 
 const httpServer = createServer(app);
@@ -73,10 +107,13 @@ app.use(cors({
 
 // ─── Production middleware stack ───
 
+// Cookie parser (before auth routes)
+app.use(cookieParser());
+
 // Request ID generation (before everything else)
 app.use(requestIdMiddleware);
 
-// Body parsing
+// Body parsing — webhook route needs raw body for signature verification
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -84,7 +121,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Input sanitization
 app.use(sanitizeRequestBody);
 
-// Structured request logging (replaces console.log)
+// Structured request logging
 app.use(requestLoggingMiddleware);
 
 // Abuse detection
@@ -93,29 +130,29 @@ app.use(abuseDetectionMiddleware);
 // Rate limiting
 app.use('/api', apiLimiter);
 
-// ─── Health, Readiness & Metrics Endpoints ───
+// ─── Health & Readiness Endpoints ───
 
-app.get('/health', async (req, res) => {
+// Minimal public liveness probe
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Minimal public readiness probe (checks DB only)
+app.get('/ready', async (req, res) => {
   try {
-    const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
-    const missingBooks = KnowledgeBaseValidationService.getMissingBooks();
-    
-    res.status(200).json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version: process.env.APP_VERSION || '1.0.0',
-      warnings: missingBooks.length > 0 ? `Missing required code books: ${missingBooks.join(', ')}` : undefined
-    });
-  } catch (err: any) {
-    res.status(500).json({
-      status: 'error',
-      message: err.message || err
-    });
+    const pool = (await import('./db')).default;
+    await pool.query('SELECT 1');
+    res.status(200).json({ status: 'ready' });
+  } catch (err) {
+    res.status(503).json({ status: 'not_ready' });
   }
 });
 
-app.get('/health/ai', async (req, res) => {
+// Protected detailed health checks — require admin auth
+app.get('/health/ai', requireAdminForHealth, async (req, res) => {
   try {
     const { breakersRegistry } = await import('./services/circuit-breaker');
     const { GeminiClient } = await import('./services/gemini.client');
@@ -125,16 +162,6 @@ app.get('/health/ai', async (req, res) => {
     for (const [name, breaker] of Object.entries(breakersRegistry)) {
       breakersStats[name] = breaker.getStats();
     }
-
-    const keysMetadata = GeminiClient.getKeysMetadata().map(km => ({
-      keyPrefix: km.key ? `${km.key.substring(0, 8)}...` : 'N/A',
-      rpmCount: km.rpmTimestamps.length,
-      tpmCount: km.tpmUsage.reduce((sum, u) => sum + u.tokens, 0),
-      dailyRequests: km.dailyRequests,
-      dailyTokens: km.dailyTokens,
-      coolDownRemainingMs: Math.max(0, km.coolDownUntil - Date.now()),
-      status: km.coolDownUntil > Date.now() ? 'COOLDOWN' : 'ACTIVE'
-    }));
 
     const providerStats = AiProviderService.getStats();
     const priorityList = AiProviderService.getPriorityList();
@@ -160,75 +187,27 @@ app.get('/health/ai', async (req, res) => {
 
     res.status(200).json({
       status: 'healthy',
-      timestamp: new Date().toISOString(),
       connectivity: isAiAvailable ? 'connected' : 'degraded',
       breakers: breakersStats,
-      apiKeys: keysMetadata,
       aiAvailable: isAiAvailable,
       providers: providerStats,
       priorityList,
       projectQuota: {
         exhausted: isProjectQuotaExhausted,
         cooldownRemainingMs: projectCooldownRemainingMs,
-        estimatedRecovery: projectCooldownRemainingMs > 0 
-          ? new Date(Date.now() + projectCooldownRemainingMs).toISOString()
-          : null
       },
       fallbackProvider,
-      estimatedRecovery: projectCooldownRemainingMs > 0 ? projectCooldownRemainingMs : 0
     });
   } catch (err: any) {
-    res.status(500).json({
-      status: 'error',
-      message: err.message || err
-    });
+    res.status(500).json({ status: 'error' });
   }
 });
 
-app.get('/health/frontend', async (req, res) => {
+app.get('/health/backend', requireAdminForHealth, async (req, res) => {
   try {
-    const fs = await import('fs');
-    const buildIdPath = path.resolve(__dirname, '../../frontend/.next/BUILD_ID');
-    const staticDir = path.resolve(__dirname, '../../frontend/.next/static');
-    
-    const buildIdExists = fs.existsSync(buildIdPath);
-    const staticExists = fs.existsSync(staticDir);
-    
-    if (!buildIdExists || !staticExists) {
-      return res.status(200).json({
-        status: 'healthy',
-        externalHosting: true,
-        message: 'Frontend is hosted externally (e.g. Vercel). Local build files not present.'
-      });
-    }
-    
-    const buildId = fs.readFileSync(buildIdPath, 'utf8').trim();
-    res.status(200).json({
-      status: 'healthy',
-      buildId,
-      staticAssets: 'ok'
-    });
-  } catch (err: any) {
-    res.status(500).json({
-      status: 'error',
-      error: err.message || String(err)
-    });
-  }
-});
-
-app.get('/health/backend', async (req, res) => {
-  try {
-    // 1. Check DB
     const pool = (await import('./db')).default;
     await pool.query('SELECT 1');
     
-    // 2. Check Pinecone
-    const { Pinecone } = await import('@pinecone-database/pinecone');
-    const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
-    const index = pc.Index(process.env.PINECONE_INDEX as string);
-    await index.describeIndexStats();
-    
-    // 3. Check Queue Worker
     const { QueueWorker } = await import('./services/queue.service');
     const queueRunning = QueueWorker.isWorkerRunning();
     
@@ -236,72 +215,31 @@ app.get('/health/backend', async (req, res) => {
       status: 'healthy',
       checks: {
         database: 'ok',
-        pinecone: 'ok',
         queueWorker: queueRunning ? 'active' : 'inactive'
       }
     });
   } catch (err: any) {
-    res.status(500).json({
-      status: 'unhealthy',
-      error: err.message || String(err)
-    });
+    res.status(500).json({ status: 'unhealthy' });
   }
 });
 
-app.get('/health/kb', async (req, res) => {
+app.get('/health/kb', requireAdminForHealth, async (req, res) => {
   try {
     const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
-    const kbStatus = KnowledgeBaseValidationService.getValidationStatus();
     const missingBooks = KnowledgeBaseValidationService.getMissingBooks();
     
     res.status(200).json({
       status: missingBooks.length === 0 ? 'healthy' : 'degraded',
-      missingBooks,
-      details: kbStatus
+      missingBooks
     });
   } catch (err: any) {
-    res.status(500).json({
-      status: 'error',
-      error: err.message || String(err)
-    });
+    res.status(500).json({ status: 'error' });
   }
 });
 
-app.get('/ready', async (req, res) => {
-  try {
-    const { KnowledgeBaseValidationService } = await import('./services/kb-validation.service');
-    
-    // Check database connectivity
-    const pool = (await import('./db')).default;
-    await pool.query('SELECT 1');
-
-    // Check circuit breaker states
-    const geminiState = geminiCircuitBreaker.getState();
-    const pineconeState = pineconeCircuitBreaker.getState();
-
-    const kbStatus = KnowledgeBaseValidationService.getValidationStatus();
-
-    res.status(200).json({
-      status: 'ready',
-      checks: {
-        database: 'ok',
-        gemini_circuit: geminiState,
-        pinecone_circuit: pineconeState
-      },
-      knowledgeBase: kbStatus
-    });
-  } catch (err) {
-    res.status(503).json({
-      status: 'not_ready',
-      error: 'Dependency check failed'
-    });
-  }
-});
-
-app.get('/metrics', (req, res) => {
+app.get('/metrics', requireAdminForHealth, (req, res) => {
   updateSystemMetrics();
 
-  // Update circuit breaker gauges
   const cbStateMap = { 'CLOSED': 0, 'HALF_OPEN': 1, 'OPEN': 2 };
   metrics.setGauge('nyc_circuit_breaker_state',
     cbStateMap[geminiCircuitBreaker.getState()] ?? 0,
@@ -316,10 +254,74 @@ app.get('/metrics', (req, res) => {
   res.send(metrics.serialize());
 });
 
-// ─── Socket.io ───
+// Helper: protect health/metrics with admin token or API key
+function requireAdminForHealth(req: any, res: any, next: any) {
+  // Allow via metrics API key
+  const metricsKey = process.env.METRICS_API_KEY;
+  if (metricsKey && req.headers['x-metrics-key'] === metricsKey) {
+    return next();
+  }
+
+  // Allow via admin JWT
+  const adminToken = req.headers['x-admin-token'] as string;
+  if (adminToken) {
+    try {
+      JwtService.verifyAdminToken(adminToken);
+      return next();
+    } catch (e) {
+      // Fall through
+    }
+  }
+
+  // Allow via user JWT for admin emails
+  const ADMIN_EMAILS = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
+  const token = req.cookies?.access_token || req.headers.authorization?.replace('Bearer ', '');
+  if (token) {
+    try {
+      const decoded = JwtService.verifyUserToken(token);
+      if (ADMIN_EMAILS.includes(decoded.email)) {
+        return next();
+      }
+    } catch (e) {
+      // Fall through
+    }
+  }
+
+  // In non-production, allow unauthenticated access for development
+  if (!IS_PRODUCTION) {
+    return next();
+  }
+
+  return res.status(403).json({ message: 'Access denied.' });
+}
+
+// ─── Socket.IO with Authentication ───
+
+io.use((socket, next) => {
+  try {
+    // Try auth token from handshake
+    const token = socket.handshake.auth?.token || 
+                  socket.handshake.headers?.cookie?.split('access_token=')[1]?.split(';')[0];
+    
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    const decoded = JwtService.verifyUserToken(token);
+    (socket as any).userId = decoded.id;
+    (socket as any).userEmail = decoded.email;
+    next();
+  } catch (error) {
+    next(new Error('Authentication failed'));
+  }
+});
 
 io.on('connection', (socket) => {
-  logger.debug('User connected to socket', { requestId: socket.id });
+  const userId = (socket as any).userId;
+  if (userId) {
+    socket.join(`user:${userId}`);
+    logger.debug('Authenticated user connected to socket', { userId, requestId: socket.id });
+  }
 
   socket.on('disconnect', () => {
     logger.debug('User disconnected from socket', { requestId: socket.id });
