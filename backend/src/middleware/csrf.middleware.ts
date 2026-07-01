@@ -36,8 +36,12 @@ if (!IS_PRODUCTION) {
 export const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
   const method = req.method;
 
-  // Bypass third-party server-to-server webhook
-  if (req.originalUrl === '/api/billing/webhook') {
+  // Bypass third-party server-to-server webhook and auth routes
+  if (
+    req.originalUrl === '/api/billing/webhook' || 
+    req.path.startsWith('/api/auth') || 
+    req.originalUrl.startsWith('/api/auth')
+  ) {
     return next();
   }
 
