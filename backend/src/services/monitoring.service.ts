@@ -1,5 +1,8 @@
 import { PIPELINE_CONFIG, ModelPricing } from '../config/pipeline.config';
 import { UsageMetadata } from './gemini.client';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'monitoring-service' });
 
 export interface CompiledMetrics {
   flashInputTokens: number;
@@ -82,8 +85,13 @@ export class MonitoringService {
       metrics.savedTokens += cachedTokens;
     }
 
-    console.log(`[Monitoring] Tracked ${isPro ? 'Pro' : 'Flash'} usage for plan ${planId}: ` +
-      `Input: ${nonCachedInputTokens}, Output: ${candidatesTokens}, Cached Read: ${cachedTokens}`);
+    logger.debug('Tracked AI usage', {
+      planId,
+      modelTier: isPro ? 'pro' : 'flash',
+      inputTokens: nonCachedInputTokens,
+      outputTokens: candidatesTokens,
+      cachedTokens,
+    });
   }
 
   /**
@@ -163,7 +171,7 @@ export class MonitoringService {
       cacheTTL: `${PIPELINE_CONFIG.cacheTTLMinutes}m`
     };
 
-    console.log(`[Monitoring] Compiled metrics for plan ${planId}:`, JSON.stringify(compiled, null, 2));
+    logger.debug('Compiled AI usage metrics', { planId, metrics: compiled });
 
     // Clear registry entry to prevent memory leaks
     this.planMetricsRegistry.delete(planId);

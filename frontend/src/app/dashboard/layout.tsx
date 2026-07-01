@@ -75,7 +75,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     const checkAuthStatus = async () => {
       const oauth = searchParams.get('oauth');
       
-      if (oauth === 'success' || (isAuthenticated && !user)) {
+      if (oauth === 'success' || !user) {
         try {
           const res = await api.get('/auth/me');
           login(res.data);
@@ -90,11 +90,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (!isAuthenticated) {
+      if (!isAuthenticated && !user) {
         const success = searchParams.get('success');
         const sessionId = searchParams.get('session_id');
         if (pathname === '/dashboard/billing' && success === 'true' && sessionId) {
-          sessionStorage.setItem('nyc-house-code-pending-checkout-session', sessionId);
+          try {
+            sessionStorage.setItem('nyc-house-code-pending-checkout-session', sessionId);
+          } catch {}
         }
 
         router.replace('/login');
@@ -114,7 +116,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       setNotifications(res.data);
       setUnreadCount(res.data.filter((n: any) => !n.isRead).length);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      setNotifications([]);
     }
   };
 
@@ -133,7 +135,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       setUnreadCount(0);
       toast.success('All notifications marked as read.');
     } catch (err) {
-      console.error('Failed to mark all as read:', err);
+      toast.error('Could not update notifications.');
     }
   };
 
@@ -143,7 +145,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('Failed to mark notification as read:', err);
+      toast.error('Could not update notification.');
     }
   };
 
@@ -165,7 +167,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     { name: "Help & Feedback", icon: LifeBuoy, path: "/dashboard/settings" },
   ];
 
-  const adminNavItems = (user?.email === 'chalams115@gmail.com' || user?.email === 'sathvi2018@gmail.com') ? [
+  const adminNavItems = user?.role === 'admin' ? [
     { name: "Admin Center", icon: Shield, path: "/dashboard/admin/feedback" },
     { name: "User Database", icon: Database, path: "/dashboard/admin/database" }
   ] : [];
@@ -274,9 +276,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               variant="ghost"
               size="icon"
               className="rounded-xl w-10 h-10 theme-toggle-trigger"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             >
-              <span className="theme-icon-sun"><Sun className="w-5 h-5 text-amber-500" /></span>
-              <span className="theme-icon-moon hidden"><Moon className="w-5 h-5 text-primary" /></span>
+              {!mounted || theme !== 'dark' ? (
+                <Sun className="w-5 h-5 text-amber-500" />
+              ) : (
+                <Moon className="w-5 h-5 text-primary" />
+              )}
             </Button>
           </div>
 

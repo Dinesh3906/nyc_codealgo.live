@@ -104,6 +104,10 @@ export function sanitizeRequestBody(req: Request, res: Response, next: NextFunct
 
 function sanitizeObject(obj: any) {
   for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'prototype' || key === 'constructor') {
+      delete obj[key];
+      continue;
+    }
     if (typeof obj[key] === 'string') {
       // Remove null bytes
       obj[key] = obj[key].replace(/\0/g, '');

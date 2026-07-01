@@ -6,14 +6,19 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import Image from 'next/image';
-import toast from "react-hot-toast";
 import { usePathname } from "next/navigation";
 
 export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const pathname = usePathname();
   const hideThemeToggle = pathname === '/terms-of-service' || pathname === '/privacy-policy';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navItems = [
     { label: "Platform", href: "/#platform" },
@@ -24,66 +29,6 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-md transition-all duration-300">
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function() {
-          function setupThemeToggle() {
-            const btn = document.getElementById('theme-toggle-btn-desktop');
-            const mobileBtn = document.getElementById('theme-toggle-btn-mobile');
-            
-            function syncIcons(isDarkTheme) {
-              const suns = document.querySelectorAll('.theme-icon-sun');
-              const moons = document.querySelectorAll('.theme-icon-moon');
-              if (isDarkTheme) {
-                suns.forEach(s => s.classList.remove('hidden'));
-                moons.forEach(m => m.classList.add('hidden'));
-              } else {
-                suns.forEach(s => s.classList.add('hidden'));
-                moons.forEach(m => m.classList.remove('hidden'));
-              }
-            }
-            
-            // Sync initial state on load
-            const activeIsDark = document.documentElement.classList.contains('dark');
-            syncIcons(activeIsDark);
-            
-            function toggle() {
-              const isDark = document.documentElement.classList.contains('dark');
-              const newTheme = isDark ? 'light' : 'dark';
-              
-              if (newTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.documentElement.style.colorScheme = 'dark';
-                localStorage.setItem('theme', 'dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-                document.documentElement.style.colorScheme = 'light';
-                localStorage.setItem('theme', 'light');
-              }
-              
-              syncIcons(newTheme === 'dark');
-            }
-            
-            if (btn) {
-              btn.replaceWith(btn.cloneNode(true));
-              const newBtn = document.getElementById('theme-toggle-btn-desktop');
-              newBtn.addEventListener('click', toggle);
-            }
-            if (mobileBtn) {
-              mobileBtn.replaceWith(mobileBtn.cloneNode(true));
-              const newMobileBtn = document.getElementById('theme-toggle-btn-mobile');
-              newMobileBtn.addEventListener('click', toggle);
-            }
-          }
-          
-          window.addEventListener('DOMContentLoaded', setupThemeToggle);
-          if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setupThemeToggle();
-          }
-          setTimeout(setupThemeToggle, 200);
-          setTimeout(setupThemeToggle, 800);
-          setTimeout(setupThemeToggle, 2000);
-        })();
-      ` }} />
       <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-7xl">
         <Link href="/" className="flex items-center gap-2.5 group">
           <Image 
@@ -133,9 +78,13 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
               size="icon"
               className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
               aria-label="Toggle Theme"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             >
-              <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
-              <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+              {!mounted || theme !== 'dark' ? (
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Moon className="w-3.5 h-3.5 text-primary" />
+              )}
             </Button>
           )}
         </div>
@@ -149,9 +98,13 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
               size="icon"
               className="rounded-sm w-8 h-8 bg-transparent hover:bg-muted text-foreground border-border/80 flex items-center justify-center transition-all duration-200"
               aria-label="Toggle Theme"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             >
-              <span className="theme-icon-sun flex items-center justify-center"><Sun className="w-3.5 h-3.5 text-amber-500" /></span>
-              <span className="theme-icon-moon hidden items-center justify-center"><Moon className="w-3.5 h-3.5 text-primary" /></span>
+              {!mounted || theme !== 'dark' ? (
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Moon className="w-3.5 h-3.5 text-primary" />
+              )}
             </Button>
           )}
           <Button

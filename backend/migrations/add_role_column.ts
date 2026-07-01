@@ -29,11 +29,17 @@ async function migrate() {
     }
 
     // 3. Promote initial admin emails to admin role
-    const adminEmails = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
-    await pool.query(
-      "UPDATE `user` SET role = 'admin' WHERE email IN (?, ?)",
-      adminEmails
-    );
+    const adminEmails = (process.env.INITIAL_ADMIN_EMAILS || '')
+      .split(',')
+      .map(email => email.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (adminEmails.length > 0) {
+      await pool.query(
+        `UPDATE \`user\` SET role = 'admin' WHERE email IN (${adminEmails.map(() => '?').join(',')})`,
+        adminEmails
+      );
+    }
     console.log('✅ Promoted administrators to admin role.');
 
   } catch (err: any) {

@@ -15,7 +15,9 @@ const logger = new Logger({ stage: 'security' });
  * Checks for X-Request-ID header (from load balancers) or generates a new one.
  */
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction) {
-  const requestId = (req.headers['x-request-id'] as string) || uuidv4();
+  const incomingRequestId = req.headers['x-request-id'];
+  const candidate = Array.isArray(incomingRequestId) ? incomingRequestId[0] : incomingRequestId;
+  const requestId = candidate && /^[A-Za-z0-9._:-]{1,128}$/.test(candidate) ? candidate : uuidv4();
   (req as any).requestId = requestId;
   res.setHeader('X-Request-ID', requestId);
   next();
@@ -36,8 +38,6 @@ const MAX_FAILED_AUDITS = parseInt(process.env.MAX_FAILED_AUDITS || '5', 10);
 const MAX_FAILED_LOGINS = parseInt(process.env.MAX_FAILED_LOGINS || '10', 10);
 
 function getClientIP(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
 

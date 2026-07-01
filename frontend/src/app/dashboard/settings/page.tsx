@@ -68,7 +68,6 @@ export default function HelpFeedbackPage() {
 
       toast.success("Feedback sent successfully!", { id: "feedback-success" });
     } catch (error: any) {
-      console.error('Feedback error:', error);
       toast.error("Failed to send feedback. Please try again later.");
       // Note: We don't rollback the form to avoid frustrating the user, 
       // but we warn them it failed.

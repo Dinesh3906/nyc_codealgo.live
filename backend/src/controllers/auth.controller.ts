@@ -13,6 +13,41 @@ const logger = new Logger({ stage: 'auth-controller' });
 
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined; // e.g. '.codealgo.live'
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OTP_PATTERN = /^\d{6}$/;
+
+const normalizeEmail = (email: unknown): string | null => {
+  if (typeof email !== 'string') return null;
+  const normalized = email.trim().toLowerCase();
+  return normalized.length <= 254 && EMAIL_PATTERN.test(normalized) ? normalized : null;
+};
+
+const cleanText = (value: unknown, maxLength: number): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed && trimmed.length <= maxLength ? trimmed : null;
+};
+
+const validatePassword = (password: unknown): password is string => (
+  typeof password === 'string' &&
+  password.length >= 12 &&
+  password.length <= 128
+);
+
+const getOAuthUrls = (req: Request) => {
+  const isLocal = !IS_PRODUCTION && (req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1'));
+  const apiBaseUrl = isLocal
+    ? 'http://localhost:5000'
+    : (process.env.API_PUBLIC_URL || 'https://api-permitiq.codealgo.live');
+  const frontendUrl = isLocal
+    ? 'http://localhost:3000'
+    : (process.env.FRONTEND_URL || 'https://permitiq.codealgo.live');
+
+  return {
+    redirectUri: `${apiBaseUrl.replace(/\/$/, '')}/api/auth/google/callback`,
+    frontendUrl: frontendUrl.replace(/\/$/, ''),
+  };
+};
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string) {
   res.cookie('access_token', accessToken, {
@@ -45,31 +80,42 @@ function clearAuthCookies(res: Response) {
   res.clearCookie('access_token', { domain: COOKIE_DOMAIN, path: '/' });
   res.clearCookie('refresh_token', { domain: COOKIE_DOMAIN, path: '/api/auth' });
   res.clearCookie('csrf_token', { domain: COOKIE_DOMAIN, path: '/' });
+  res.clearCookie('admin_session', { domain: COOKIE_DOMAIN, path: '/' });
 }
 
 // ─── Helpers ───
 
-const generateTokens = async (id: string, email: string, tokenVersion: number) => {
+const signTokenPair = (id: string, email: string, tokenVersion: number) => {
   const accessToken = JwtService.signUserToken(id, email, tokenVersion);
   const refreshToken = JwtService.signRefreshToken(id, email, tokenVersion);
+  return { accessToken, refreshToken };
+};
 
-  const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+const hashRefreshToken = (refreshToken: string) => crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+const storeRefreshTokenHash = async (id: string, refreshToken: string) => {
+  const hash = hashRefreshToken(refreshToken);
   await pool.query(
     'UPDATE `user` SET refreshTokenHash = ? WHERE id = ?',
     [hash, id]
   );
+};
 
-  return { accessToken, refreshToken };
+const issueAuthSession = async (res: Response, user: { id: string; email: string; tokenVersion?: number }) => {
+  const { accessToken, refreshToken } = signTokenPair(user.id, user.email, user.tokenVersion || 1);
+  await storeRefreshTokenHash(user.id, refreshToken);
+  const csrfToken = crypto.randomBytes(32).toString('hex');
+  setAuthCookies(res, accessToken, refreshToken, csrfToken);
 };
 
 // ─── Registration OTP ───
 
 export const registerSendOtp = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  const email = normalizeEmail(req.body?.email);
 
   try {
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ message: 'A valid email is required' });
     }
 
     // Check if user already exists — use generic response to prevent enumeration
@@ -112,11 +158,16 @@ export const registerSendOtp = async (req: Request, res: Response) => {
 // ─── Registration ───
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, dob, phone, otp } = req.body;
+  const email = normalizeEmail(req.body?.email);
+  const name = cleanText(req.body?.name, 120);
+  const password = req.body?.password;
+  const dob = cleanText(req.body?.dob, 30);
+  const phone = cleanText(req.body?.phone, 30);
+  const otp = typeof req.body?.otp === 'string' ? req.body.otp.trim() : '';
 
   try {
-    if (!email || !password || !name || !otp) {
-      return res.status(400).json({ message: 'All fields and OTP are required' });
+    if (!email || !name || !OTP_PATTERN.test(otp) || !validatePassword(password)) {
+      return res.status(400).json({ message: 'Valid name, email, password, and OTP are required' });
     }
 
     // Verify OTP — fetch hashed OTP and compare
@@ -155,9 +206,7 @@ export const register = async (req: Request, res: Response) => {
     const [updatedUsers]: any = await pool.query('SELECT id, name, email, role, tokenVersion FROM `user` WHERE email = ?', [email]);
     const updatedUser = updatedUsers[0];
 
-    const { accessToken, refreshToken } = await generateTokens(updatedUser.id, updatedUser.email, updatedUser.tokenVersion || 1);
-    const csrfToken = crypto.randomBytes(32).toString('hex');
-    setAuthCookies(res, accessToken, refreshToken, csrfToken);
+    await issueAuthSession(res, { id: updatedUser.id, email: updatedUser.email, tokenVersion: updatedUser.tokenVersion });
 
     res.status(201).json({
       id: updatedUser.id,
@@ -174,16 +223,19 @@ export const register = async (req: Request, res: Response) => {
 // ─── Login ───
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const email = normalizeEmail(req.body?.email);
+  const password = req.body?.password;
+
+  if (!email || typeof password !== 'string' || password.length > 128) {
+    return res.status(401).json({ message: 'Invalid email or password' });
+  }
 
   try {
     const [users]: any = await pool.query('SELECT id, name, email, role, password, tokenVersion FROM `user` WHERE email = ?', [email]);
     const user = users[0];
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { accessToken, refreshToken } = await generateTokens(user.id, user.email, user.tokenVersion || 1);
-      const csrfToken = crypto.randomBytes(32).toString('hex');
-      setAuthCookies(res, accessToken, refreshToken, csrfToken);
+      await issueAuthSession(res, { id: user.id, email: user.email, tokenVersion: user.tokenVersion });
 
       res.json({
         id: user.id,
@@ -206,7 +258,10 @@ export const logout = async (req: any, res: Response) => {
   try {
     // Increment token version to invalidate all existing tokens
     if (req.user?.id) {
-      await pool.query('UPDATE `user` SET tokenVersion = tokenVersion + 1 WHERE id = ?', [req.user.id]);
+      await pool.query(
+        'UPDATE `user` SET tokenVersion = tokenVersion + 1, refreshTokenHash = NULL WHERE id = ?',
+        [req.user.id]
+      );
     }
     clearAuthCookies(res);
     res.json({ message: 'Logged out successfully.' });
@@ -249,7 +304,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     }
 
     // Validate refresh token against hash stored in database (reuse detection)
-    const incomingHash = crypto.createHash('sha256').update(refreshTokenValue).digest('hex');
+    const incomingHash = hashRefreshToken(refreshTokenValue);
     if (!user.refreshTokenHash || user.refreshTokenHash !== incomingHash) {
       logger.warn('Refresh token reuse detected. Revoking all sessions for user.', { userId: user.id });
       // Invalidate all tokens
@@ -261,8 +316,23 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Session expired or invalidated. Please log in again.', code: 'TOKEN_REUSE_DETECTED' });
     }
 
-    // Issue new tokens (rotation)
-    const { accessToken, refreshToken } = await generateTokens(user.id, user.email, user.tokenVersion);
+    // Atomic rotation: only the active hash may be replaced
+    const { accessToken, refreshToken } = signTokenPair(user.id, user.email, user.tokenVersion);
+    const nextHash = hashRefreshToken(refreshToken);
+    const [rotationResult]: any = await pool.query(
+      'UPDATE `user` SET refreshTokenHash = ? WHERE id = ? AND refreshTokenHash = ? AND tokenVersion = ?',
+      [nextHash, user.id, incomingHash, user.tokenVersion]
+    );
+
+    if (!rotationResult.affectedRows) {
+      await pool.query(
+        'UPDATE `user` SET tokenVersion = tokenVersion + 1, refreshTokenHash = NULL WHERE id = ?',
+        [user.id]
+      );
+      clearAuthCookies(res);
+      return res.status(403).json({ message: 'Session expired or invalidated. Please log in again.', code: 'TOKEN_REUSE_DETECTED' });
+    }
+
     const csrfToken = crypto.randomBytes(32).toString('hex');
     setAuthCookies(res, accessToken, refreshToken, csrfToken);
 
@@ -292,7 +362,11 @@ export const getMe = async (req: any, res: Response) => {
 // ─── Forgot Password ───
 
 export const forgotPassword = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  const email = normalizeEmail(req.body?.email);
+
+  if (!email) {
+    return res.json({ message: 'If an account exists with this email, you will receive an OTP shortly.' });
+  }
 
   try {
     const [users]: any = await pool.query('SELECT id FROM `user` WHERE email = ?', [email]);
@@ -323,7 +397,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
 // ─── Reset Password ───
 
 export const resetPassword = async (req: Request, res: Response) => {
-  const { email, otp, newPassword } = req.body;
+  const email = normalizeEmail(req.body?.email);
+  const otp = typeof req.body?.otp === 'string' ? req.body.otp.trim() : '';
+  const newPassword = req.body?.newPassword;
+
+  if (!email || !OTP_PATTERN.test(otp) || !validatePassword(newPassword)) {
+    return res.status(400).json({ message: 'Invalid or expired OTP.' });
+  }
 
   try {
     const [users]: any = await pool.query(
@@ -351,7 +431,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     await pool.query(
-      'UPDATE `user` SET password = ?, tokenVersion = tokenVersion + 1, resetOtp = NULL, resetOtpExpiry = NULL, otpAttempts = 0 WHERE email = ?',
+      'UPDATE `user` SET password = ?, tokenVersion = tokenVersion + 1, refreshTokenHash = NULL, resetOtp = NULL, resetOtpExpiry = NULL, otpAttempts = 0 WHERE email = ?',
       [hashedPassword, email]
     );
 
@@ -370,10 +450,7 @@ export const googleAuthRedirect = async (req: Request, res: Response) => {
     return res.status(503).json({ message: 'Google OAuth is not configured.' });
   }
 
-  const isLocal = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
-  const redirectUri = isLocal
-    ? 'http://localhost:5000/api/auth/google/callback'
-    : 'https://api-permitiq.codealgo.live/api/auth/google/callback';
+  const { redirectUri } = getOAuthUrls(req);
 
   // Generate OAuth state to prevent CSRF
   const state = crypto.randomBytes(32).toString('hex');
@@ -392,11 +469,7 @@ export const googleAuthRedirect = async (req: Request, res: Response) => {
 
 export const googleAuthCallback = async (req: Request, res: Response) => {
   const { code, state } = req.query;
-  const isLocal = req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1');
-  const redirectUri = isLocal
-    ? 'http://localhost:5000/api/auth/google/callback'
-    : 'https://api-permitiq.codealgo.live/api/auth/google/callback';
-  const frontendUrl = isLocal ? 'http://localhost:3000' : 'https://permitiq.codealgo.live';
+  const { redirectUri, frontendUrl } = getOAuthUrls(req);
 
   // Validate OAuth state
   const savedState = (req as any).cookies?.oauth_state;
@@ -436,7 +509,8 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
       headers: { Authorization: `Bearer ${access_token}` }
     });
 
-    const { email, name } = userRes.data;
+    const email = normalizeEmail(userRes.data?.email);
+    const name = cleanText(userRes.data?.name, 120) || 'Google User';
 
     if (!email) {
       return res.redirect(`${frontendUrl}/login?error=Google+did+not+return+an+email+address`);
@@ -465,12 +539,10 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     }
 
     // 4. Set JWT in HttpOnly cookies — NEVER in URL
-    const { accessToken, refreshToken } = await generateTokens(user.id, user.email, user.tokenVersion || 1);
-    const csrfToken = crypto.randomBytes(32).toString('hex');
-    setAuthCookies(res, accessToken, refreshToken, csrfToken);
+    await issueAuthSession(res, { id: user.id, email: user.email, tokenVersion: user.tokenVersion });
 
     // Redirect to dashboard with minimal, non-sensitive user info
-    res.redirect(`${frontendUrl}/dashboard?oauth=success&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`);
+    res.redirect(`${frontendUrl}/dashboard?oauth=success`);
 
   } catch (error: any) {
     logger.error('Google OAuth Error', error);

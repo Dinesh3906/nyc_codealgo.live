@@ -55,7 +55,6 @@ export default function AdminDatabasePage() {
   
   // OTP Session Authentication States
   const [isVerified, setIsVerified] = useState(false);
-  const [adminToken, setAdminToken] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState("");
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
@@ -76,43 +75,43 @@ export default function AdminDatabasePage() {
 
   // 1. Initial Authorization Verification
   useEffect(() => {
-    if (hasHydrated) {
-      if (!isAuthenticated || !isAdmin) {
-        toast.error("Unauthorized access restricted.");
-        router.push("/dashboard");
-        return;
-      }
-      
-      // Check for cached admin OTP session status (valid for 2 hours)
-      const isVerifiedCached = document.cookie.includes('admin_verified=true');
-      if (isVerifiedCached) {
-        setIsVerified(true);
-      } else {
-        // Automatically request security OTP on page enter
-        triggerSendOtp();
-      }
+    if (!hasHydrated) return;
+
+    if (!isAuthenticated || !isAdmin) {
+      toast.error("Unauthorized access restricted.");
+      router.push("/dashboard");
+      return;
     }
+
+    let cancelled = false;
+    const verifyAdminSession = async () => {
+      try {
+        await api.get("/admin/session");
+        if (!cancelled) {
+          setIsVerified(true);
+        }
+      } catch {
+        if (!cancelled) {
+          triggerSendOtp();
+        }
+      }
+    };
+
+    verifyAdminSession();
+    return () => {
+      cancelled = true;
+    };
   }, [hasHydrated, isAuthenticated, isAdmin, router]);
 
   // 2. Fetch Users Directory once OTP is verified
-  const fetchUsers = async (tokenOverride?: string) => {
-    const activeToken = tokenOverride || adminToken;
-    
+  const fetchUsers = async () => {
     setLoading(true);
     try {
-      const headersConfig: any = {};
-      if (activeToken) {
-        headersConfig["X-Admin-Token"] = activeToken;
-      }
-      const response = await api.get("/admin/users", {
-        headers: headersConfig
-      });
+      const response = await api.get("/admin/users");
       setUsersList(response.data);
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 403) {
         toast.error("Admin session expired. Please verify OTP again.");
-        document.cookie = "admin_verified=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-        setAdminToken(null);
         setIsVerified(false);
       } else {
         toast.error(error.response?.data?.message || "Failed to retrieve user directory.");
@@ -158,12 +157,9 @@ export default function AdminDatabasePage() {
     setOtpVerifying(true);
     try {
       const res = await api.post("/admin/verify-otp", { otp: otpCode });
-      const receivedToken = res.data.adminSessionToken;
-      
-      setAdminToken(receivedToken);
       setIsVerified(true);
       toast.success("Security authorization complete. Welcome back!");
-      fetchUsers(receivedToken);
+      fetchUsers();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Invalid verification code.");
     } finally {
@@ -173,7 +169,7 @@ export default function AdminDatabasePage() {
 
   const handleGiftPagesSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!giftingUser || giftingInProgress || !adminToken) return;
+    if (!giftingUser || giftingInProgress) return;
 
     const pagesNum = parseInt(giftPagesAmount);
     if (isNaN(pagesNum) || pagesNum <= 0) {
@@ -185,8 +181,7 @@ export default function AdminDatabasePage() {
     try {
       const res = await api.post(
         "/admin/gift-pages",
-        { email: giftingUser.email, pages: pagesNum },
-        { headers: { "X-Admin-Token": adminToken } }
+        { email: giftingUser.email, pages: pagesNum }
       );
       
       toast.success(res.data.message || "Pages allocated successfully!");
@@ -202,14 +197,13 @@ export default function AdminDatabasePage() {
 
   const handleBroadcastSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!broadcastTitle || !broadcastMessage || broadcasting || !adminToken) return;
+    if (!broadcastTitle || !broadcastMessage || broadcasting) return;
 
     setBroadcasting(true);
     try {
       const res = await api.post(
         "/admin/broadcast-notification",
-        { title: broadcastTitle, message: broadcastMessage, type: broadcastType },
-        { headers: { "X-Admin-Token": adminToken } }
+        { title: broadcastTitle, message: broadcastMessage, type: broadcastType }
       );
       toast.success(res.data.message || "System broadcast sent successfully!");
       setBroadcastTitle("");

@@ -1,4 +1,7 @@
 import Groq from 'groq-sdk';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'ai-service' });
 
 const groqApiKey = process.env.GROQ_API_KEY;
 if (!groqApiKey) {
@@ -268,11 +271,11 @@ Return ONLY a JSON object in this format:
       try {
         return JSON.parse(content);
       } catch (e) {
-        console.error("JSON Parse Error. Content:", content);
+        logger.warn('AI returned invalid JSON');
         throw new Error("AI returned an invalid report format. Please retry.");
       }
     } catch (error: any) {
-      console.error('AI Grounding Error:', error);
+      logger.error('AI grounding error', error);
       throw error;
     }
   }

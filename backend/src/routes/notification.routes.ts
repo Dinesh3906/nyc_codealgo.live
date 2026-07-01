@@ -1,8 +1,10 @@
 import { Router, Response } from 'express';
 import pool from '../db';
 import { protect } from '../middleware/auth.middleware';
+import { Logger } from '../services/logger';
 
 const router = Router();
+const logger = new Logger({ stage: 'notification-routes' });
 
 // @route   GET /api/notifications
 // @desc    Get all notifications for logged-in user
@@ -16,7 +18,7 @@ router.get('/', protect, async (req: any, res: Response) => {
 
     res.json(rows);
   } catch (error) {
-    console.error('Fetch Notifications Error:', error);
+    logger.error('Fetch Notifications Error', error);
     res.status(500).json({ message: 'Failed to retrieve notifications.' });
   }
 });
@@ -33,7 +35,7 @@ router.post('/read-all', protect, async (req: any, res: Response) => {
 
     res.json({ message: 'All notifications marked as read.' });
   } catch (error) {
-    console.error('Read All Notifications Error:', error);
+    logger.error('Read All Notifications Error', error);
     res.status(500).json({ message: 'Failed to update notifications.' });
   }
 });
@@ -56,7 +58,7 @@ router.post('/:id/read', protect, async (req: any, res: Response) => {
 
     res.json({ message: 'Notification marked as read.' });
   } catch (error) {
-    console.error('Read Single Notification Error:', error);
+    logger.error('Read Single Notification Error', error);
     res.status(500).json({ message: 'Failed to update notification.' });
   }
 });

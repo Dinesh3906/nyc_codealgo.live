@@ -53,7 +53,6 @@ export const downloadPdfDocument = async (doc: any, filename: string) => {
       return; // Done — file saved with correct name
     } catch (err: any) {
       if (err?.name === "AbortError") return; // User cancelled the dialog
-      console.warn("showSaveFilePicker unavailable, falling back:", err);
     }
   }
 

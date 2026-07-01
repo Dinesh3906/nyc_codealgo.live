@@ -1,4 +1,6 @@
 import { Metadata } from 'next';
+import { jsonLdScriptProps } from '@/lib/jsonLd';
+import { headers } from 'next/headers';
 
 export const metadata: Metadata = {
   title: "Contact Us - NYC Code Compliance Support | PermitIQ by Aureon",
@@ -36,12 +38,15 @@ const localBusinessSchema = {
   }
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const nonce = (await headers()).get('x-nonce') || undefined;
+
   return (
     <main className="min-h-screen py-24 px-6 bg-background">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        nonce={nonce}
+        dangerouslySetInnerHTML={jsonLdScriptProps(localBusinessSchema)}
       />
       <div className="container mx-auto max-w-4xl text-center">
         <h1 className="text-4xl font-bold mb-6 text-foreground">Contact PermitIQ by Aureon</h1>

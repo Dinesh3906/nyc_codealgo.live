@@ -1,7 +1,9 @@
 import { createWorker } from 'tesseract.js';
 import fs from 'fs';
+import { Logger } from './logger';
 // @ts-ignore
 const pdf = require('pdf-parse');
+const logger = new Logger({ stage: 'ocr-service' });
 
 export class OCRService {
   /**
@@ -26,13 +28,13 @@ export class OCRService {
 
       // IF TEXT IS WEAK (Likely a scanned blueprint)
       if (text.trim().length < 50) {
-        console.warn("[OCR] PDF Parse yields very little text. It might be a scanned image.");
+        logger.warn('PDF parse yielded very little text');
         return "WARNING: This PDF appears to be a scanned image. For 100% accuracy, please upload a direct PDF export or high-resolution PNG/JPG images instead.";
       }
 
       return this.cleanText(text);
     } catch (error) {
-       console.error("[OCR] PDF Error:", error);
+       logger.error('PDF OCR extraction failed', error);
        return "FAILED TO EXTRACT TEXT FROM PDF.";
     }
   }

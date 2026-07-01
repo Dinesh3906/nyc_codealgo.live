@@ -41,6 +41,22 @@ const upload = multer({
   }
 });
 
+function isValidImageMagic(filePath: string): boolean {
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const header = Buffer.alloc(12);
+    const bytesRead = fs.readSync(fd, header, 0, header.length, 0);
+    if (bytesRead < 4) return false;
+
+    const isPng = header.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    const isJpeg = header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff;
+    const isWebp = header.subarray(0, 4).toString('ascii') === 'RIFF' && header.subarray(8, 12).toString('ascii') === 'WEBP';
+    return isPng || isJpeg || isWebp;
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 router.post('/submit', protect, upload.array('images', 3), async (req: any, res) => {
   try {
     const { type, subject, message } = req.body;
@@ -49,6 +65,15 @@ router.post('/submit', protect, upload.array('images', 3), async (req: any, res)
 
     if (!type || !subject || !message) {
       return res.status(400).json({ message: 'Type, subject, and message are required.' });
+    }
+    if (typeof type !== 'string' || typeof subject !== 'string' || typeof message !== 'string' || subject.length > 200 || message.length > 5000) {
+      return res.status(400).json({ message: 'Invalid feedback payload.' });
+    }
+    for (const file of files) {
+      if (!isValidImageMagic(file.path)) {
+        try { fs.unlinkSync(file.path); } catch {}
+        return res.status(400).json({ message: 'Invalid image content.' });
+      }
     }
 
     const imageUrls = files.map(file => `/uploads/feedback/${file.filename}`);
@@ -87,7 +112,7 @@ router.post('/submit', protect, upload.array('images', 3), async (req: any, res)
 
 router.get('/', protect, async (req: any, res) => {
   try {
-    if (req.user.email !== 'chalams115@gmail.com' && req.user.email !== 'sathvi2018@gmail.com') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 

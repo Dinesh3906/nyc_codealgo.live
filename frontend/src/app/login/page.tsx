@@ -28,11 +28,13 @@ export default function LoginPage() {
   const login = useAuthStore((state: any) => state.login);
 
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL");
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRememberMe(true);
-    }
+    try {
+      const rememberedEmail = localStorage.getItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL");
+      if (rememberedEmail) {
+        setEmail(rememberedEmail);
+        setRememberMe(true);
+      }
+    } catch {}
   }, []);
 
   const handleGoogleLogin = () => {

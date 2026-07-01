@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { apiLimiter, authLimiter, uploadLimiter } from './middleware/rateLimit.middleware';
+import { apiLimiter, authLimiter } from './middleware/rateLimit.middleware';
 import { requestIdMiddleware, requestLoggingMiddleware, abuseDetectionMiddleware } from './middleware/security.middleware';
 import { sanitizeRequestBody } from './middleware/input-validation.middleware';
 import { metrics, updateSystemMetrics } from './services/metrics.service';
@@ -13,6 +13,7 @@ import { geminiCircuitBreaker, pineconeCircuitBreaker } from './services/circuit
 import { Logger } from './services/logger';
 import { JwtService } from './services/jwt.service';
 import { csrfProtection } from './middleware/csrf.middleware';
+import pool from './db';
 import authRoutes from './routes/auth.routes';
 import planRoutes from './routes/plans.routes';
 import billingRoutes from './routes/billing.routes';
@@ -26,6 +27,8 @@ const app = express();
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
+app.set('trust proxy', process.env.TRUST_PROXY || (IS_PRODUCTION ? 1 : false));
+
 // ─── Security Headers with Helmet ───
 
 app.use(helmet({
@@ -34,8 +37,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://api-permitiq.codealgo.live", "wss://api-permitiq.codealgo.live", "https://checkout.razorpay.com"],
       frameSrc: ["'self'", "https://api.razorpay.com", "https://checkout.razorpay.com"],
@@ -56,18 +59,35 @@ app.use(helmet({
 
 // ─── CORS: Exact production allowlist ───
 
-const allowedOrigins: string[] = [
+const allowedOrigins = new Set<string>([
   'https://permitiq.codealgo.live',
   'https://www.permitiq.codealgo.live',
-];
+]);
 
-// Add configured origins
-if (process.env.CORS_ORIGIN) allowedOrigins.push(process.env.CORS_ORIGIN);
-if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+const addAllowedOrigins = (value: string | undefined) => {
+  if (!value) return;
+  for (const rawOrigin of value.split(',')) {
+    const trimmed = rawOrigin.trim();
+    if (!trimmed) continue;
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol === 'https:' || (!IS_PRODUCTION && parsed.protocol === 'http:')) {
+        allowedOrigins.add(parsed.origin);
+      }
+    } catch {
+      logger.warn('Ignoring malformed CORS origin configuration');
+    }
+  }
+};
+
+addAllowedOrigins(process.env.CORS_ORIGIN);
+addAllowedOrigins(process.env.FRONTEND_URL);
+addAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
 
 // Allow localhost only in non-production
 if (!IS_PRODUCTION) {
-  allowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000');
+  allowedOrigins.add('http://localhost:3000');
+  allowedOrigins.add('http://127.0.0.1:3000');
 }
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
@@ -75,15 +95,7 @@ const isOriginAllowed = (origin: string | undefined): boolean => {
     return true; // Allow direct navigation, local health checks (curl), same-origin
   }
   
-  if (allowedOrigins.includes(origin)) {
-    return true;
-  }
-
-  // Support all subdomains of codealgo.live and all vercel.app deployments (previews, staging)
-  const isMatch = /^https:\/\/(?:[a-zA-Z0-9-]+\.)*codealgo\.live$/.test(origin) ||
-                  /^https:\/\/(?:[a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin);
-                  
-  return isMatch;
+  return allowedOrigins.has(origin);
 };
 
 const httpServer = createServer(app);
@@ -111,7 +123,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Admin-Token', 'x-admin-token', 'X-Request-ID']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-CSRF-Token', 'x-csrf-token', 'X-Request-ID']
 }));
 
 // ─── Production middleware stack ───
@@ -267,31 +279,39 @@ app.get('/metrics', requireAdminForHealth, (req, res) => {
 });
 
 // Helper: protect health/metrics with admin token or API key
-function requireAdminForHealth(req: any, res: any, next: any) {
+async function requireAdminForHealth(req: any, res: any, next: any) {
   // Allow via metrics API key
   const metricsKey = process.env.METRICS_API_KEY;
   if (metricsKey && req.headers['x-metrics-key'] === metricsKey) {
     return next();
   }
 
-  // Allow via admin JWT
-  const adminToken = req.headers['x-admin-token'] as string;
+  // Allow via HttpOnly admin session cookie after validating DB role.
+  const adminToken = req.cookies?.admin_session as string | undefined;
   if (adminToken) {
     try {
-      JwtService.verifyAdminToken(adminToken);
-      return next();
+      const decoded = JwtService.verifyAdminToken(adminToken);
+      const [rows]: any = await pool.query(
+        'SELECT id, email, role FROM `user` WHERE id = ? AND role = ?',
+        [decoded.id, 'admin']
+      );
+      if (rows.length > 0 && rows[0].email === decoded.email) {
+        return next();
+      }
     } catch (e) {
       // Fall through
     }
   }
 
-  // Allow via user JWT for admin emails
-  const ADMIN_EMAILS = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
   const token = req.cookies?.access_token || req.headers.authorization?.replace('Bearer ', '');
   if (token) {
     try {
       const decoded = JwtService.verifyUserToken(token);
-      if (ADMIN_EMAILS.includes(decoded.email)) {
+      const [rows]: any = await pool.query(
+        'SELECT id, role, tokenVersion FROM `user` WHERE id = ?',
+        [decoded.id]
+      );
+      if (rows.length > 0 && rows[0].role === 'admin' && rows[0].tokenVersion === decoded.tokenVersion) {
         return next();
       }
     } catch (e) {

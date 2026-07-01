@@ -5,6 +5,8 @@ import { BLOG_POSTS } from '@/lib/blog-data';
 import { authors } from '@/lib/authors';
 import AuthorCard from '@/components/AuthorCard';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { jsonLdScriptProps } from '@/lib/jsonLd';
+import { headers } from 'next/headers';
 
 // Fix 5: ISR revalidation — 30 days
 export const revalidate = 2592000;
@@ -55,6 +57,7 @@ export async function generateStaticParams() {
 */
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const nonce = (await headers()).get('x-nonce') || undefined;
   const resolvedParams = await params;
   const post = BLOG_POSTS.find((p) => p.slug === resolvedParams.slug);
 
@@ -173,9 +176,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <main className="min-h-screen py-24 px-6 bg-background">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={jsonLdScriptProps(articleSchema)} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={jsonLdScriptProps(faqSchema)} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={jsonLdScriptProps(breadcrumbSchema)} />
 
       <article className="container mx-auto max-w-3xl prose prose-lg dark:prose-invert">
         {/* Fix 9D: Visible breadcrumbs */}

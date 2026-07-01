@@ -41,7 +41,6 @@ export default function PlanDetailPage() {
 
         setPlan(planData);
       } catch (err) {
-        console.error("Fetch plan failed:", err);
       } finally {
         setLoading(false);
       }

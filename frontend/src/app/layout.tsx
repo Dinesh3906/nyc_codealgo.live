@@ -1,22 +1,9 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from 'react-hot-toast';
-
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: "--font-ibm-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-ibm-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+import { jsonLdScriptProps } from "@/lib/jsonLd";
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://permitiq.codealgo.live'),
@@ -141,111 +128,33 @@ const faqJsonLd = {
   ]
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') || undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        {/* Global theme loader & bulletproof click delegator bypass */}
-        <script dangerouslySetInnerHTML={{
-          __html: `
-          (function() {
-            // 1. Immediately evaluate saved theme to prevent hydration flash (defaults to light mode)
-            try {
-              // Reset old cached dark theme once to force the new Permit-Paper Light Mode default
-              const themeVersion = localStorage.getItem('theme_version_v2');
-              if (!themeVersion) {
-                localStorage.setItem('theme', 'light');
-                localStorage.setItem('theme_version_v2', 'true');
-              }
-              
-              const saved = localStorage.getItem('theme');
-              if (saved === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.body.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-                document.body.classList.remove('dark');
-              }
-            } catch (e) {}
-
-            // 2. Icon sync helper
-            function syncAllThemeIcons(isDarkTheme) {
-              const suns = document.querySelectorAll('.theme-icon-sun');
-              const moons = document.querySelectorAll('.theme-icon-moon');
-              if (isDarkTheme) {
-                suns.forEach(s => s.classList.remove('hidden'));
-                moons.forEach(m => m.classList.add('hidden'));
-              } else {
-                suns.forEach(s => s.classList.add('hidden'));
-                moons.forEach(m => m.classList.remove('hidden'));
-              }
-            }
-
-            // Bind sync hooks on DOM loads
-            window.addEventListener('DOMContentLoaded', function() {
-              const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
-              syncAllThemeIcons(isDark);
-            });
-            
-            // Periodically sync in case framework re-renders swap icons
-            setInterval(function() {
-              const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
-              syncAllThemeIcons(isDark);
-            }, 300);
-
-            // 3. Global atomic click delegator (Capture Phase)
-            document.addEventListener('click', function(e) {
-              const btn = e.target.closest('#theme-toggle-btn-desktop') || 
-                          e.target.closest('#theme-toggle-btn-mobile') || 
-                          e.target.closest('#theme-toggle-btn-dashboard') || 
-                          e.target.closest('.theme-toggle-trigger');
-              if (!btn) return;
-              
-              e.preventDefault();
-              e.stopPropagation();
-              
-              const isCurrentlyDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
-              const targetTheme = isCurrentlyDark ? 'light' : 'dark';
-              
-              if (targetTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.body.classList.add('dark');
-                document.documentElement.style.colorScheme = 'dark';
-                try { localStorage.setItem('theme', 'dark'); } catch(err) {}
-              } else {
-                document.documentElement.classList.remove('dark');
-                document.body.classList.remove('dark');
-                document.documentElement.style.colorScheme = 'light';
-                try { localStorage.setItem('theme', 'light'); } catch(err) {}
-              }
-              
-              syncAllThemeIcons(targetTheme === 'dark');
-              console.log("Global capture-phase delegator swapped theme to:", targetTheme);
-            }, true); // Capture phase interceptor
-          })();
-        ` }} />
-
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
+          nonce={nonce}
+          dangerouslySetInnerHTML={jsonLdScriptProps(softwareAppSchema)}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+          nonce={nonce}
+          dangerouslySetInnerHTML={jsonLdScriptProps(websiteSchema)}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+          nonce={nonce}
+          dangerouslySetInnerHTML={jsonLdScriptProps(faqJsonLd)}
         />
       </head>
-      <body className={`${ibmPlexSans.variable} ${ibmPlexMono.variable} font-sans antialiased selection:bg-blue-950/60 selection:text-primary`}>
+      <body className="font-sans antialiased selection:bg-blue-950/60 selection:text-primary">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

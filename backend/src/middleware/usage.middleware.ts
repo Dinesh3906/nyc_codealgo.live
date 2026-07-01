@@ -2,11 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
 import pool from '../db';
+import { Logger } from '../services/logger';
 
 const pdfParse = require('pdf-parse');
+const logger = new Logger({ stage: 'usage-middleware' });
+
+const clampPages = (value: number) => Math.min(Math.max(Number(value) || 1, 1), 10000);
 
 export const checkUsageLimit = async (req: any, res: Response, next: NextFunction) => {
-  const { id: userId, subStatus, scanLimit, pagesUsed } = req.user;
+  const { id: userId, scanLimit, pagesUsed } = req.user;
 
   // Only enforce after multer runs and a real upload exists.
   if (!req.file) {
@@ -22,14 +26,14 @@ export const checkUsageLimit = async (req: any, res: Response, next: NextFunctio
     try {
       const dataBuffer = fs.readFileSync(filePath);
       const pdfData = await pdfParse(dataBuffer);
-      filePages = Number(pdfData.numpages) || 1;
-      console.log(`[USAGE MIDDLEWARE] PDF file detected. Page count: ${filePages}`);
+      filePages = clampPages(Number(pdfData.numpages));
+      logger.info('PDF page count parsed', { pages: filePages });
     } catch (parseErr) {
-      console.error('[USAGE MIDDLEWARE] Failed to parse PDF page count. Defaulting to 1 page.', parseErr);
+      logger.warn('Failed to parse PDF page count. Defaulting to 1 page.');
       filePages = 1;
     }
   } else {
-    console.log(`[USAGE MIDDLEWARE] Non-PDF file detected (${fileExt}). Defaulting to 1 page.`);
+    logger.warn('Unexpected non-PDF upload reached usage middleware.');
   }
 
   const limit = Number(scanLimit) > 0 ? Number(scanLimit) : 0;
@@ -84,14 +88,14 @@ export const checkUsageLimit = async (req: any, res: Response, next: NextFunctio
       });
     }
 
-    console.log(`[USAGE MIDDLEWARE] Atomically deducted ${filePages} pages for user ${userId}. New pagesUsed will be loaded in next auth check.`);
+    logger.info('Usage pages deducted', { userId, pages: filePages });
     
     // Save pages count on the request object for use in routes (to insert into plan table)
     req.filePages = filePages;
 
     next();
   } catch (error) {
-    console.error('Usage limit check failed:', error);
+    logger.error('Usage limit check failed', error);
     if (req.file?.path && fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch { /* ignore */ }
     }

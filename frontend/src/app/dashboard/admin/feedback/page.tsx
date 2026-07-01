@@ -49,9 +49,7 @@ export default function AdminFeedbackPage() {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = user?.email === 'chalams115@gmail.com' || user?.email === 'sathvi2018@gmail.com';
-  // Hardcode the production backend URL for images to be safe against relative path issues
-  const backendUrl = 'https://api-permitiq.codealgo.live';
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     if (hasHydrated && (!isAuthenticated || !isAdmin)) {

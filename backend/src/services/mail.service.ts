@@ -1,4 +1,7 @@
 import nodemailer from 'nodemailer';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'mail-service' });
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -11,12 +14,16 @@ const transporter = nodemailer.createTransport({
 });
 
 function escapeHtml(text: string): string {
-  return text
+  return String(text || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function safeHeaderText(text: string): string {
+  return String(text || '').replace(/[\r\n]/g, ' ').slice(0, 200);
 }
 
 export const sendFeedbackEmail = async (data: {
@@ -32,19 +39,19 @@ export const sendFeedbackEmail = async (data: {
     throw new Error('FEEDBACK_EMAIL environment variable is not configured');
   }
 
-  console.log(`[FEEDBACK] New message from ${data.userName} (${data.userEmail}): ${data.subject}`);
+  logger.info('New support message received');
 
   // Fallback if SMTP not configured
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    console.warn('⚠️ SMTP credentials not configured. Feedback logged to console only.');
+    logger.warn('SMTP credentials not configured. Feedback email was not sent.');
     return { messageId: 'mock-id-dev-mode' };
   }
 
   const mailOptions = {
     from: `"NYC House Code Feedback" <${process.env.SMTP_USER}>`,
     to: destination,
-    replyTo: data.userEmail,
-    subject: `[${data.type.toUpperCase()}] ${escapeHtml(data.subject)}`,
+    replyTo: safeHeaderText(data.userEmail),
+    subject: `[${safeHeaderText(data.type).toUpperCase()}] ${safeHeaderText(data.subject)}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #10b981; color: white; padding: 20px; text-align: center;">
@@ -67,7 +74,7 @@ export const sendFeedbackEmail = async (data: {
       </div>
     `,
     attachments: data.attachments?.map(file => ({
-      filename: file.filename || file.originalname,
+      filename: safeHeaderText(file.filename || file.originalname || 'attachment'),
       content: file.content || file.buffer,
     })),
   };
@@ -78,7 +85,7 @@ export const sendFeedbackEmail = async (data: {
 export const sendOtpEmail = async (email: string, otp: string) => {
   // Fallback if SMTP not configured
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    console.warn(`⚠️ SMTP not configured. OTP for ${email}: ${otp}`);
+    logger.warn('SMTP not configured. OTP email was not sent.');
     return { messageId: 'mock-id-dev-mode' };
   }
 
@@ -116,7 +123,7 @@ export const sendOtpEmail = async (email: string, otp: string) => {
 export const sendAdminOtpEmail = async (email: string, otp: string) => {
   // Fallback if SMTP not configured
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    console.warn(`⚠️ SMTP not configured. Admin OTP for ${email}: ${otp}`);
+    logger.warn('SMTP not configured. Admin OTP email was not sent.');
     return { messageId: 'mock-id-dev-mode' };
   }
 
@@ -154,7 +161,7 @@ export const sendAdminOtpEmail = async (email: string, otp: string) => {
 export const sendGiftPagesEmail = async (email: string, pages: number) => {
   // Fallback if SMTP not configured
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    console.warn(`⚠️ SMTP not configured. Gift Pages email for ${email}: ${pages} pages`);
+    logger.warn('SMTP not configured. Gift pages email was not sent.');
     return { messageId: 'mock-id-dev-mode' };
   }
 
@@ -192,3 +199,4 @@ export const sendGiftPagesEmail = async (email: string, pages: number) => {
 
   return transporter.sendMail(mailOptions);
 };
+

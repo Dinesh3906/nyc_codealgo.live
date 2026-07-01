@@ -1,4 +1,6 @@
 import { Metadata } from 'next';
+import { jsonLdScriptProps } from '@/lib/jsonLd';
+import { headers } from 'next/headers';
 
 export const metadata: Metadata = {
   title: "PermitIQ by Aureon Features: 260+ Building Code PDF Checks | PermitIQ by Aureon",
@@ -30,12 +32,15 @@ const howToSchema = {
   ]
 };
 
-export default function FeaturesPage() {
+export default async function FeaturesPage() {
+  const nonce = (await headers()).get('x-nonce') || undefined;
+
   return (
     <main className="min-h-screen py-24 px-6 bg-background">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+        nonce={nonce}
+        dangerouslySetInnerHTML={jsonLdScriptProps(howToSchema)}
       />
       <div className="container mx-auto max-w-4xl text-center">
         <h1 className="text-4xl font-bold mb-6 text-foreground">PermitIQ by Aureon Features: 260+ Building Code PDFs Checked</h1>

@@ -1,5 +1,8 @@
 import { PIPELINE_CONFIG } from '../config/pipeline.config';
 import { GeminiClient } from './gemini.client';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'routing-service' });
 
 export interface PageRouteResult {
   page_number: number;
@@ -21,7 +24,7 @@ export class RoutingService {
     inlineData?: string,
     totalPages?: number
   ): Promise<PageRouteResult[]> {
-    console.log(`[RoutingService] Starting classification for plan ${planId} (Total pages: ${totalPages || 'unknown'})...`);
+    logger.debug('Starting page classification', { planId, totalPages });
 
     const systemPrompt = `You are a document classification and routing engine for architectural blueprints and engineering document packages.
 Your task is to analyze the attached document and identify the category, complexity, and visual accuracy requirements for EACH page.
@@ -131,11 +134,11 @@ Example format:
       if (totalPages && totalPages > 10) {
         const chunkSize = 10;
         const chunkPromises: Promise<any[]>[] = [];
-        console.log(`[RoutingService] Parallelizing classification into chunks of size ${chunkSize} for ${totalPages} pages.`);
+        logger.debug('Parallelizing page classification', { planId, chunkSize, totalPages });
         for (let start = 1; start <= totalPages; start += chunkSize) {
           const end = Math.min(start + chunkSize - 1, totalPages);
           chunkPromises.push(classifyRange(start, end).catch(err => {
-            console.warn(`[RoutingService] Chunk ${start}-${end} failed: ${err.message}. Retrying range in fallback.`);
+            logger.warn('Page classification chunk failed', { planId, start, end });
             return [];
           }));
         }
@@ -145,14 +148,14 @@ Example format:
 
         // If chunked classification returned empty result, fall back to single document classification.
         if (pageClassifications.length === 0) {
-          console.warn(`[RoutingService] Chunked classification returned empty result. Falling back to single document classification.`);
+          logger.warn('Chunked page classification returned empty result; falling back', { planId });
           pageClassifications = await classifyRange();
         }
       } else {
         pageClassifications = await classifyRange();
       }
     } catch (err) {
-      console.error(`[RoutingService] Page classification failed:`, err);
+      logger.error('Page classification failed', err, { planId });
       // Fallback: assume 1 page and route to Flash
       return [{
         page_number: 1,
@@ -163,7 +166,7 @@ Example format:
       }];
     }
 
-    console.log(`[RoutingService] Classified ${pageClassifications.length} pages:`);
+    logger.debug('Classified pages', { planId, count: pageClassifications.length });
 
     // Apply Smart Escalation and cost limits
     const proCandidates: PageRouteResult[] = [];
@@ -207,8 +210,11 @@ Example format:
 
     // Enforce Pro page limit
     if (proCandidates.length > PIPELINE_CONFIG.proPageLimit) {
-      console.warn(`[RoutingService] WARNING: Escalated pages count (${proCandidates.length}) ` +
-        `exceeds Pro page limit (${PIPELINE_CONFIG.proPageLimit}). Demoting excess pages to Flash.`);
+      logger.warn('Escalated page count exceeds Pro page limit; demoting excess pages', {
+        planId,
+        candidateCount: proCandidates.length,
+        limit: PIPELINE_CONFIG.proPageLimit,
+      });
 
       // Sort candidate pages: highest complexity first, then highest confidence
       proCandidates.sort((a, b) => {
@@ -227,8 +233,11 @@ Example format:
         flashRoutes.push(p);
       });
 
-      console.log(`[RoutingService] Active Pro pages: ${activeProPages.map(p => p.page_number).join(', ')}`);
-      console.log(`[RoutingService] Demoted to Flash: ${demotedPages.map(p => p.page_number).join(', ')}`);
+      logger.debug('Finalized Pro routing limit enforcement', {
+        planId,
+        activeProCount: activeProPages.length,
+        demotedCount: demotedPages.length,
+      });
 
       // Combine and return sorted by page number
       return [...activeProPages, ...demotedPages].sort((a, b) => a.page_number - b.page_number);
@@ -236,9 +245,7 @@ Example format:
 
     const finalRoutes = [...proCandidates, ...flashRoutes].sort((a, b) => a.page_number - b.page_number);
     
-    finalRoutes.forEach(r => {
-      console.log(`  Page ${r.page_number}: Type: ${r.type}, Route: ${r.route.toUpperCase()} (Complexity: ${r.complexity})`);
-    });
+    logger.debug('Final page routes generated', { planId, routeCount: finalRoutes.length });
 
     return finalRoutes;
   }

@@ -35,10 +35,9 @@
     "langchain": "^1.2.37",
     "multer": "^2.1.1",
     "mysql2": "^3.20.0",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^9.0.3",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^3.11.174",
     "razorpay": "^2.9.6",
     "socket.io": "^4.8.3",
     "tesseract.js": "^7.0.0",
@@ -55,7 +54,12 @@
     "@types/nodemailer": "^8.0.0",
     "@types/path-browserify": "^1.0.3",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
+    "pdfjs-dist": "^6.1.200",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "protobufjs": "^7.6.3",
+    "tar": "^7.5.16"
   }
 }

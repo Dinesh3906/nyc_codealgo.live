@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 export default function ServicesPage() {
-  const { user } = useAuthStore();
   const [leadLoading, setLeadLoading] = useState(false);
   const [contractorLoading, setContractorLoading] = useState(false);
 
@@ -34,8 +33,7 @@ export default function ServicesPage() {
     setLeadLoading(true);
     try {
       await api.post("/leads/submit-lead", {
-        ...leadForm,
-        userId: user?.id
+        ...leadForm
       });
       toast.success("Project lead submitted! We will contact you soon.");
       setLeadForm({ phone: "", description: "", projectType: "residential" });

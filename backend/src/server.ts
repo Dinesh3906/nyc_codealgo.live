@@ -1,5 +1,8 @@
 import 'dotenv/config';
+import { installConsoleGuard } from './services/console-guard';
 import { validateEnvironment } from './config/env.validator';
+
+installConsoleGuard();
 
 // 1. Environment Variables Check (Fail-fast before loading other modules)
 const envErrors = validateEnvironment();

@@ -14,6 +14,34 @@ import { Logger } from '../services/logger';
 
 const logger = new Logger({ stage: 'plans-routes' });
 const router = Router();
+const ALLOWED_STEP_IDS = new Set([
+  'building_code',
+  'plumbing_code',
+  'mechanical_code',
+  'fuel_gas_code',
+  'energy_code',
+  'electrical_code',
+  'fire_code',
+  'zoning_resolution',
+]);
+
+const sanitizeStepIds = (steps: unknown): string[] | undefined => {
+  const rawSteps = Array.isArray(steps)
+    ? steps
+    : typeof steps === 'string'
+      ? steps.split(',')
+      : [];
+  const cleaned = [...new Set(rawSteps.map((s: unknown) => String(s).trim()))]
+    .filter((s: string) => ALLOWED_STEP_IDS.has(s));
+  return cleaned.length > 0 ? cleaned.slice(0, ALLOWED_STEP_IDS.size) : undefined;
+};
+
+const sanitizeResolvedIssueIds = (issueIds: unknown): string[] | undefined => {
+  if (!Array.isArray(issueIds)) return undefined;
+  const cleaned = [...new Set(issueIds.map((id: unknown) => String(id).trim()))]
+    .filter((id: string) => /^[a-zA-Z0-9._:-]{1,120}$/.test(id));
+  return cleaned.length > 0 ? cleaned.slice(0, 500) : undefined;
+};
 
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads/')) {
@@ -48,7 +76,7 @@ const upload = multer({
 
 // DEBUG ENDPOINT REMOVED — was unauthenticated, exposed plan data
 
-router.post('/count-pages', protect, upload.single('plan'), validatePdfFile, async (req: any, res: any) => {
+router.post('/count-pages', protect, uploadLimiter, upload.single('plan'), validatePdfFile, async (req: any, res: any) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
@@ -80,7 +108,7 @@ router.post('/count-pages', protect, upload.single('plan'), validatePdfFile, asy
             const pdfString = dataBuffer.toString('binary');
             const pageMatches = pdfString.match(/\/Type\s*\/Page\b/g);
             if (pageMatches && pageMatches.length > 0) {
-              pages = pageMatches.length;
+              pages = Math.min(pageMatches.length, 10000);
             } else {
               pages = 1;
             }
@@ -97,7 +125,7 @@ router.post('/count-pages', protect, upload.single('plan'), validatePdfFile, asy
       fs.unlinkSync(filePath);
     }
 
-    res.json({ pages });
+    res.json({ pages: Math.min(Math.max(Number(pages) || 1, 1), 10000) });
   } catch (err) {
     logger.error('Failed to count pages', err);
     if (fs.existsSync(filePath)) {
@@ -134,13 +162,9 @@ router.post('/upload', protect, uploadLimiter, (req: any, res: any) => {
         if (req.body.steps) {
           try {
             const parsed = JSON.parse(req.body.steps);
-            if (Array.isArray(parsed)) {
-              selectedSteps = parsed.map((s: any) => String(s));
-            }
+            selectedSteps = sanitizeStepIds(parsed);
           } catch (e) {
-            if (typeof req.body.steps === 'string') {
-              selectedSteps = req.body.steps.split(',').map((s: string) => s.trim()).filter(Boolean);
-            }
+            selectedSteps = sanitizeStepIds(req.body.steps);
           }
         }
 
@@ -277,7 +301,8 @@ router.patch('/:id', protect, async (req: any, res) => {
     }
 
     // Only allow marking specific issues as resolved (not full report replacement)
-    if (resolvedIssueIds && Array.isArray(resolvedIssueIds)) {
+    const safeResolvedIssueIds = sanitizeResolvedIssueIds(resolvedIssueIds);
+    if (safeResolvedIssueIds) {
       let currentResult = existingPlan.analysisResult;
       let depth = 0;
       while (typeof currentResult === 'string' && depth < 5) {
@@ -290,7 +315,7 @@ router.patch('/:id', protect, async (req: any, res) => {
       if (!currentResult.resolvedIssueIds) {
         currentResult.resolvedIssueIds = [];
       }
-      currentResult.resolvedIssueIds = [...new Set([...currentResult.resolvedIssueIds, ...resolvedIssueIds])];
+      currentResult.resolvedIssueIds = [...new Set([...currentResult.resolvedIssueIds, ...safeResolvedIssueIds])].slice(0, 500);
 
       await pool.query(
         'UPDATE `plan` SET analysisResult = ? WHERE id = ?',

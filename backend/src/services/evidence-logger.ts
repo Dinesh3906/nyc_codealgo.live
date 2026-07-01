@@ -1,5 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'evidence-logger' });
 
 export interface AuditEvidence {
   auditId: string;
@@ -38,7 +41,7 @@ export class EvidenceLogger {
         fs.mkdirSync(this.evidenceDir, { recursive: true });
       }
 
-      const planId = evidence.auditId || 'unknown';
+      const planId = String(evidence.auditId || 'unknown').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
       const filepath = path.join(this.evidenceDir, `audit_${planId}.json`);
       
       let existing: any[] = [];
@@ -57,7 +60,7 @@ export class EvidenceLogger {
 
       fs.writeFileSync(filepath, JSON.stringify(existing, null, 2), 'utf8');
     } catch (err) {
-      console.error('[EvidenceLogger] Failed to log evidence:', err);
+      logger.error('Failed to log evidence', err);
     }
   }
 }

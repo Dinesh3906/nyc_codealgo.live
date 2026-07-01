@@ -1,4 +1,7 @@
 import { performance } from 'perf_hooks';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'profiler-service' });
 
 interface StageTime {
   start?: number;
@@ -167,7 +170,7 @@ export class ProfilerService {
     }
     textSummary += `===============================================================\n`;
 
-    console.log(textSummary);
+    logger.debug('Performance profile summary generated', { planId });
 
     // Clean up
     this.profiles.delete(planId);

@@ -4,6 +4,9 @@ import { MonitoringService } from './monitoring.service';
 import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
+import { Logger } from './logger';
+
+const logger = new Logger({ stage: 'gemini-cache' });
 
 interface CacheEntry {
   fileUri: string;
@@ -41,7 +44,7 @@ export class GeminiCacheManager {
     // If cache exists and is still valid
     if (existing && existing.expiresAt > now) {
       MonitoringService.trackCacheEvent(planId, 'hit');
-      console.log(`[GeminiCacheManager] Cache hit for plan ${planId}. Cache name: ${existing.cacheName}`);
+      logger.debug('Cache hit', { planId, isCached: !!existing.cacheName });
       if (existing.cacheName && existing.cacheModel) {
         GeminiClient.registerCache(existing.cacheName, existing.cacheModel, existing.fileUri, existing.inlineData);
       }
@@ -57,14 +60,14 @@ export class GeminiCacheManager {
 
     // Cache miss
     MonitoringService.trackCacheEvent(planId, 'miss');
-    console.log(`[GeminiCacheManager] Cache miss for plan ${planId}. Checking if cache is needed...`);
+    logger.debug('Cache miss', { planId });
 
     // Estimate tokens and bytes to decide if we should cache
     const { tokens, bytes } = await this.estimateTokensAndBytes(filePath);
     const shouldCache = bytes > 2 * 1024 * 1024 || tokens > 2048;
 
     if (!shouldCache) {
-      console.log(`[GeminiCacheManager] Skipping Context Cache and File API upload for plan ${planId} (Size: ${(bytes / 1024 / 1024).toFixed(2)}MB, Est. Tokens: ${tokens}). Using direct inline data.`);
+      logger.debug('Skipping context cache for small document', { planId, bytes, tokens });
       const inlineData = fs.readFileSync(filePath).toString('base64');
       const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
       const entry: CacheEntry = {
@@ -85,7 +88,7 @@ export class GeminiCacheManager {
       };
     }
 
-    console.log(`[GeminiCacheManager] Context Cache is required. Uploading document to File API...`);
+    logger.debug('Context cache required; uploading document to file API', { planId });
     const originalFileStats = fs.statSync(filePath);
     const originalBytes = originalFileStats.size;
 
@@ -109,7 +112,7 @@ export class GeminiCacheManager {
       const apiKeys = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
       const apiKey = apiKeys[0] || ''; // Use first key for cache creation
 
-      console.log(`[GeminiCacheManager] Creating Context Cache for ${fileResourceName} (model: ${baseModelName}, ttl: ${ttlSeconds}s)...`);
+      logger.debug('Creating context cache', { planId, model: baseModelName, ttlSeconds });
 
       const cacheUrl = `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`;
       const response = await fetch(cacheUrl, {
@@ -137,12 +140,11 @@ export class GeminiCacheManager {
         const cacheResult: any = await response.json();
         cacheName = cacheResult.name; // projects/.../locations/.../cachedContents/xxxx
         isCached = true;
-        console.log(`[GeminiCacheManager] Context Cache created successfully: ${cacheName}`);
+        logger.debug('Context cache created', { planId });
         GeminiClient.registerCache(cacheName, baseModelName, fileUri, undefined);
       } else {
-        const errText = await response.text();
-        console.warn(`[GeminiCacheManager] Failed to create Context Cache: ${response.status} ${response.statusText}. ` +
-          `Falling back to non-cached direct inline data. Error: ${errText}`);
+        await response.text();
+        logger.warn('Failed to create context cache; falling back to inline data', { planId, status: response.status });
         
         // Fall back to inline data on cache creation failure
         const inlineData = fs.readFileSync(filePath).toString('base64');
@@ -164,7 +166,7 @@ export class GeminiCacheManager {
         };
       }
     } catch (e: any) {
-      console.warn(`[GeminiCacheManager] Cache creation exception: ${e.message || e}. Falling back to non-cached direct inline data.`);
+      logger.warn('Cache creation exception; falling back to inline data', { planId });
       
       const inlineData = fs.readFileSync(filePath).toString('base64');
       const expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
@@ -234,11 +236,11 @@ export class GeminiCacheManager {
       if (response.ok) {
         entry.expiresAt = now + PIPELINE_CONFIG.cacheTTLMinutes * 60 * 1000;
         this.caches.set(planId, entry);
-        console.log(`[GeminiCacheManager] Cache TTL refreshed for ${entry.cacheName}`);
+        logger.debug('Cache TTL refreshed', { planId });
         return true;
       }
     } catch (e) {
-      console.warn(`[GeminiCacheManager] Failed to touch cache:`, e);
+      logger.warn('Failed to touch cache', { planId });
     }
     return false;
   }
@@ -250,7 +252,7 @@ export class GeminiCacheManager {
     const entry = this.caches.get(planId);
     if (!entry) return;
 
-    console.log(`[GeminiCacheManager] Cleaning up cache/files for plan ${planId}...`);
+    logger.debug('Cleaning up cache/files', { planId });
 
     // 1. Delete Cached Content (REST API)
     if (entry.cacheName) {
@@ -259,9 +261,9 @@ export class GeminiCacheManager {
         const apiKey = rawKeys.split(',').map(k => k.trim()).filter(Boolean)[0] || '';
         const url = `https://generativelanguage.googleapis.com/v1beta/${entry.cacheName}?key=${apiKey}`;
         await fetch(url, { method: 'DELETE' });
-        console.log(`[GeminiCacheManager] Deleted Context Cache: ${entry.cacheName}`);
+        logger.debug('Deleted context cache', { planId });
       } catch (e) {
-        console.warn(`[GeminiCacheManager] Non-critical error deleting cache ${entry.cacheName}:`, e);
+        logger.warn('Non-critical error deleting cache', { planId });
       }
     }
 
@@ -289,7 +291,7 @@ export class GeminiCacheManager {
       const words = text.trim().split(/\s+/).filter(Boolean).length;
       textTokens = Math.round(words * 1.33);
     } catch (e) {
-      console.warn("[GeminiCacheManager] Failed to parse PDF text for token estimation:", e);
+      logger.warn('Failed to parse PDF text for token estimation');
     }
 
     let visualTokens = 0;
@@ -300,7 +302,7 @@ export class GeminiCacheManager {
       // Assume 258 tokens per page for visual layout reasoning fallback
       visualTokens = pageCount * 258;
     } catch (e) {
-      console.warn("[GeminiCacheManager] Failed to count pages for token estimation:", e);
+      logger.warn('Failed to count pages for token estimation');
       const estPages = Math.max(1, Math.round(bytes / 500000));
       visualTokens = estPages * 258;
     }

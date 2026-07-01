@@ -85,7 +85,6 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         });
         setPageCount(response.data.pages || 1);
       } catch (err) {
-        console.error("Failed to count pages:", err);
         setPageCount(1); // fallback
       } finally {
         setCountingPages(false);
@@ -178,7 +177,6 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           setStatus('error');
         }
       } catch (err) {
-        console.error("Polling error:", err);
       }
     };
 
@@ -223,7 +221,6 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
       setActivePlanId(response.data.planId);
       setStatus('analyzing');
     } catch (err: any) {
-      console.error(err);
       setErrorMessage(err.response?.data?.message || "Upload failed");
       setStatus('error');
     }
@@ -768,7 +765,6 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
       await downloadPdfDocument(doc, buildPdfFilename("Forensic_Report", file.name));
     } catch (err) {
-      console.error("PDF generation error:", err);
       alert("Failed to generate PDF. Please try again.");
     }
   };

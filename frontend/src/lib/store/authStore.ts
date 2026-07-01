@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 interface User {
   id: string;
@@ -20,37 +19,22 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      hasHydrated: false,
-      setHasHydrated: (value) => set({ hasHydrated: value }),
-      login: (user) => set({ 
-        user, 
-        isAuthenticated: true 
-      }),
-      setUser: (user) => set({ 
-        user, 
-        isAuthenticated: !!user 
-      }),
-      logout: () => set({ 
-        user: null, 
-        isAuthenticated: false 
-      }),
+  (set) => ({
+    user: null,
+    isAuthenticated: false,
+    hasHydrated: true,
+    setHasHydrated: (value) => set({ hasHydrated: value }),
+    login: (user) => set({
+      user,
+      isAuthenticated: true
     }),
-    {
-      name: 'nyc-house-code-auth',
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-
-        const hasUser = !!state.user?.email;
-        if (hasUser !== state.isAuthenticated) {
-          state.setUser(hasUser ? state.user : null);
-        }
-
-        state.setHasHydrated(true);
-      },
-    }
-  )
+    setUser: (user) => set({
+      user,
+      isAuthenticated: !!user
+    }),
+    logout: () => set({
+      user: null,
+      isAuthenticated: false
+    }),
+  })
 );

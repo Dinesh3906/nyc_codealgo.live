@@ -9,10 +9,24 @@ import { sendAdminOtpEmail, sendGiftPagesEmail } from '../services/mail.service'
 import { Logger } from '../services/logger';
 
 const logger = new Logger({ stage: 'admin-routes' });
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const OTP_PATTERN = /^\d{6}$/;
+const NOTIFICATION_TYPES = new Set(['info', 'news', 'update', 'alert']);
+
+const cleanText = (value: unknown, maxLength: number): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 && trimmed.length <= maxLength ? trimmed : null;
+};
+
+const normalizeEmail = (value: unknown): string | null => {
+  const email = cleanText(value, 254)?.toLowerCase();
+  return email && EMAIL_PATTERN.test(email) ? email : null;
+};
 
 const router = Router();
-const ADMIN_EMAILS = ['chalams115@gmail.com', 'sathvi2018@gmail.com'];
-
 // Helper middleware to check if user is in authorized admin list
 const requireAdmin = (req: any, res: Response, next: NextFunction) => {
   if (!req.user || req.user.role !== 'admin') {
@@ -23,7 +37,7 @@ const requireAdmin = (req: any, res: Response, next: NextFunction) => {
 
 // Middleware to verify the short-lived admin OTP session token
 const verifyAdminSession = (req: any, res: Response, next: NextFunction) => {
-  const adminToken = req.cookies?.admin_session || req.headers['x-admin-token'];
+  const adminToken = req.cookies?.admin_session;
   
   if (!adminToken) {
     return res.status(401).json({ message: 'Verification required. Admin OTP token missing.' });
@@ -71,10 +85,10 @@ router.post('/send-otp', protect, requireAdmin, async (req: any, res: Response) 
 // @desc    Verify OTP and return an admin session token
 // @access  Private (Admins Only)
 router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response) => {
-  const { otp } = req.body;
+  const otp = typeof req.body?.otp === 'string' ? req.body.otp.trim() : '';
 
-  if (!otp) {
-    return res.status(400).json({ message: 'Verification OTP is required.' });
+  if (!OTP_PATTERN.test(otp)) {
+    return res.status(400).json({ message: 'A valid 6-digit verification OTP is required.' });
   }
 
   try {
@@ -126,23 +140,26 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      domain: COOKIE_DOMAIN,
       maxAge: 2 * 60 * 60 * 1000, // 2 hours
       path: '/',
     });
 
-    res.cookie('admin_verified', 'true', {
-      httpOnly: false, // Read by frontend
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 2 * 60 * 60 * 1000, // 2 hours
-      path: '/',
-    });
-
-    res.json({ adminSessionToken });
+    res.json({ verified: true });
   } catch (error) {
     logger.error('Verify Admin OTP Error', error);
     res.status(500).json({ message: 'Failed to verify OTP.' });
   }
+});
+
+// @route   GET /api/admin/session
+// @desc    Confirm the short-lived admin OTP session is still valid
+// @access  Private (Admins Only + Verified Session)
+router.get('/session', protect, requireAdmin, verifyAdminSession, (req: any, res: Response) => {
+  res.json({
+    verified: true,
+    expiresAt: req.adminSession?.exp ? req.adminSession.exp * 1000 : null,
+  });
 });
 
 // @route   GET /api/admin/users
@@ -174,15 +191,11 @@ router.get('/users', protect, requireAdmin, verifyAdminSession, async (req: any,
 // @desc    Add page limit to a user and trigger notification email
 // @access  Private (Admins Only + Verified Session)
 router.post('/gift-pages', protect, requireAdmin, verifyAdminSession, async (req: any, res: Response) => {
-  const { email, pages } = req.body;
+  const email = normalizeEmail(req.body?.email);
+  const pagesNum = Number(req.body?.pages);
 
-  if (!email || pages === undefined || pages === null) {
-    return res.status(400).json({ message: 'User email and pages count are required.' });
-  }
-
-  const pagesNum = Number(pages);
-  if (isNaN(pagesNum) || pagesNum <= 0) {
-    return res.status(400).json({ message: 'Gift pages must be a positive number.' });
+  if (!email || !Number.isInteger(pagesNum) || pagesNum < 1 || pagesNum > 1000) {
+    return res.status(400).json({ message: 'A valid target email and 1-1000 gift pages are required.' });
   }
 
   try {
@@ -233,13 +246,15 @@ router.post('/gift-pages', protect, requireAdmin, verifyAdminSession, async (req
 // @desc    Send a system-wide notification to all users
 // @access  Private (Admins Only + Verified Session)
 router.post('/broadcast-notification', protect, requireAdmin, verifyAdminSession, async (req: any, res: Response) => {
-  const { title, message, type } = req.body;
+  const title = cleanText(req.body?.title, 120);
+  const message = cleanText(req.body?.message, 2000);
+  const notifType = typeof req.body?.type === 'string' && NOTIFICATION_TYPES.has(req.body.type)
+    ? req.body.type
+    : 'info';
 
   if (!title || !message) {
     return res.status(400).json({ message: 'Notification title and message are required.' });
   }
-
-  const notifType = type || 'info'; // 'info', 'news', 'update', 'alert'
 
   try {
     const [users]: any = await pool.query('SELECT id FROM `user`');
@@ -270,6 +285,10 @@ router.post('/broadcast-notification', protect, requireAdmin, verifyAdminSession
 // @access  Private (Admins Only + Verified Session)
 router.post('/users/:id/revoke', protect, requireAdmin, verifyAdminSession, async (req: any, res: Response) => {
   const userId = req.params.id;
+
+  if (!UUID_PATTERN.test(userId)) {
+    return res.status(400).json({ message: 'A valid user id is required.' });
+  }
 
   try {
     const [result]: any = await pool.query(

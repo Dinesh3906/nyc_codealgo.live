@@ -4,6 +4,7 @@ import pool from '../db';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { Logger } from '../services/logger';
+import { billingLimiter } from '../middleware/rateLimit.middleware';
 
 const logger = new Logger({ stage: 'billing' });
 
@@ -25,6 +26,11 @@ const getRazorpay = () => {
 };
 
 const router = Router();
+
+router.use((req, res, next) => {
+  if (req.path === '/webhook') return next();
+  return billingLimiter(req, res, next);
+});
 
 type UserColumnSet = Set<string>;
 let userColumnCache: UserColumnSet | null = null;
@@ -120,6 +126,10 @@ router.post('/validate-coupon', protect, async (req: any, res) => {
     // 'CODE': DiscountAmount
   };
 
+  if (typeof code !== 'string' || code.length > 64) {
+    return res.status(400).json({ valid: false, message: 'Invalid coupon code' });
+  }
+
   const discount = coupons[code.toUpperCase()];
   if (discount !== undefined) {
     res.json({ valid: true, discount: discount });
@@ -148,13 +158,16 @@ router.post('/create-checkout', protect, async (req: any, res) => {
     return res.status(400).json({ message: 'Invalid plan selected.' });
   }
 
-  const pagesCount = plan === 'monthly-15k' ? 15000 : parseInt(pages);
+  const pagesCount = plan === 'monthly-15k' ? 15000 : Number.parseInt(String(pages), 10);
   if (isNaN(pagesCount) || pagesCount <= 0) {
     return res.status(400).json({ message: 'Invalid page count requested.' });
   }
 
   if (plan === 'custom-topup' && pagesCount < 100) {
     return res.status(400).json({ message: 'Minimum custom top-up is 100 pages.' });
+  }
+  if (plan === 'custom-topup' && pagesCount > 100000) {
+    return res.status(400).json({ message: 'Maximum custom top-up is 100,000 pages.' });
   }
   
   logger.info('Creating Razorpay order', { userId, plan, pages: pagesCount });
@@ -241,7 +254,7 @@ router.post('/confirm-session', protect, async (req: any, res) => {
     }
 
     const planType = String(order.notes?.planType || '');
-    const pagesCount = parseInt(String(order.notes?.pages || '0'));
+    const pagesCount = Number.parseInt(String(order.notes?.pages || '0'), 10);
 
     if (planType !== 'monthly-15k' && planType !== 'custom-topup') {
       return res.status(400).json({ message: 'Could not determine purchased plan.' });
@@ -283,6 +296,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     // Verify HMAC signature
     const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(String(req.body));
+    if (rawBody.length === 0 || rawBody.length > 1024 * 1024) {
+      return res.status(400).json({ received: false });
+    }
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
       .update(rawBody)
@@ -319,7 +335,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
       const order = await razorpay.orders.fetch(orderId);
       const userId = order.notes?.userId ? String(order.notes.userId) : '';
       const planType = order.notes?.planType ? String(order.notes.planType) : '';
-      const pagesCount = parseInt(String(order.notes?.pages || '0'));
+      const pagesCount = Number.parseInt(String(order.notes?.pages || '0'), 10);
 
       if (!userId || (planType !== 'monthly-15k' && planType !== 'custom-topup')) {
         logger.warn('Webhook order has invalid metadata', { orderId });
@@ -334,8 +350,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     res.json({ received: true });
   } catch (error) {
     logger.error('Webhook processing error', error);
-    // Always return 200 to prevent Razorpay retries on our errors
-    res.json({ received: true });
+    res.status(500).json({ received: false });
   }
 });
 

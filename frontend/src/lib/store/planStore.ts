@@ -42,7 +42,6 @@ export const usePlanStore = create<PlanState>((set, get) => ({
       });
       set({ plans, loading: false });
     } catch (err) {
-      console.error(err);
       set({ loading: false });
     }
   },
@@ -55,7 +54,6 @@ export const usePlanStore = create<PlanState>((set, get) => ({
       await api.delete(`/plans/${id}`);
       toast.success("Plan deleted successfully");
     } catch (err) {
-      console.error(err);
       toast.error("Error deleting plan. Restoring...");
       // Rollback on failure
       set({ plans: previousPlans });
@@ -76,12 +74,9 @@ export const usePlanStore = create<PlanState>((set, get) => ({
 
     socket.on('connect', () => {
       set({ socketConnected: true });
-      console.log('Socket connected to backend');
     });
 
     socket.on('analysis-status', (data) => {
-      console.log('Analysis Status Update:', data);
-
       if (data.status === 'COMPLETE') {
         toast.success(`Scan Complete: ${data.report.score}% Compliance`, {
           duration: 5000,

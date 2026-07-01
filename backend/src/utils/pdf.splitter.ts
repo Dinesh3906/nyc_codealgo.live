@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
+import { Logger } from '../services/logger';
+
+const logger = new Logger({ stage: 'pdf-splitter' });
 
 export class PDFSplitter {
   private static tempDir = path.resolve('uploads/temp_pages/');
@@ -45,10 +48,10 @@ export class PDFSplitter {
       const destBytes = await destDoc.save();
       fs.writeFileSync(destPath, destBytes);
 
-      console.log(`[PDFSplitter] Extracted page ${pageNumber} of ${resolvedSrc} -> ${destPath} (${destBytes.length} bytes)`);
+      logger.debug('Extracted PDF page', { pageNumber, bytes: destBytes.length });
       return destPath;
     } catch (err: any) {
-      console.error(`[PDFSplitter] Error extracting page ${pageNumber}:`, err);
+      logger.error('Error extracting PDF page', err, { pageNumber });
       throw err;
     }
   }
@@ -61,10 +64,10 @@ export class PDFSplitter {
       const resolved = path.resolve(filePath);
       if (fs.existsSync(resolved)) {
         fs.unlinkSync(resolved);
-        console.log(`[PDFSplitter] Cleaned up temporary page: ${resolved}`);
+        logger.debug('Cleaned up temporary PDF page');
       }
     } catch (e) {
-      console.warn(`[PDFSplitter] Failed to delete temporary page ${filePath}:`, e);
+      logger.warn('Failed to delete temporary PDF page');
     }
   }
 }
