@@ -28,7 +28,36 @@ async function migrate() {
       console.log('ℹ️ refreshTokenHash column already exists or ALTER failed:', err.message);
     }
 
-    // 3. Promote initial admin emails to admin role
+    // 3. Add/Modify adminOtp columns (for secure OTP panel verification)
+    try {
+      // Widen adminOtp to VARCHAR(255) for bcrypt hashes
+      await pool.query("ALTER TABLE `user` MODIFY COLUMN `adminOtp` VARCHAR(255) NULL");
+      console.log('✅ Modified adminOtp column to VARCHAR(255).');
+    } catch (err: any) {
+      // If it doesn't exist yet, we add it
+      try {
+        await pool.query("ALTER TABLE `user` ADD COLUMN `adminOtp` VARCHAR(255) NULL");
+        console.log('✅ Added adminOtp column to user table.');
+      } catch (addErr: any) {
+        console.log('ℹ️ adminOtp column already exists or ALTER failed:', addErr.message);
+      }
+    }
+
+    try {
+      await pool.query("ALTER TABLE `user` ADD COLUMN `adminOtpExpiry` DATETIME NULL");
+      console.log('✅ Added adminOtpExpiry column to user table.');
+    } catch (err: any) {
+      console.log('ℹ️ adminOtpExpiry column already exists or ALTER failed:', err.message);
+    }
+
+    try {
+      await pool.query("ALTER TABLE `user` ADD COLUMN `adminOtpAttempts` INT DEFAULT 0");
+      console.log('✅ Added adminOtpAttempts column to user table.');
+    } catch (err: any) {
+      console.log('ℹ️ adminOtpAttempts column already exists or ALTER failed:', err.message);
+    }
+
+    // 4. Promote initial admin emails to admin role
     const adminEmails = (process.env.INITIAL_ADMIN_EMAILS || '')
       .split(',')
       .map(email => email.trim().toLowerCase())
