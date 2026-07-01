@@ -1,0 +1,1026 @@
+{
+  "building_code": [
+    {
+      "filename": "2022BC_AppendixA_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixB_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixC_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixD_FireDistrictsWBwm.pdf",
+      "pages": 44
+    },
+    {
+      "filename": "2022BC_AppendixE_SuppAccessibilityWBwm.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "2022BC_AppendixF_Rodent-ProofingWBwm.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "2022BC_AppendixG_FloodResistantWBwm.pdf",
+      "pages": 36
+    },
+    {
+      "filename": "2022BC_AppendixH_OutdoorSignsWBwm.pdf",
+      "pages": 9
+    },
+    {
+      "filename": "2022BC_AppendixI_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixJ_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixK_ElevatorStandardsWBwm.pdf",
+      "pages": 79
+    },
+    {
+      "filename": "2022BC_AppendixL_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixM_One-TwoWBwm.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "2022BC_AppendixN_AssistiveListeningWBwm.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "2022BC_AppendixO_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixP_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_AppendixQ_FireStandardsWBwm.pdf",
+      "pages": 47
+    },
+    {
+      "filename": "2022BC_AppendixR_AcousticalTileWBwm.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "2022BC_AppendixS_ExitPathMarkingsWBwm.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "2022BC_AppendixU_AncillaryDwellingWBwm.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "2022BC_Chapter01_AdministrationWBwm.pdf",
+      "pages": 11
+    },
+    {
+      "filename": "2022BC_Chapter02_DefinitionsWBwm.pdf",
+      "pages": 64
+    },
+    {
+      "filename": "2022BC_Chapter03_OccupancyClassWBwm.pdf",
+      "pages": 20
+    },
+    {
+      "filename": "2022BC_Chapter04_SpecialUseWBwm.pdf",
+      "pages": 69
+    },
+    {
+      "filename": "2022BC_Chapter05_HeightAreaWBwm.pdf",
+      "pages": 24
+    },
+    {
+      "filename": "2022BC_Chapter06_ConstructionTypeWBwm.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2022BC_Chapter07_FireResistanceWBwm.pdf",
+      "pages": 103
+    },
+    {
+      "filename": "2022BC_Chapter08_InteriorFinishesWBwm.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "2022BC_Chapter09_FireProtectionWBwm.pdf",
+      "pages": 67
+    },
+    {
+      "filename": "2022BC_Chapter10_EgressWBwm.pdf",
+      "pages": 80
+    },
+    {
+      "filename": "2022BC_Chapter11_AccessibilityWBwm.pdf",
+      "pages": 38
+    },
+    {
+      "filename": "2022BC_Chapter12_InteriorEnvironmentWBwm.pdf",
+      "pages": 17
+    },
+    {
+      "filename": "2022BC_Chapter14_ExteriorWallsWBwm.pdf",
+      "pages": 18
+    },
+    {
+      "filename": "2022BC_Chapter15_RoofsRooftopsWBwm.pdf",
+      "pages": 26
+    },
+    {
+      "filename": "2022BC_Chapter16_StructuralDesignWBwm.pdf",
+      "pages": 57
+    },
+    {
+      "filename": "2022BC_Chapter17_SpecialInspectionsWBwm.pdf",
+      "pages": 40
+    },
+    {
+      "filename": "2022BC_Chapter18_SoilsFoundationsWBwm.pdf",
+      "pages": 54
+    },
+    {
+      "filename": "2022BC_Chapter19_ConcreteWBwm.pdf",
+      "pages": 22
+    },
+    {
+      "filename": "2022BC_Chapter20_AluminimWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_Chapter21_MasonryWBwm.pdf",
+      "pages": 26
+    },
+    {
+      "filename": "2022BC_Chapter22_SteelWBwm.pdf",
+      "pages": 8
+    },
+    {
+      "filename": "2022BC_Chapter23_WoodWBwm.pdf",
+      "pages": 90
+    },
+    {
+      "filename": "2022BC_Chapter24_GlassGlazingWBwm.pdf",
+      "pages": 11
+    },
+    {
+      "filename": "2022BC_Chapter25_GypsumBoardWBwm.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "2022BC_Chapter26_PlasticWBwm.pdf",
+      "pages": 17
+    },
+    {
+      "filename": "2022BC_Chapter30_ElevatorsWBwm.pdf",
+      "pages": 15
+    },
+    {
+      "filename": "2022BC_Chapter31_SpecConstructionWBwm.pdf",
+      "pages": 15
+    },
+    {
+      "filename": "2022BC_Chapter32_PublicRightofWayWBwm.pdf",
+      "pages": 8
+    },
+    {
+      "filename": "2022BC_Chapter33_Con_DemoSafetyWBwm.pdf",
+      "pages": 137
+    },
+    {
+      "filename": "2022BC_Chapter34_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_Chapter35_RefStandardsWBwm.pdf",
+      "pages": 33
+    }
+  ],
+  "plumbing_code": [
+    {
+      "filename": "2022BC_Chapter29_PlumbingWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022PC_AppendixA_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022PC_AppendixB_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022PC_AppendixC_StructuralSafetyWBwm.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "2022PC_AppendixD_ReservedWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022PC_AppendixE_WaterPipingWBwm.pdf",
+      "pages": 19
+    },
+    {
+      "filename": "2022PC_Chapter10_TrapsWBwm.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "2022PC_Chapter11_StormDrainageWBwm.pdf",
+      "pages": 20
+    },
+    {
+      "filename": "2022PC_Chapter12_SpecialPipingWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022PC_Chapter13_NonpotableWaterWBwm.pdf",
+      "pages": 12
+    },
+    {
+      "filename": "2022PC_Chapter14_SubsurfaceIrrigationWBwm.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2022PC_Chapter15_RefStandardsWBwm.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "2022PC_Chapter1_AdministrationWBwm.pdf",
+      "pages": 9
+    },
+    {
+      "filename": "2022PC_Chapter2_DefinitionsWBwm.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "2022PC_Chapter3_GenRegsWBwm.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "2022PC_Chapter4_FixturesWBwm.pdf",
+      "pages": 18
+    },
+    {
+      "filename": "2022PC_Chapter5_WaterHeatersWBwm.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "2022PC_Chapter6_WaterSupplyWBwm.pdf",
+      "pages": 26
+    },
+    {
+      "filename": "2022PC_Chapter7_SanitaryDrainageWBwm.pdf",
+      "pages": 22
+    },
+    {
+      "filename": "2022PC_Chapter8_IndirectWasteWBwm.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2022PC_Chapter9_VentsWBwm.pdf",
+      "pages": 12
+    }
+  ],
+  "mechanical_code": [
+    {
+      "filename": "2022BC_Chapter28_MechanicalWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022MC_AppendixA_ChimneyConnectorWB.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "2022MC_AppendixB_ReservedWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022MC_AppendixC_FuelOilStorageWB.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "2022MC_Chapter10_BoilersWB.pdf",
+      "pages": 8
+    },
+    {
+      "filename": "2022MC_Chapter11_RefrigerationWB.pdf",
+      "pages": 18
+    },
+    {
+      "filename": "2022MC_Chapter12_HydronicPipingWB.pdf",
+      "pages": 13
+    },
+    {
+      "filename": "2022MC_Chapter13_FuelOilPipingWB.pdf",
+      "pages": 19
+    },
+    {
+      "filename": "2022MC_Chapter14_SolarSystemsWB.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "2022MC_Chapter15_RefStandardsWB.pdf",
+      "pages": 13
+    },
+    {
+      "filename": "2022MC_Chapter1_AdministrationWB.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "2022MC_Chapter2_DefinitionsWB.pdf",
+      "pages": 18
+    },
+    {
+      "filename": "2022MC_Chapter3_GenRegsWB.pdf",
+      "pages": 15
+    },
+    {
+      "filename": "2022MC_Chapter4_VentilationWB.pdf",
+      "pages": 13
+    },
+    {
+      "filename": "2022MC_Chapter5_ExhaustWB.pdf",
+      "pages": 35
+    },
+    {
+      "filename": "2022MC_Chapter6_DuctsWB.pdf",
+      "pages": 20
+    },
+    {
+      "filename": "2022MC_Chapter7_CombustionAirWB.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2022MC_Chapter8_ChimneysVentsWB.pdf",
+      "pages": 17
+    },
+    {
+      "filename": "2022MC_Chapter9_SpecificAppliancesWB.pdf",
+      "pages": 10
+    }
+  ],
+  "fuel_gas_code": [
+    {
+      "filename": "2022FGC_AppendixA_ReservedWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022FGC_AppendixB_ReservedWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022FGC_AppendixC_ReservedWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022FGC_AppendixD_ReservedWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022FGC_AppendixE_GasServiceWB.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "2022FGC_AppendixF_ReservedWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022FGC_AppendixG_HPNaturalGasWB.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "2022FGC_Chapter1_AdministrationWB.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "2022FGC_Chapter2_DefinitionsWB.pdf",
+      "pages": 13
+    },
+    {
+      "filename": "2022FGC_Chapter3_GenRegsWB.pdf",
+      "pages": 20
+    },
+    {
+      "filename": "2022FGC_Chapter4_GasPipingWB.pdf",
+      "pages": 30
+    },
+    {
+      "filename": "2022FGC_Chapter5_ChimneysVentsWB.pdf",
+      "pages": 66
+    },
+    {
+      "filename": "2022FGC_Chapter6_SpecAppliancesWB.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "2022FGC_Chapter7_GaseousHydrogenWB.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022FGC_Chapter8_RefStandardsWB.pdf",
+      "pages": 5
+    }
+  ],
+  "electrical_code": [
+    {
+      "filename": "eab_eliminated_sn.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "electrical_code_handbook_2018.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "oldeabfilings-sn.pdf",
+      "pages": 1
+    }
+  ],
+  "energy_code": [
+    {
+      "filename": "2025nycecc_appendix_rf.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "2025nycecc_c1.pdf",
+      "pages": 8
+    },
+    {
+      "filename": "2025nycecc_c2.pdf",
+      "pages": 19
+    },
+    {
+      "filename": "2025nycecc_c3.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2025nycecc_c4.pdf",
+      "pages": 203
+    },
+    {
+      "filename": "2025nycecc_c5.pdf",
+      "pages": 11
+    },
+    {
+      "filename": "2025nycecc_c6.pdf",
+      "pages": 8
+    },
+    {
+      "filename": "2025nycecc_r2.pdf",
+      "pages": 11
+    },
+    {
+      "filename": "2025nycecc_r3.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2025nycecc_r4.pdf",
+      "pages": 55
+    },
+    {
+      "filename": "2025nycecc_r5.pdf",
+      "pages": 6
+    },
+    {
+      "filename": "2025nycecc_r6.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "2025nyc_ashrae.pdf",
+      "pages": 409
+    },
+    {
+      "filename": "2025_acknowledgements_energy.pdf",
+      "pages": 2
+    }
+  ],
+  "fire_code": [
+    {
+      "filename": "appendix-a-2022.pdf",
+      "pages": 17
+    },
+    {
+      "filename": "appendix-b-2022.pdf",
+      "pages": 33
+    },
+    {
+      "filename": "chapter-1-2022.pdf",
+      "pages": 45
+    },
+    {
+      "filename": "chapter-10-2022.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "chapter-11-19-2022.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "chapter-2-2022.pdf",
+      "pages": 53
+    },
+    {
+      "filename": "chapter-20-2022.pdf",
+      "pages": 17
+    },
+    {
+      "filename": "chapter-21-2022.pdf",
+      "pages": 9
+    },
+    {
+      "filename": "chapter-22-2022.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "chapter-23-2022.pdf",
+      "pages": 43
+    },
+    {
+      "filename": "chapter-24-2022.pdf",
+      "pages": 21
+    },
+    {
+      "filename": "chapter-25-2022.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "chapter-26-2022.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "chapter-27-2022.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "chapter-28-2022.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "chapter-29-2022.pdf",
+      "pages": 6
+    },
+    {
+      "filename": "chapter-3-2022.pdf",
+      "pages": 38
+    },
+    {
+      "filename": "chapter-30-2022.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "chapter-31-2022.pdf",
+      "pages": 6
+    },
+    {
+      "filename": "chapter-32-2022.pdf",
+      "pages": 17
+    },
+    {
+      "filename": "chapter-33-2022.pdf",
+      "pages": 12
+    },
+    {
+      "filename": "chapter-34-2022.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "chapter-35-2022.pdf",
+      "pages": 11
+    },
+    {
+      "filename": "chapter-36-2022.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "chapter-37-2022.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "chapter-38-39-2022.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "chapter-4-2022.pdf",
+      "pages": 32
+    },
+    {
+      "filename": "chapter-40-2022.pdf",
+      "pages": 15
+    },
+    {
+      "filename": "chapter-41-49-2022.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "chapter-5-2022.pdf",
+      "pages": 28
+    },
+    {
+      "filename": "chapter-50-2022.pdf",
+      "pages": 49
+    },
+    {
+      "filename": "chapter-51-2022.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "chapter-52-2022.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "chapter-53-2022.pdf",
+      "pages": 13
+    },
+    {
+      "filename": "chapter-54-2022.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "chapter-55-2022.pdf",
+      "pages": 11
+    },
+    {
+      "filename": "chapter-56-2022.pdf",
+      "pages": 65
+    },
+    {
+      "filename": "chapter-57-2022.pdf",
+      "pages": 77
+    },
+    {
+      "filename": "chapter-58-2022.pdf",
+      "pages": 15
+    },
+    {
+      "filename": "chapter-59-2022.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "chapter-6-2022.pdf",
+      "pages": 36
+    },
+    {
+      "filename": "chapter-60-2022.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "chapter-61-2022.pdf",
+      "pages": 10
+    },
+    {
+      "filename": "chapter-62-2022.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "chapter-63-2022.pdf",
+      "pages": 9
+    },
+    {
+      "filename": "chapter-64-2022.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "chapter-65-2022.pdf",
+      "pages": 3
+    },
+    {
+      "filename": "chapter-66-2022.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "chapter-67-2022.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "chapter-68-79-2022.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "chapter-7-2022.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "chapter-8-2022.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "chapter-80-2022.pdf",
+      "pages": 7
+    },
+    {
+      "filename": "chapter-9-2022.pdf",
+      "pages": 48
+    },
+    {
+      "filename": "fire-code-cross-reference.pdf",
+      "pages": 15
+    },
+    {
+      "filename": "fire-code-highlight-summary.pdf",
+      "pages": 21
+    }
+  ],
+  "zoning_resolution": [
+    {
+      "filename": "All Articles ZR_12June2024-compressed2.pdf",
+      "pages": 3437
+    },
+    {
+      "filename": "All Articles ZR_17July2024_compressed.pdf",
+      "pages": 3338
+    },
+    {
+      "filename": "All Articles ZR_1Jul2025_compressed.pdf",
+      "pages": 3081
+    },
+    {
+      "filename": "All Articles ZR_21Mar2025_compressed.pdf",
+      "pages": 3054
+    },
+    {
+      "filename": "All Articles ZR_22March2024-compressed.pdf",
+      "pages": 3437
+    },
+    {
+      "filename": "All Articles ZR_23Sep2025_compressed.pdf",
+      "pages": 3093
+    },
+    {
+      "filename": "All Articles ZR_25Mar2025_compressed.pdf",
+      "pages": 3057
+    },
+    {
+      "filename": "All Articles ZR_2Oct2024-compressed.pdf",
+      "pages": 3386
+    },
+    {
+      "filename": "AllArticles_23Jun2026_compressed_0.pdf",
+      "pages": 5316
+    },
+    {
+      "filename": "AllArticles_31Dec2025_compressed.pdf",
+      "pages": 3129
+    },
+    {
+      "filename": "APPENDIX B — Index of Special Purpose Districts.pdf",
+      "pages": 12
+    },
+    {
+      "filename": "APPENDIX D — Zoning Map Amendment (_D_) Restrictive Declarations.pdf",
+      "pages": 16
+    },
+    {
+      "filename": "APPENDIX E — Design Requirements for Plazas, Residential Plazas and Urban Plazas Developed Prior to October 17, 2007.pdf",
+      "pages": 34
+    },
+    {
+      "filename": "APPENDIX F – Mandatory Inclusionary Housing Areas and former Inclusionary Housing Designated Areas.pdf",
+      "pages": 151
+    },
+    {
+      "filename": "APPENDIX G — Radioactive Materials.pdf",
+      "pages": 9
+    },
+    {
+      "filename": "APPENDIX H — Arterial Highways.pdf",
+      "pages": 5
+    },
+    {
+      "filename": "APPENDIX I .pdf",
+      "pages": 24
+    },
+    {
+      "filename": "APPENDIX J — Designated Areas Within Manufacturing Districts.pdf",
+      "pages": 115
+    },
+    {
+      "filename": "APPENDIX K — Areas With Nursing Home Restrictions.pdf",
+      "pages": 14
+    },
+    {
+      "filename": "Article I.pdf",
+      "pages": 381
+    },
+    {
+      "filename": "Article II.pdf",
+      "pages": 416
+    },
+    {
+      "filename": "Article III.pdf",
+      "pages": 474
+    },
+    {
+      "filename": "Article IV.pdf",
+      "pages": 237
+    },
+    {
+      "filename": "Article IX.pdf",
+      "pages": 618
+    },
+    {
+      "filename": "Article V.pdf",
+      "pages": 53
+    },
+    {
+      "filename": "Article VI.pdf",
+      "pages": 412
+    },
+    {
+      "filename": "Article VII.pdf",
+      "pages": 343
+    },
+    {
+      "filename": "Article VIII.pdf",
+      "pages": 531
+    },
+    {
+      "filename": "Article X.pdf",
+      "pages": 388
+    },
+    {
+      "filename": "Article XI.pdf",
+      "pages": 275
+    },
+    {
+      "filename": "Article XII.pdf",
+      "pages": 264
+    },
+    {
+      "filename": "Article XIII.pdf",
+      "pages": 335
+    },
+    {
+      "filename": "Article XIV.pdf",
+      "pages": 172
+    },
+    {
+      "filename": "r1-r3-qrs-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r1-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r10-r10x-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r10a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r11-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r11a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r12-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r2-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r31-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r32-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r3a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r3x-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r4-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r41-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r4a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r4b-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r4qrs-regulations.pdf",
+      "pages": 39
+    },
+    {
+      "filename": "r5-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r5a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r5b-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r5d-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r5qrs-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r6-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r6a-r61-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r6b-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r6d-r62-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r71-r72-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r7a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r7b-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r7d-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r7x-r73-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r8-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r8a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r8b-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r8x-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r9-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r9a-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r9d-91-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "r9x-regulations.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "Zoning Resolution Complete.pdf",
+      "pages": 5316
+    }
+  ]
+}

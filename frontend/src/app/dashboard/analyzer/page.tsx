@@ -88,7 +88,7 @@ function AnalyzerContent() {
           <div className="max-w-2xl">
             <CardTitle className="text-4xl font-black text-slate-900 dark:text-white leading-tight">NYC DOB Compliance <span className="text-blue-500">Analyzer</span></CardTitle>
             <CardDescription className="text-lg text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
-              Instantly verify your architectural plans against 113 NYC Building Code chapters using our Vectorless RAG forensic engine.
+              Instantly verify your architectural plans against 260+ NYC building code PDFs using our Vectorless RAG forensic engine.
             </CardDescription>
           </div>
           <div className="flex gap-4 pt-4">
@@ -107,7 +107,7 @@ function AnalyzerContent() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { icon: ShieldCheck, title: "113 NYC Codes", desc: "Complete coverage of 2022 NYC Building, Fuel Gas, Mechanical, and Plumbing Codes." },
+          { icon: ShieldCheck, title: "260+ NYC PDFs", desc: "Complete coverage of 2022 NYC Building, Fuel Gas, Mechanical, and Plumbing Codes." },
           { icon: Zap, title: "Forensic RAG", desc: "Advanced vectorless retrieval system for hyper-accurate code section matching." },
           { icon: FileText, title: "Executive Audit", desc: "Professional reports with Senior Examiner appreciation and architectural betterments." }
         ].map((item, i) => (

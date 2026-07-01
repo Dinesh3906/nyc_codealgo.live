@@ -240,7 +240,7 @@ export default function NYCHouseCodesListClient() {
           <div className="grid sm:grid-cols-3 gap-6 mt-6 pt-6 border-t border-slate-800/60">
             <div>
               <h3 className="text-slate-400 font-bold mb-1">Total Codes Index</h3>
-              <p className="text-2xl font-extrabold text-blue-400">113 Chapters</p>
+              <p className="text-2xl font-extrabold text-blue-400">260+ PDFs</p>
             </div>
             <div>
               <h3 className="text-slate-400 font-bold mb-1">Zoning Resolutions</h3>

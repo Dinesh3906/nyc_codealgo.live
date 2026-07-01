@@ -21,7 +21,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://permitiq.codealgo.live'),
   title: "NYC Building Code AI Compliance Checker | PermitIQ by Aureon",
-  description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
+  description: "Check architectural plans against 260+ NYC building code PDFs instantly. Detect DOB violations and generate PDF compliance reports. Check your plans for free!",
   keywords: [
     "NYC building code",
     "DOB code requirements",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "NYC Building Code AI Compliance Checker | PermitIQ by Aureon",
-    description: "Check architectural plans against 112+ NYC building codes instantly. Detect DOB violations and generate PDF compliance reports.",
+    description: "Check architectural plans against 260+ NYC building code PDFs instantly. Detect DOB violations and generate PDF compliance reports.",
     type: "website",
     url: "https://permitiq.codealgo.live",
     siteName: "PermitIQ by Aureon",
@@ -63,9 +63,16 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/icon.png",
+    icon: [
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" }
+    ],
     shortcut: "/favicon.ico",
-    apple: "/icon.png",
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" }
+    ],
   },
 };
 
@@ -80,7 +87,7 @@ const softwareAppSchema = {
   "description": "AI-powered NYC building code compliance checker for architects, engineers, and developers across all 5 NYC boroughs",
   "areaServed": { "@type": "City", "name": "New York City" },
   "featureList": [
-    "112+ NYC code requirement checks",
+    "260+ building code PDF checks",
     "Instant violation detection",
     "PDF compliance report generation",
     "Pre-permit readiness scoring"

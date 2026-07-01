@@ -102,7 +102,7 @@ export default function FreeCheckerPage() {
                 </p>
               ) : (
                 <p className="text-lg text-muted-foreground mb-8">
-                  For final construction documents, you need comprehensive safety checks. PermitIQ by Aureon evaluates your plans against 113 NYC Building Code chapters in minutes.
+                  For final construction documents, you need comprehensive safety checks. PermitIQ by Aureon evaluates your plans against 260+ NYC building code PDFs in minutes.
                 </p>
               )}
               

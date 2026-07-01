@@ -37,7 +37,7 @@ export class KnowledgeBaseValidationService {
     electrical_code: { dirName: "electrical", officialBook: "NYC Electrical Code (EC)", legacyPattern: /^(?:2022BC_Chapter27_|2025electrical_code|.*electrical_code)/ },
     energy_code: { dirName: "energy", officialBook: "NYC Energy Conservation Code (ECC)", legacyPattern: /^(?:2022BC_Chapter13_|2025_acknowledgements_energy|2025nycecc)/ },
     fire_code: { dirName: "fire", officialBook: "NYC Fire Code (FC)", legacyPattern: /^(?:2022FC_|chapter-\d+-2022)/ },
-    zoning_resolution: { dirName: "zoning", officialBook: "NYC Zoning Resolution (ZR)", legacyPattern: /^(?:2022ZR_|Article\s+[A-Z]+|Zoning\s+Resolution\s+Complete)/i }
+    zoning_resolution: { dirName: "zoning", officialBook: "NYC Zoning Resolution (ZR)", legacyPattern: /^(?:2022ZR_|All\s+Articles\s+ZR_|AllArticles_|Article\s+[A-Z]+|Zoning\s+Resolution\s+Complete)/i }
   };
 
   /**
@@ -121,6 +121,17 @@ export class KnowledgeBaseValidationService {
       }
     }
 
+    // Load inventory json fallback
+    let pdfInventory: Record<string, { filename: string; pages: number }[]> = {};
+    try {
+      const inventoryPath = path.join(__dirname, "../config/pdf-inventory.json");
+      if (fs.existsSync(inventoryPath)) {
+        pdfInventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
+      }
+    } catch (e: any) {
+      logger.warn(`Failed to load pdf-inventory.json: ${e.message}`);
+    }
+
     // 4. Validate each discipline directory
     for (const [discipline, meta] of Object.entries(this.DISCIPLINE_DIRS)) {
       const dirPath = path.join(pdfDir, meta.dirName);
@@ -165,13 +176,21 @@ export class KnowledgeBaseValidationService {
               ingestionMetadataOk = false;
             }
           }
-        } else {
-          ingestionMetadataOk = false;
-          errorMsg = "Directory contains no PDF documents.";
         }
-      } else {
+      }
+
+      // Apply inventory fallback if directory has no files but inventory has cataloged files
+      if (pdfCount === 0 && pdfInventory[discipline] && pdfInventory[discipline].length > 0) {
+        const invFiles = pdfInventory[discipline];
+        pdfCount = invFiles.length;
+        firstFilename = invFiles[0]?.filename;
+        totalPages = invFiles.reduce((sum, f) => sum + f.pages, 0);
+        ingestionMetadataOk = true;
+        errorMsg = "";
+        logger.info(`Resolved discipline [${meta.officialBook}] from pdf-inventory.json fallback (${pdfCount} PDFs, ${totalPages} total pages)`);
+      } else if (pdfCount === 0) {
         ingestionMetadataOk = false;
-        errorMsg = "Directory does not exist.";
+        errorMsg = dirExists ? "Directory contains no PDF documents." : "Directory does not exist.";
       }
 
       // Query Pinecone for chunk counts
@@ -190,10 +209,10 @@ export class KnowledgeBaseValidationService {
         }
       }
 
-      // A discipline is fully supported only if:
-      // 1. Directory exists and contains at least 1 PDF.
-      // 2. Ingestion metadata is valid for all PDFs (or it's electrical/energy/zoning/fire which we warn on instead of failing startup).
-      const supported = dirExists && pdfCount > 0 && indexedChunks > 0;
+      // A discipline is fully supported if:
+      // 1. It contains at least 1 PDF (either physically or via inventory fallback).
+      // 2. Chunks exist in Pinecone database index.
+      const supported = pdfCount > 0 && indexedChunks > 0;
 
       if (!supported) {
         logger.warn(`Production Warning: Corpus [${meta.officialBook}] is unsupported. (Dir: pdfs/${meta.dirName}, Chunks: ${indexedChunks})`);

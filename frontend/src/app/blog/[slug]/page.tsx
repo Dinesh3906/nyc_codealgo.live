@@ -134,7 +134,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       },
       {
         question: `How can I automatically check my plans for ${post.keyword}?`,
-        answer: `You can upload your architectural plans to PermitIQ by Aureon's AI scanner, which instantly checks against ${post.keyword} and 112+ other NYC DOB requirements, generating a detailed violation report.`
+        answer: `You can upload your architectural plans to PermitIQ by Aureon's AI scanner, which instantly checks against ${post.keyword} and 260+ other building code PDFs, generating a detailed violation report.`
       }
     ]).map(faq => ({
       "@type": "Question",
@@ -285,7 +285,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
           <div>
             <h3 className="text-xl font-semibold">How can I automatically check my plans for {post.keyword}?</h3>
-            <p>PermitIQ by Aureon&apos;s AI scanner checks uploaded architectural plans against {post.keyword} and 112+ other NYC DOB requirements instantly, generating a detailed violation report with specific code section references.</p>
+            <p>PermitIQ by Aureon&apos;s AI scanner checks uploaded architectural plans against {post.keyword} and 260+ other building code PDFs instantly, generating a detailed violation report with specific code section references.</p>
           </div>
         </div>
 
@@ -311,7 +311,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* CTA */}
         <div className="bg-muted p-8 rounded-2xl text-center border border-border mt-16 mb-16">
           <h2 className="text-3xl font-bold mb-4">Check Your Plans Against This Requirement</h2>
-          <p className="text-xl mb-6">Let our AI automatically review your plans against {post.keyword} and 112+ other NYC DOB requirements in seconds.</p>
+          <p className="text-xl mb-6">Let our AI automatically review your plans against {post.keyword} and 260+ other building code PDFs in seconds.</p>
           <Link
             href="/"
             className="inline-block bg-primary text-primary-foreground font-bold py-4 px-8 rounded-lg text-lg hover:bg-primary/90 transition-colors"

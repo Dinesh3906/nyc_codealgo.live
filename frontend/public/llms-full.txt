@@ -3,10 +3,10 @@
 PermitIQ by Aureon is an AI-powered NYC building code compliance checker designed for Registered Architects, Professional Engineers, Expediters, and Developers.
 
 ## System Capabilities
-PermitIQ by Aureon uses advanced RAG (Retrieval-Augmented Generation) and multi-agent LLM analysis to parse architectural plans and compare them against 113 NYC Building Code PDF chapters. It specifically cross-references data against the 2022/2026 NYC Construction Codes.
+PermitIQ by Aureon uses advanced RAG (Retrieval-Augmented Generation) and multi-agent LLM analysis to parse architectural plans and compare them against 260+ NYC Building Code PDFs. It specifically cross-references data against the 2022/2026 NYC Construction Codes.
 
 ## Key Features
-- **112+ NYC Code Requirement Checks**: Scans for dimensional accuracy, required fire-ratings, egress widths, and more.
+- **260+ NYC Building Code PDF Checks**: Scans for dimensional accuracy, required fire-ratings, egress widths, and more.
 - **Instant Violation Detection**: Highlights areas of non-compliance before DOB submission to prevent plan objections.
 - **PDF Compliance Report Generation**: Creates formal documentation that can be used for internal QA or client presentation.
 - **Pre-permit Readiness Scoring**: Evaluates the overall health of a drawing set before uploading to DOB NOW.

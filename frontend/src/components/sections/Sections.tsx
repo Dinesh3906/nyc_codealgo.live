@@ -841,7 +841,7 @@ export function ReportPreview() {
                 <div>
                   <span className="block font-bold text-primary">Automated Sweeps</span>
                   <p className="text-[9px] text-muted-foreground mt-0.5 leading-relaxed font-sans">
-                    Checks entire layouts across 112+ distinct NYC DOB rulesets instantly.
+                    Checks entire layouts across 260+ NYC building code PDFs instantly.
                   </p>
                 </div>
               </div>

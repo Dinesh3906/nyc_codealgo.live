@@ -31,7 +31,7 @@ export default function OGImage() {
         <div style={{
           color: '#94a3b8', fontSize: 28, maxWidth: 700,
         }}>
-          AI-powered compliance checks against 112+ NYC DOB requirements
+          AI-powered compliance checks against 260+ NYC building code PDFs
         </div>
         <div style={{
           marginTop: 48, display: 'flex', gap: 16,

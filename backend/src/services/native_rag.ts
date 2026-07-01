@@ -431,109 +431,178 @@ function scanDirectoryRecursively(dir: string, fileList: string[] = []): string[
   return fileList;
 }
 
+const SUBDIR_TO_DISCIPLINE: Record<string, string> = {
+  "building": "building_code",
+  "plumbing": "plumbing_code",
+  "mechanical": "mechanical_code",
+  "fuel_gas": "fuel_gas_code",
+  "electrical": "electrical_code",
+  "energy": "energy_code",
+  "fire": "fire_code",
+  "zoning": "zoning_resolution"
+};
+
 function getFilesFromSubdir(subdirName?: string): string[] {
   const targetDir = subdirName 
     ? path.join(__dirname, "../../pdfs", subdirName) 
     : path.join(__dirname, "../../pdfs");
-  if (!fs.existsSync(targetDir)) return [];
-  try {
-    return fs.readdirSync(targetDir)
-      .filter(f => {
-        try {
-          return fs.statSync(path.join(targetDir, f)).isFile() && f.endsWith('.pdf');
-        } catch {
-          return false;
-        }
-      });
-  } catch (e) {
-    console.error(`Failed to read subdir ${subdirName || "root"}:`, e);
-    return [];
+  
+  let files: string[] = [];
+  if (fs.existsSync(targetDir)) {
+    try {
+      files = fs.readdirSync(targetDir)
+        .filter(f => {
+          try {
+            return fs.statSync(path.join(targetDir, f)).isFile() && f.endsWith('.pdf');
+          } catch {
+            return false;
+          }
+        });
+    } catch (e) {
+      console.error(`Failed to read subdir ${subdirName || "root"}:`, e);
+    }
   }
+
+  // Fallback to inventory json if no files are found (e.g. on production server without physical PDFs)
+  if (files.length === 0 && subdirName) {
+    const discipline = SUBDIR_TO_DISCIPLINE[subdirName];
+    if (discipline) {
+      try {
+        const inventoryPath = path.join(__dirname, "../config/pdf-inventory.json");
+        if (fs.existsSync(inventoryPath)) {
+          const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
+          if (inventory[discipline]) {
+            files = inventory[discipline].map((item: any) => item.filename);
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to load pdf-inventory.json fallback in native_rag:`, err);
+      }
+    }
+  }
+
+  return files;
 }
 
 export function getPDFsForStep(stepId: string): string[] {
   const rootFiles = getFilesFromSubdir();
-  const gapFiles = rootFiles.filter(f => f.startsWith("2022GAP_"));
-  const commonBuildingDocs = rootFiles.filter(f => 
-    f === "2022BC_Chapter02_DefinitionsWBwm.pdf" || 
-    f === "2022BC_Chapter03_OccupancyClassWBwm.pdf" || 
-    f === "2022BC_Chapter05_HeightAreaWBwm.pdf" || 
-    f === "2022BC_Chapter06_ConstructionTypeWBwm.pdf"
-  );
+  const buildingFiles = getFilesFromSubdir("building");
+  const plumbingFiles = getFilesFromSubdir("plumbing");
+  const mechanicalFiles = getFilesFromSubdir("mechanical");
+  const fuelGasFiles = getFilesFromSubdir("fuel_gas");
+  const electricalFiles = getFilesFromSubdir("electrical");
+  const energyFiles = getFilesFromSubdir("energy");
+  const fireFiles = getFilesFromSubdir("fire");
+  const zoningFiles = getFilesFromSubdir("zoning");
+
+  // Helper to find files in both root and subfolders
+  const findFiles = (prefix: string, exact = false): string[] => {
+    const list = [
+      ...rootFiles,
+      ...buildingFiles,
+      ...plumbingFiles,
+      ...mechanicalFiles,
+      ...fuelGasFiles,
+      ...electricalFiles,
+      ...energyFiles,
+      ...fireFiles,
+      ...zoningFiles
+    ];
+    if (exact) {
+      return list.filter(f => f === prefix);
+    }
+    return list.filter(f => f.startsWith(prefix));
+  };
+
+  const gapFiles = findFiles("2022GAP_");
+  const commonBuildingDocs = [
+    ...findFiles("2022BC_Chapter02_DefinitionsWBwm.pdf", true),
+    ...findFiles("2022BC_Chapter03_OccupancyClassWBwm.pdf", true),
+    ...findFiles("2022BC_Chapter05_HeightAreaWBwm.pdf", true),
+    ...findFiles("2022BC_Chapter06_ConstructionTypeWBwm.pdf", true)
+  ];
 
   switch (stepId) {
     case 'building_code':
       return [
-        ...rootFiles.filter(f => f.startsWith("2022BC_") && f !== "2022BC_Chapter13_EnergyWBwm.pdf" && f !== "2022BC_Chapter27_ElectricalWBwm.pdf"),
+        ...findFiles("2022BC_").filter(f => f !== "2022BC_Chapter13_EnergyWBwm.pdf" && f !== "2022BC_Chapter27_ElectricalWBwm.pdf"),
         ...gapFiles
       ];
     case 'plumbing_code':
       return [
-        ...rootFiles.filter(f => f.startsWith("2022PC_")),
-        ...rootFiles.filter(f => f === "2022BC_Chapter29_PlumbingWBwm.pdf"), // Cross-reference BC Chapter 29
+        ...findFiles("2022PC_"),
+        ...findFiles("2022BC_Chapter29_PlumbingWBwm.pdf", true),
         ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'mechanical_code':
       return [
-        ...rootFiles.filter(f => f.startsWith("2022MC_")),
-        ...rootFiles.filter(f => f === "2022BC_Chapter28_MechanicalWBwm.pdf"), // Cross-reference BC Chapter 28
+        ...findFiles("2022MC_"),
+        ...findFiles("2022BC_Chapter28_MechanicalWBwm.pdf", true),
         ...commonBuildingDocs,
         ...gapFiles
       ];
     case 'fuel_gas_code':
       return [
-        ...rootFiles.filter(f => f.startsWith("2022FGC_")),
+        ...findFiles("2022FGC_"),
         ...commonBuildingDocs,
         ...gapFiles
       ];
-    case 'energy_code': {
-      const energyFiles = getFilesFromSubdir("energy");
+    case 'energy_code':
       return [
         ...energyFiles,
-        ...rootFiles.filter(f => 
-          f.startsWith("2022BC_Chapter13_") || 
-          f === "2022BC_Chapter12_InteriorEnvironmentWBwm.pdf" || 
-          f === "2022BC_Chapter14_ExteriorWallsWBwm.pdf" || 
-          f === "2022BC_Chapter15_RoofsRooftopsWBwm.pdf"
+        ...findFiles("2022BC_Chapter13_").concat(
+          findFiles("2022BC_Chapter12_InteriorEnvironmentWBwm.pdf", true),
+          findFiles("2022BC_Chapter14_ExteriorWallsWBwm.pdf", true),
+          findFiles("2022BC_Chapter15_RoofsRooftopsWBwm.pdf", true)
         ),
         ...gapFiles
       ];
-    }
-    case 'electrical_code': {
-      const electricalFiles = getFilesFromSubdir("electrical");
+    case 'electrical_code':
       return [
         ...electricalFiles,
-        ...rootFiles.filter(f => f.startsWith("2022BC_Chapter27_") || f.toLowerCase().includes("electrical_code")),
+        ...findFiles("2022BC_Chapter27_"),
+        ...[
+          ...rootFiles, ...buildingFiles, ...plumbingFiles, ...mechanicalFiles,
+          ...fuelGasFiles, ...electricalFiles, ...energyFiles, ...fireFiles, ...zoningFiles
+        ].filter(f => f.toLowerCase().includes("electrical_code")),
         ...commonBuildingDocs,
         ...gapFiles
       ];
-    }
-    case 'fire_code': {
-      const fireFiles = getFilesFromSubdir("fire");
+    case 'fire_code':
       return [
         ...fireFiles,
-        ...rootFiles.filter(f => 
-          f.includes("FireProtection") || 
-          f.includes("FireResistance") || 
-          f.includes("FireStandards") || 
-          f.includes("ExitPath") ||
-          f === "2022BC_Chapter10_EgressWBwm.pdf" ||
-          f === "2022BC_AppendixS_ExitPathMarkingsWBwm.pdf"
-        ),
+        ...[
+          ...findFiles("2022BC_Chapter07_FireResistanceWBwm.pdf", true),
+          ...findFiles("2022BC_Chapter08_InteriorFinishesWBwm.pdf", true),
+          ...findFiles("2022BC_Chapter09_FireProtectionWBwm.pdf", true),
+          ...findFiles("2022BC_AppendixQ_FireStandardsWBwm.pdf", true),
+          ...findFiles("2022BC_Chapter10_EgressWBwm.pdf", true),
+          ...findFiles("2022BC_AppendixS_ExitPathMarkingsWBwm.pdf", true)
+        ],
         ...commonBuildingDocs,
         ...gapFiles
       ];
-    }
-    case 'zoning_resolution': {
-      const zoningFiles = getFilesFromSubdir("zoning");
+    case 'zoning_resolution':
       return [
         ...zoningFiles
       ];
-    }
     default: {
       const allFiles: string[] = [];
-      scanDirectoryRecursively(path.join(__dirname, "../../pdfs"), allFiles);
+      const pdfDir = path.join(__dirname, "../../pdfs");
+      const scanDir = (dir: string) => {
+        if (!fs.existsSync(dir)) return;
+        const list = fs.readdirSync(dir);
+        for (const item of list) {
+          const p = path.join(dir, item);
+          if (fs.statSync(p).isDirectory()) {
+            scanDir(p);
+          } else if (item.endsWith('.pdf')) {
+            allFiles.push(item);
+          }
+        }
+      };
+      scanDir(pdfDir);
       return allFiles;
     }
   }
