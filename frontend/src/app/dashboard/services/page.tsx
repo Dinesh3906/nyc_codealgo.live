@@ -149,7 +149,7 @@ export default function ServicesPage() {
               </div>
               <div>
                 <CardTitle>Join the Network</CardTitle>
-                <CardDescription>Grow your business with NYC House Code</CardDescription>
+                <CardDescription>Grow your business with PermitIQ</CardDescription>
               </div>
             </div>
           </CardHeader>

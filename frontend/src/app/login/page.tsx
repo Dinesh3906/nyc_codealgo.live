@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     try {
-      const rememberedEmail = localStorage.getItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL");
+      const rememberedEmail = localStorage.getItem("PERMITIQ_REMEMBERED_EMAIL");
       if (rememberedEmail) {
         setEmail(rememberedEmail);
         setRememberMe(true);
@@ -62,9 +62,9 @@ export default function LoginPage() {
 
       if (response.data && response.data.id) {
         if (rememberMe) {
-          localStorage.setItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL", email);
+          localStorage.setItem("PERMITIQ_REMEMBERED_EMAIL", email);
         } else {
-          localStorage.removeItem("NYC_HOUSE_CODE_REMEMBERED_EMAIL");
+          localStorage.removeItem("PERMITIQ_REMEMBERED_EMAIL");
         }
 
         const userData = {
@@ -134,7 +134,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center">
           <Link href="/" className="flex items-center gap-2.5 justify-center group">
             <Image src="/logo.png" alt="PermitIQ by Aureon NYC Codes Logo" width={32} height={32} className="w-8 h-8 object-contain rounded-md" priority={true} />
-            <span className="text-xl font-bold text-foreground">NYC House Code</span>
+            <span className="text-xl font-bold text-foreground">PermitIQ</span>
           </Link>
           <div>
             <CardTitle className="text-2xl font-extrabold">

@@ -105,7 +105,7 @@ export default function PlanDetailPage() {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2]);
-      doc.text("NYC HOUSE CODE AI COMPLIANCE ENGINE", 20, 45);
+      doc.text("PERMITIQ AI COMPLIANCE ENGINE", 20, 45);
       doc.text(new Date(plan.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - 20, 45, { align: 'right' });
 
       let currentY = 80;

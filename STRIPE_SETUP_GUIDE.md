@@ -1,4 +1,4 @@
-# Stripe Setup Guide for NYC House Code
+# Stripe Setup Guide for PermitIQ
 
 Hello! To process payments and subscriptions securely on your application, we need to connect it to your own Stripe account. Please follow the instructions below to retrieve the necessary API keys. 
 

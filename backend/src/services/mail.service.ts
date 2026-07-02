@@ -48,7 +48,7 @@ export const sendFeedbackEmail = async (data: {
   }
 
   const mailOptions = {
-    from: `"NYC House Code Feedback" <${process.env.SMTP_USER}>`,
+    from: `"PermitIQ Feedback" <${process.env.SMTP_USER}>`,
     to: destination,
     replyTo: safeHeaderText(data.userEmail),
     subject: `[${safeHeaderText(data.type).toUpperCase()}] ${safeHeaderText(data.subject)}`,
@@ -69,7 +69,7 @@ export const sendFeedbackEmail = async (data: {
           ` : ''}
         </div>
         <div style="background-color: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #64748b;">
-          This message was sent via NYC House Code Help & Feedback portal.
+          This message was sent via PermitIQ Help & Feedback portal.
         </div>
       </div>
     `,
@@ -90,13 +90,13 @@ export const sendOtpEmail = async (email: string, otp: string) => {
   }
 
   const mailOptions = {
-    from: `"NYC House Code Support" <${process.env.SMTP_USER}>`,
+    from: `"PermitIQ Support" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `Your Verification Code: ${otp}`,
     html: `
       <div style="font-family: 'Inter', sans-serif; max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="background-color: #0f172a; padding: 30px; text-align: center;">
-          <h1 style="color: #10b981; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">NYC House Code</h1>
+          <h1 style="color: #10b981; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">PermitIQ</h1>
         </div>
         <div style="padding: 40px 30px; text-align: center;">
           <h2 style="color: #1e293b; margin-bottom: 8px; font-size: 20px; font-weight: 700;">Password Reset</h2>
@@ -111,7 +111,7 @@ export const sendOtpEmail = async (email: string, otp: string) => {
           </p>
         </div>
         <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} NYC House Code. All rights reserved.</p>
+          <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} PermitIQ. All rights reserved.</p>
         </div>
       </div>
     `,

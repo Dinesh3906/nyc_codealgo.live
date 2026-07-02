@@ -722,7 +722,7 @@ export function ReportPreview() {
 
               {/* Technical watermark stamp */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-4 border-dashed border-primary/10 rounded-full w-48 h-48 flex flex-col items-center justify-center uppercase tracking-widest text-[8px] text-primary/10 font-bold rotate-12 pointer-events-none select-none">
-                <span>NYC House Code</span>
+                <span>PermitIQ</span>
                 <span className="text-[6px] mt-1">AI Verified</span>
                 <span className="text-[5px] mt-1 font-sans">© 2026 PermitIQ by Aureon</span>
               </div>
@@ -730,7 +730,7 @@ export function ReportPreview() {
               {/* Header */}
               <div className="flex justify-between items-start border-b border-border/60 pb-4">
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">NYC House Code Analysis Report</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">PermitIQ Analysis Report</h3>
                   <span className="text-[8px] text-muted-foreground/60 block mt-0.5">COMPLIANCE REVIEW FOR ARCHITECTS & DEVELOPERS</span>
                 </div>
                 <div className="text-right">
@@ -815,7 +815,7 @@ export function ReportPreview() {
             <div className="border border-border/80 bg-white dark:bg-[#0C0F12] rounded-sm overflow-hidden font-mono text-[10px] transition-colors duration-300">
               <div className="grid grid-cols-2 border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground/70 font-bold bg-[#F1EFEA] dark:bg-[#0A0D10] py-2 px-4 transition-colors duration-300">
                 <span>Traditional DOB Preparation</span>
-                <span>NYC House Code System</span>
+                <span>PermitIQ System</span>
               </div>
               <div className="grid grid-cols-2 border-b border-border/40 py-2.5 px-4 gap-4">
                 <div>
@@ -908,7 +908,7 @@ export function TrustSection() {
           </div>
           <h2 className="text-3xl md:text-4xl font-sans font-bold text-foreground mb-4">Designed for Construction Professionals</h2>
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-            NYC House Code integrates directly into current drafting workflows, trusted by key project stakeholders.
+            PermitIQ integrates directly into current drafting workflows, trusted by key project stakeholders.
           </p>
         </div>
 
@@ -1081,7 +1081,7 @@ export function AccuracyDisclaimer() {
           <div className="space-y-1.5 leading-relaxed font-sans">
             <span className="font-mono text-[10px] uppercase font-bold tracking-wider block">Administrative Accuracy Disclaimer</span>
             <p>
-              NYC House Code compliance engine leverages artificial intelligence and machine learning models to parse layout coordinates, text structures, and code datasets. AI-assisted reviews are built to support, not replace, experienced engineering and architectural judgement. All plans must undergo final structural engineering review and stamp approvals by licensed New York State design professionals before formal submission to the NYC Department of Buildings.
+              PermitIQ compliance engine leverages artificial intelligence and machine learning models to parse layout coordinates, text structures, and code datasets. AI-assisted reviews are built to support, not replace, experienced engineering and architectural judgement. All plans must undergo final structural engineering review and stamp approvals by licensed New York State design professionals before formal submission to the NYC Department of Buildings.
             </p>
           </div>
         </div>
@@ -1101,9 +1101,9 @@ export function Footer() {
           <div className="col-span-2 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-sm bg-primary/10 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold font-mono">
-                NC
+                PIQ
               </div>
-              <span className="text-xs uppercase font-bold text-foreground tracking-wider">NYC House Code</span>
+              <span className="text-xs uppercase font-bold text-foreground tracking-wider">PermitIQ</span>
             </div>
             <p className="text-xs text-muted-foreground max-w-xs leading-relaxed font-sans">
               Automated building code and zoning analysis vectors for New York real estate portfolios.
@@ -1128,7 +1128,7 @@ export function Footer() {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between text-muted-foreground/60 text-[8px] leading-loose">
-          <span>© 2026 NYC House Code Inc. — Construction AI Verification Technologies, NY.</span>
+          <span>© 2026 PermitIQ Inc. — Construction AI Verification Technologies, NY.</span>
           <span>COMPLIANCE INDEX DATA FEED ACCURACY SECURED</span>
         </div>
       </div>

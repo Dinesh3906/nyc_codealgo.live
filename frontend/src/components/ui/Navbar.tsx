@@ -33,14 +33,14 @@ export default function Navbar({ onOpenModal }: { onOpenModal: () => void }) {
         <Link href="/" className="flex items-center gap-2.5 group">
           <Image 
             src="/logo.png" 
-            alt="NYC House Code Logo" 
+            alt="PermitIQ Logo" 
             width={28} 
             height={28} 
             className="w-7 h-7 object-contain rounded-sm" 
             priority={true} 
           />
           <span className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">
-            NYC House Code
+            PermitIQ
           </span>
         </Link>
 
