@@ -12,9 +12,7 @@ import {
   ProblemSection,
   SolutionSection,
   InteractiveBlueprintScanner,
-  NYCRegulationEngine,
   ReportPreview,
-  TrustSection,
   AccuracyDisclaimer,
   Pricing,
   Footer
@@ -44,11 +42,7 @@ export default function LandingPage() {
 
       <InteractiveBlueprintScanner />
 
-      <NYCRegulationEngine />
-
       <ReportPreview />
-
-      <TrustSection />
 
       {/* Premium Technical Call-To-Action */}
       <section className="py-24 bg-[#F1EFEA] dark:bg-[#0A0D10] relative transition-colors duration-300">

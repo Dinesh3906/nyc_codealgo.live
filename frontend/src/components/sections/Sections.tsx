@@ -4,8 +4,8 @@ import { useState } from "react";
 import {
   FileText, Search, Check, ChevronRight, AlertTriangle,
   Upload, Database, Shield, ShieldCheck, CheckCircle2,
-  Layers, Compass, Clock, ArrowRight, BarChart3, Building2,
-  Users, AlertCircle
+  Layers, Compass, Clock, ArrowRight, BarChart3,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -559,132 +559,7 @@ export function InteractiveBlueprintScanner() {
   );
 }
 
-/* ====================================================================
-   PREMIUM ELEMENT 2: NYC REGULATION ENGINE SECTION
-   ==================================================================== */
-export function NYCRegulationEngine() {
-  const [selectedEngine, setSelectedEngine] = useState<string>("building");
 
-  const engines = {
-    building: {
-      title: "Building Code (BC)",
-      stats: "312+ checks active",
-      rules: [
-        { code: "Chapter 10 (Egress)", desc: "Validates minimum egress pathways, stairway clearances, fire exits, and occupant load ratios." },
-        { code: "Chapter 12 (Interior Environment)", desc: "Calculates room ceiling heights, natural light ratios, and ventilation clearances." },
-        { code: "Chapter 7 (Fire Barriers)", desc: "Verifies rated masonry wall thicknesses, door assemblies, and draft stops." }
-      ]
-    },
-    zoning: {
-      title: "Zoning Resolution (ZR)",
-      stats: "184+ boundaries checked",
-      rules: [
-        { code: "Article II Chapter 3 (Residential FAR)", desc: "Checks Floor Area Ratio boundaries, open spaces, and sky exposure limits." },
-        { code: "Article III Chapter 7 (Commercial Setbacks)", desc: "Calculates maximum frontages, rear setbacks, and street line clearances." },
-        { code: "Chapter 6 (Accessory Parking Lots)", desc: "Inspects parking lot ratios, landscaping zones, and access driveway dimensions." }
-      ]
-    },
-    energy: {
-      title: "Energy Conservation Code (NYCECC)",
-      stats: "92+ envelope values audited",
-      rules: [
-        { code: "Section C402 (Building Envelope)", desc: "Validates minimum ceiling R-values, window glass U-factors, and exterior insulation thermal breaks." },
-        { code: "Section C405 (Electrical & Lighting)", desc: "Audits interior lighting power densities (LPD), standard controls, and daylight sensors." },
-        { code: "Section C403 (Mechanical Systems)", desc: "Verifies minimum HVAC efficiencies, draft damper seals, and hot-water pipe insulation." }
-      ]
-    },
-    accessibility: {
-      title: "Accessibility Code (ADA/ICC)",
-      stats: "128+ physical clearance vectors",
-      rules: [
-        { code: "ICC A117.1 (Accessible Entryways)", desc: "Checks minimum door frame clearance openings, threshold heights, and ramp landing slopes." },
-        { code: "Chapter 11 (WC Compartments)", desc: "Validates grab bar locations, standard toilet alignments, and sink knee clearance recesses." },
-        { code: "ICC Section 308 (Reach Ranges)", desc: "Ensures switches, thermostats, and manual fire alarms do not exceed maximum height limits." }
-      ]
-    }
-  };
-
-  return (
-    <section className="py-24 bg-[#F1EFEA] dark:bg-[#0A0D10] border-b border-border/40 relative transition-colors duration-300">
-      <div className="container mx-auto px-6 max-w-7xl">
-
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
-
-          {/* Left Column: Interactive Code Selection */}
-          <div className="lg:col-span-5 space-y-6 font-mono">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 dark:bg-blue-950/45 border border-primary/30 rounded-sm text-[10px] tracking-widest uppercase text-primary">
-              <Database className="w-3.5 h-3.5" />
-              Regulation Intelligence
-            </div>
-
-            <h2 className="text-3xl font-sans font-bold text-foreground">The NYC Regulation Database Engine</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed font-sans">
-              Our analysis model is updated in real-time with administrative resolutions. We automatically map drawings to the four central New York regulatory pillars.
-            </p>
-
-            <div className="flex flex-col gap-2.5 pt-2">
-              {Object.keys(engines).map((k) => (
-                <button
-                  key={k}
-                  onClick={() => setSelectedEngine(k)}
-                  className={`flex items-center justify-between p-4 border rounded-sm transition-all text-left group ${selectedEngine === k
-                      ? 'bg-primary/5 border-primary text-foreground'
-                      : 'border-border/60 text-muted-foreground hover:border-border/80'
-                    }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs uppercase font-bold tracking-wider">{engines[k as keyof typeof engines].title}</span>
-                    <span className="text-[10px] text-muted-foreground/60 mt-0.5">{engines[k as keyof typeof engines].stats}</span>
-                  </div>
-                  <ChevronRight className={`w-4 h-4 transition-transform ${selectedEngine === k ? 'text-primary translate-x-1' : 'text-muted-foreground/40'}`} />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column: Database details display */}
-          <div className="lg:col-span-7 bg-white dark:bg-[#0C0F12] border border-border rounded-sm p-6 flex flex-col justify-between min-h-[380px] font-mono relative overflow-hidden transition-colors duration-300">
-            {/* Active wireframe structure background */}
-            <div className="absolute inset-0 bg-[url('/bg-engine.png')] bg-cover bg-center opacity-[0.02] dark:opacity-[0.05] pointer-events-none mix-blend-multiply dark:mix-blend-lighten transition-opacity" />
-            <div className="relative z-10 w-full flex-1 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-6">
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Active Engine Ruleset</span>
-                  <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-sm uppercase tracking-wider font-semibold border border-primary/10">
-                    {engines[selectedEngine as keyof typeof engines].title}
-                  </span>
-                </div>
-
-                <div className="space-y-6">
-                  {engines[selectedEngine as keyof typeof engines].rules.map((r, i) => (
-                    <div key={i} className="flex gap-4 items-start group">
-                      <div className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary text-[9px] font-bold shrink-0 mt-0.5">
-                        {i + 1}
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">{r.code}</span>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed font-sans">
-                          {r.desc}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-8 pt-4 border-t border-border/40 text-[9px] text-muted-foreground/60 flex items-center justify-between">
-                <span>DB INTEGRITY VALUE: 0x8FA12B</span>
-                <span>SYNC TIME: LIVE (2026 UPDATE)</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-  );
-}
 
 /* ====================================================================
    PREMIUM ELEMENT 3: REPORT PREVIEW & BEFORE/AFTER MATRIX
@@ -788,7 +663,7 @@ export function ReportPreview() {
               Efficiency Ledger
             </div>
 
-            <h2 className="text-3xl font-sans font-bold text-foreground">Get Actionable, DOB-Grade Auditing Reports</h2>
+            <h2 className="text-3xl font-sans font-bold text-foreground">Get Actionable, High-Grade Auditing Reports</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Our automated generator builds detailed digital ledgers highlighting physical code violations. Show reviews instantly to drafting engineering partners or client developers.
             </p>
@@ -852,64 +727,7 @@ export function ReportPreview() {
   );
 }
 
-/* ====================================================================
-   TRUST SECTION (Built for construction professionals)
-   ==================================================================== */
-export function TrustSection() {
-  const professionals = [
-    {
-      role: "Architects",
-      icon: <Compass className="w-4 h-4 text-primary" />,
-      desc: "Speed up plan auditing during layout drafts. Eliminate hours spent cross-referencing code books manually."
-    },
-    {
-      role: "Developers",
-      icon: <Building2 className="w-4 h-4 text-primary" />,
-      desc: "Protect investments. Ensure building sets conform completely to zoning resolution densities before drawing purchases."
-    },
-    {
-      role: "Permit Consultants",
-      icon: <FileText className="w-4 h-4 text-primary" />,
-      desc: "Increase approval throughput. Scan sets to identify filing mistakes beforehand, reducing DOB Now rejection volumes."
-    },
-    {
-      role: "Contractors",
-      icon: <Users className="w-4 h-4 text-primary" />,
-      desc: "Verify project estimates and dimensions. Keep on-site building adjustments clean and fully compliant."
-    }
-  ];
 
-  return (
-    <section className="py-24 bg-[#F1EFEA] dark:bg-[#0A0D10] border-b border-border/40 relative transition-colors duration-300">
-      <div className="container mx-auto px-6 max-w-7xl">
-
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 dark:bg-blue-950/45 border border-primary/30 rounded-sm text-[10px] font-mono tracking-widest uppercase text-primary mb-4">
-            <Users className="w-3.5 h-3.5" />
-            Industry Trust Indicators
-          </div>
-          <h2 className="text-3xl md:text-4xl font-sans font-bold text-foreground mb-4">Designed for Construction Professionals</h2>
-          <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-            PermitIQ integrates directly into current drafting workflows, trusted by key project stakeholders.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 font-mono text-[10px]">
-          {professionals.map((p, i) => (
-            <div key={i} className="border border-border/60 bg-white dark:bg-[#0C0F12] p-5 rounded-sm flex flex-col gap-3 group hover:border-primary/40 transition-colors duration-300">
-              <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <span className="text-xs uppercase font-bold text-foreground group-hover:text-primary transition-colors">{p.role}</span>
-                {p.icon}
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed font-sans">{p.desc}</p>
-            </div>
-          ))}
-        </div>
-
-      </div>
-    </section>
-  );
-}
 
 /* ====================================================================
    PRICING SECTION (Sleek Ledger-style Table)
@@ -940,7 +758,7 @@ export function Pricing({ onOpenModal }: { onOpenModal: () => void }) {
       features: [
         "15,000 AI page scans included",
         "Interactive compliance inspector",
-        "Downloadable DOB-grade PDF reports",
+        "Downloadable high-grade PDF reports",
         "Prioritized vector parsing queue",
         "Resets and reloads every cycle"
       ],
