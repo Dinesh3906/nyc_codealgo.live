@@ -341,25 +341,7 @@ export function SolutionSection() {
           ))}
         </div>
 
-        {/* AutoCAD-style Horizontal Title Block Bar */}
-        <div className="mt-12 border border-border/60 bg-white dark:bg-[#0C0F12] p-4 font-mono text-[9px] text-muted-foreground/80 grid grid-cols-2 md:grid-cols-4 gap-6 z-10 relative transition-colors duration-300">
-          <div className="flex flex-col gap-1 border-r border-border/40 pr-4">
-            <span className="text-[7px] text-muted-foreground/50 uppercase">Drawing Type:</span>
-            <span className="text-foreground font-bold uppercase">PIPELINE DIAGRAM</span>
-          </div>
-          <div className="flex flex-col gap-1 md:border-r md:border-border/40 pr-4">
-            <span className="text-[7px] text-muted-foreground/50 uppercase">Scale:</span>
-            <span className="text-foreground font-bold uppercase">NOT TO SCALE</span>
-          </div>
-          <div className="flex flex-col gap-1 border-r border-border/40 pr-4">
-            <span className="text-[7px] text-muted-foreground/50 uppercase">Sheet Number:</span>
-            <span className="text-primary font-bold uppercase">A-002</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[7px] text-muted-foreground/50 uppercase">Project Reference:</span>
-            <span className="text-foreground font-bold uppercase">NYC-HC-2026</span>
-          </div>
-        </div>
+
       </div>
     </section>
   );

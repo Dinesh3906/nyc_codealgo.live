@@ -79,24 +79,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
               </Button>
             </div>
 
-            {/* Quick trust metrics - Architectural studio layout */}
-            <div className="grid grid-cols-3 gap-6 pt-10 border-t border-border/40 max-w-lg font-mono">
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Standards</p>
-                <p className="text-xl font-bold text-foreground mt-1">100% NYC DOB</p>
-                <span className="text-[10px] text-muted-foreground/60 block">Building & Zoning Codes</span>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Accuracy</p>
-                <p className="text-xl font-bold text-foreground mt-1">Drawing Intel</p>
-                <span className="text-[10px] text-muted-foreground/60 block">CAD-grade spatial scans</span>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Target Audience</p>
-                <p className="text-xl font-bold text-foreground mt-1">Built for Pros</p>
-                <span className="text-[10px] text-muted-foreground/60 block">Architects & Developers</span>
-              </div>
-            </div>
+
           </div>
 
           {/* Right Column: Premium CAD Blueprint simulator */}
