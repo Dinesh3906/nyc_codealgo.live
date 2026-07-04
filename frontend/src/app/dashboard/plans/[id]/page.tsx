@@ -818,7 +818,7 @@ export default function PlanDetailPage() {
                               </div>
                             </CardHeader>
                             <CardContent className="pb-4 space-y-3">
-                              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{issue.description}</p>
+                              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed whitespace-pre-line">{issue.description}</p>
 
                               {loophole && loophole !== 'N/A' && (
                                 <div className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-3">

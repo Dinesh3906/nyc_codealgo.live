@@ -6,12 +6,12 @@ import { Footer } from "@/components/sections/Sections";
 export default function PrivacyPage() {
   return (
     <main className="dark min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative overflow-hidden">
-      
+
       {/* Background decoration */}
       <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
 
       <Navbar onOpenModal={() => { }} />
-      
+
       <div className="relative container mx-auto px-6 py-24 max-w-4xl z-10">
         <header className="mb-12 border-b border-slate-800/80 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-500/30 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
@@ -26,15 +26,15 @@ export default function PrivacyPage() {
         </header>
 
         <div className="prose prose-invert max-w-none text-slate-300 space-y-8 leading-relaxed">
-          
+
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">1. Introduction & Legal Entity</h2>
             <p>
               Welcome to <strong>PermitIQ by Aureon</strong>. This Privacy Policy explains how Construction AI Technologies Inc. ("PermitIQ by Aureon", "we", "our", "us") collects, uses, stores, and protects your information when you use our building code compliance and analysis platform.
             </p>
             <p>
-              <strong>Construction AI Technologies Inc.</strong><br/>
-              Registered Address: 1 World Trade Center, Suite 4500, New York, NY 10007<br/>
+              <strong>Construction AI Technologies Inc.</strong><br />
+              Registered Address: 1 World Trade Center, Suite 4500, New York, NY 10007<br />
               Contact Email: support@permitiq.codealgo.live
             </p>
             <p>
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">2. Information We Collect</h2>
-            
+
             <h3 className="text-xl font-bold text-slate-200 mt-4 mb-2">Account Information</h3>
             <p className="mb-4">When you create an account, we may collect:</p>
             <ul className="list-disc pl-6 space-y-1 text-slate-400 mb-6">
@@ -133,7 +133,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">8. Security & Breach Notification</h2>
             <p>
-              We implement industry-standard encryption (SSL/TLS), role-based access controls, and secure infrastructure to protect your data. However, no digital transmission is entirely secure. 
+              We implement industry-standard encryption (SSL/TLS), role-based access controls, and secure infrastructure to protect your data. However, no digital transmission is entirely secure.
             </p>
             <p className="mt-4">
               <strong>Incident Response:</strong> In the event of a data breach that compromises your personal information and requires notification under applicable law, we will provide prompt notice to affected users and regulatory bodies as required.
@@ -193,7 +193,7 @@ export default function PrivacyPage() {
               If you have any questions, concerns, or requests regarding this Privacy Policy or our enterprise data practices, please contact our privacy compliance team:
             </p>
             <p className="mt-4">
-              <strong>Construction AI Technologies Inc.</strong><br/>
+              <strong>Construction AI Technologies Inc.</strong><br />
               Email: <a href="mailto:support@permitiq.codealgo.live" className="text-blue-400 hover:underline">support@permitiq.codealgo.live</a><br />
               Address: 1 World Trade Center, Suite 4500, New York, NY 10007
             </p>

@@ -51,7 +51,7 @@ function extractTextFromCAD(filePath: string, ext: string): string {
       // .dwg binary format - Scan for ASCII and UTF-16 strings
       const buffer = fs.readFileSync(filePath);
       const strings: string[] = [];
-      
+
       // Standard ASCII strings (length >= 4)
       let currentStr = "";
       for (let i = 0; i < buffer.length; i++) {
@@ -74,7 +74,7 @@ function extractTextFromCAD(filePath: string, ext: string): string {
           strings.push(trimmed);
         }
       }
-      
+
       // Wide-characters (UTF-16 LE)
       let currentWideStr = "";
       for (let i = 0; i < buffer.length - 1; i++) {
@@ -99,7 +99,7 @@ function extractTextFromCAD(filePath: string, ext: string): string {
           strings.push(trimmed);
         }
       }
-      
+
       const uniqueStrings = Array.from(new Set(strings));
       return uniqueStrings.slice(0, 2000).join('\n');
     }
@@ -283,7 +283,7 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
 export function chunkPlanText(fullText: string): PlanChunk[] {
   const pages = fullText.split(/--- PAGE (\d+) ---/i);
   const chunks: PlanChunk[] = [];
-  
+
   if (pages.length <= 1) {
     const chunkSize = 1500;
     const overlap = 300;
@@ -313,7 +313,7 @@ export function chunkPlanText(fullText: string): PlanChunk[] {
     const pageText = pages[i + 1] || "";
     const pageTrimmed = pageText.trim();
     if (pageTrimmed.length === 0) continue;
-    
+
     if (pageTrimmed.length > 2000) {
       const chunkSize = 1500;
       const overlap = 300;
@@ -335,7 +335,7 @@ export function chunkPlanText(fullText: string): PlanChunk[] {
       });
     }
   }
-  
+
   return chunks;
 }
 
@@ -351,7 +351,7 @@ export async function getOrGeneratePlanChunks(planData: any): Promise<PlanChunk[
   // Generate embeddings using local model in batches
   const texts = chunks.map(c => c.text);
   const model = await initEmbeddingModel();
-  
+
   const embeddings: number[][] = [];
   const batchSize = 50;
   for (let i = 0; i < texts.length; i += batchSize) {
@@ -383,11 +383,11 @@ export async function semanticSearchPlan(planData: any, stepId: string, topK: nu
 
   for (const query of queries) {
     const queryVector = await generateQueryEmbedding(query);
-    
+
     for (const chunk of chunks) {
       if (!chunk.embedding) continue;
       const score = cosineSimilarity(queryVector, chunk.embedding);
-      
+
       const existing = scoredChunksMap.get(chunk.chunkIndex);
       if (!existing || score > existing.maxScore) {
         scoredChunksMap.set(chunk.chunkIndex, { chunk, maxScore: score });
@@ -443,10 +443,10 @@ const SUBDIR_TO_DISCIPLINE: Record<string, string> = {
 };
 
 function getFilesFromSubdir(subdirName?: string): string[] {
-  const targetDir = subdirName 
-    ? path.join(__dirname, "../../pdfs", subdirName) 
+  const targetDir = subdirName
+    ? path.join(__dirname, "../../pdfs", subdirName)
     : path.join(__dirname, "../../pdfs");
-  
+
   let files: string[] = [];
   if (fs.existsSync(targetDir)) {
     try {
@@ -610,61 +610,70 @@ export function getPDFsForStep(stepId: string): string[] {
 
 export const STEP_CODES_CHECKLIST: Record<string, { code: string; title: string; description: string }[]> = {
   building_code: [
-    { code: "BC 1009.3", title: "Stairways / Egress width", description: "Verify stair width is at least 44 inches for occupancy > 50." },
-    { code: "BC 1008.1.1", title: "Door clear width", description: "Verify door openings provide at least 32 inches clear width." },
-    { code: "BC 1208.2", title: "Minimum ceiling heights", description: "Verify habitable spaces have at least 7 feet 6 inches height." },
-    { code: "BC 1208.3", title: "Room area dimensions", description: "Verify habitable rooms are at least 7 feet in any plan dimension." },
-    { code: "BC 705.8", title: "Firewalls and opening protection", description: "Verify firewall assemblies meet fire-resistance ratings and do not contain non-compliant polyurethane acoustic foam or combustible insulation materials." },
-    { code: "BC 903.2", title: "Automatic sprinkler systems", description: "Verify automatic fire sprinkler coverage for occupied areas." }
+    { code: "BC 1009.3", title: "Stairways / Egress width", description: "Verify stair widths on the plans against the code-specified minimum egress width requirements based on occupant load." },
+    { code: "BC 1008.1.1", title: "Door clear width", description: "Verify door clear opening widths on the plans against the code-specified minimum door clear width requirements." },
+    { code: "BC 1208.2", title: "Minimum ceiling heights", description: "Verify ceiling heights in habitable spaces on the plan drawings against the code-specified minimum ceiling heights." },
+    { code: "BC 1208.3", title: "Room area dimensions", description: "Verify habitable room dimensions on the plan drawings against the code-specified minimum room dimension and area requirements." },
+    { code: "BC 705.8", title: "Firewalls and opening protection", description: "Verify firewall assemblies and opening protections on the plans comply with the code-specified fire-resistance ratings and material limitations." },
+    { code: "BC 903.2", title: "Automatic sprinkler systems", description: "Verify automatic sprinkler system coverage and locations on the drawings against code-specified occupancy requirements." },
+    { code: "DOB NOW Admin Consistency", title: "Completeness Check: Data Consistency", description: "Verify that story count, address, block/lot numbers, and occupancy classifications match exactly across the drawing title sheet, architectural plans, and zoning diagrams." },
+    { code: "DOB Form TR1", title: "Completeness Check: Form TR1 Special Inspections", description: "Cross-reference plan scopes (concrete, structural steel, underpinning) to verify that all mandatory Special Inspection requirements (TR1) are specified." },
+    { code: "DOB Board Attestation", title: "Completeness Check: Co-op/Condo Board Attestation", description: "Verify if the plan involves a residential co-op or condo and flag the DOB NOW digital board attestation requirement." },
+    { code: "DOB Pre-Approvals", title: "Completeness Check: Agency Prior Approvals", description: "Identify scopes of work requiring prior approvals from FDNY, LPC (landmarks), or DEP (asbestos) and flag the pre-approval requirements." },
+    { code: "LL11 FISP", title: "Local Law 11: Facade Safety (FISP)", description: "Identify if the existing building exceeds height limits requiring facade safety inspection protocols (FISP) and flag any missing facade protocols." }
   ],
   plumbing_code: [
-    { code: "PC 403.1", title: "Required plumbing fixtures", description: "Verify minimum number of toilets, lavatories, and showers/bathtubs." },
-    { code: "PC 405.3.1", title: "Water closet spacing", description: "Verify water closets have at least 15 inches clearance from center to any wall." },
-    { code: "PC 701.2", title: "Drainage system connection", description: "Verify connections to public sewer or approved private system." },
-    { code: "PC 901.3", title: "Vent system requirements", description: "Verify trap seals are protected by adequate venting to outdoors." },
-    { code: "PC 604.1", title: "Water distribution pipe sizing", description: "Verify supply lines are sized to support peak water demand." }
+    { code: "PC 403.1", title: "Required plumbing fixtures", description: "Verify the minimum plumbing fixture counts on the drawings against the code-specified occupant load calculations." },
+    { code: "PC 405.3.1", title: "Water closet spacing", description: "Verify water closet clearances and spacing on the plumbing diagrams against the code-specified minimum clearance requirements." },
+    { code: "PC 701.2", title: "Drainage system connection", description: "Verify drainage connections on the site plans against municipal public sewer connection standards." },
+    { code: "PC 901.3", title: "Vent system requirements", description: "Verify trap seal vent systems on the riser diagrams against code-specified venting and piping limits." },
+    { code: "PC 604.1", title: "Water distribution pipe sizing", description: "Verify water distribution pipe sizes on the schedules against peak demand flow rate requirements." }
   ],
   mechanical_code: [
-    { code: "MC 401.2", title: "Ventilation required", description: "Verify mechanical or natural ventilation is provided for habitable rooms." },
-    { code: "MC 501.1", title: "Exhaust systems", description: "Verify bathroom and kitchen areas have independent mechanical exhaust." },
-    { code: "MC 603.1", title: "Duct construction", description: "Verify duct materials, sealing, and insulation meet code requirements." },
-    { code: "MC 304.1", title: "Equipment clearances", description: "Verify mechanical equipment has sufficient servicing clearance." },
-    { code: "MC 908.1", title: "Cooling towers sanitary compliance", description: "Verify cooling tower design prevents biological contamination." }
+    { code: "MC 401.2", title: "Ventilation required", description: "Verify natural or mechanical ventilation specifications for habitable spaces on the drawings against the code requirements." },
+    { code: "MC 501.1", title: "Exhaust systems", description: "Verify bathroom and kitchen independent mechanical exhaust systems on the drawings against the code flow rate requirements." },
+    { code: "MC 603.1", title: "Duct construction", description: "Verify duct construction materials, sealing, and insulation specifications on the mechanical details against the code." },
+    { code: "MC 304.1", title: "Equipment clearances", description: "Verify equipment servicing clearances on mechanical layout drawings against code-specified minimum clearance distances." },
+    { code: "MC 908.1", title: "Cooling towers sanitary compliance", description: "Verify cooling tower sanitation, filtration, and drift eliminator specifications on mechanical schedules against code requirements." },
+    { code: "All-Electric Mandate (Mech)", title: "Fossil-Fuel Gas Piping Prohibition", description: "Identify building height and verify fossil-fuel piping prohibitions for low-rise buildings under Jan 1, 2026 mandates." }
   ],
   fuel_gas_code: [
-    { code: "FGC 404.1", title: "Gas piping installation", description: "Verify gas piping is properly routed, supported, and protected." },
-    { code: "FGC 409.1", title: "Shutoff valves", description: "Verify accessible gas shutoff valves are located upstream of appliances." },
-    { code: "FGC 503.1", title: "Venting of appliances", description: "Verify gas equipment has proper venting and chimney configurations." },
-    { code: "FGC 304.1", title: "Combustion air supply", description: "Verify sufficient outdoor air supply for fuel combustion." },
-    { code: "FGC 621.1", title: "Unvented room heaters prohibition", description: "Confirm unvented gas heaters are not specified in habitable rooms." }
+    { code: "FGC 404.1", title: "Gas piping installation", description: "Verify gas piping installation, routing, support, and protection details on the plumbing/mechanical sheets against code requirements." },
+    { code: "FGC 409.1", title: "Shutoff valves", description: "Verify gas shutoff valve locations and accessibility on the gas riser diagrams against code requirements." },
+    { code: "FGC 503.1", title: "Venting of appliances", description: "Verify appliance venting, chimney, and draft hood details on the drawings against code-specified sizes and clearance limits." },
+    { code: "FGC 304.1", title: "Combustion air supply", description: "Verify combustion air supply duct sizes and outdoor air openings on mechanical plans against appliance combustion air requirements." },
+    { code: "FGC 621.1", title: "Unvented room heaters prohibition", description: "Verify that no unvented room heaters or gas fireplaces are specified in habitable spaces on architectural drawings." },
+    { code: "LL152 Gas Inspections", title: "Local Law 152: Gas Piping Inspections", description: "Verify periodic gas piping inspection protocols for applicable existing buildings." }
   ],
   energy_code: [
-    { code: "ECC C402.1", title: "Thermal envelope insulation", description: "Verify exterior wall and roof R-values/U-factors meet standards." },
-    { code: "ECC C405.1", title: "Lighting controls", description: "Verify automatic lighting shutoff and occupancy sensors are specified." },
-    { code: "ECC C403.2", title: "HVAC performance efficiency", description: "Verify mechanical heating/cooling equipment efficiency ratings." },
-    { code: "ECC C402.4", title: "Fenestration SHGC and U-factor", description: "Verify window assemblies meet solar heat gain and thermal limits." },
-    { code: "ECC C405.2", title: "Lighting power allowance", description: "Verify lighting power densities (LPD) are below maximum limits." }
+    { code: "ECC C402.1", title: "Thermal envelope insulation", description: "Verify envelope thermal R-values and assembly U-factors on the energy calculations against code-specified limits." },
+    { code: "ECC C405.1", title: "Lighting controls", description: "Verify automatic lighting controls and occupancy sensors on the electrical layouts against energy code requirements." },
+    { code: "ECC C403.2", title: "HVAC performance efficiency", description: "Verify mechanical HVAC equipment efficiency ratings on the equipment schedules against code-specified energy limits." },
+    { code: "ECC C402.4", title: "Fenestration SHGC and U-factor", description: "Verify fenestration Solar Heat Gain Coefficient (SHGC) and U-factor ratings on window schedules against energy code limits." },
+    { code: "ECC C405.2", title: "Lighting power allowance", description: "Verify lighting power allowance and lighting power density (LPD) calculations on the schedules against energy code limits." },
+    { code: "LL97 Carbon Caps", title: "Local Law 97: Building Carbon Emission Limits", description: "Verify mechanical, electrical, and plumbing system energy designs against Local Law 97 carbon emissions limits based on occupancy." }
   ],
   electrical_code: [
-    { code: "EC 210.8", title: "GFCI protection", description: "Verify GFCI protection is specified in bathrooms, kitchens, and wet areas." },
-    { code: "EC 210.12", title: "AFCI protection", description: "Verify AFCI protection on all bedroom and dwelling unit circuits." },
-    { code: "EC 110.26", title: "Electrical panel clearance", description: "Verify a clear workspace of at least 36 inches deep in front of panels." },
-    { code: "EC 210.52", title: "Receptacle outlet spacing", description: "Verify outlets are spaced so no point on a wall is > 6 feet from an outlet." },
-    { code: "EC 220.1", title: "Feeder load, wire, and transformer calculations", description: "Verify electrical panels, transformer capacity (e.g. 50 kVA vs 370 kVA planned load), and wire conductor sizing (e.g. 14 AWG vs 60 Amp welder load) are appropriately designed for planned loads." }
+    { code: "EC 210.8", title: "GFCI protection", description: "Verify GFCI protection specifications for receptacles in kitchens, bathrooms, and wet locations on electrical plans against code requirements." },
+    { code: "EC 210.12", title: "AFCI protection", description: "Verify AFCI protection specifications on bedroom and dwelling unit branch circuits on the panel schedules against code requirements." },
+    { code: "EC 110.26", title: "Electrical panel clearance", description: "Verify electrical panel workspace clearances on layout drawings against code-specified minimum depth and width requirements." },
+    { code: "EC 210.52", title: "Receptacle outlet spacing", description: "Verify receptacle placement and spacing along walls on floor plans against code-specified maximum spacing requirements." },
+    { code: "EC 220.1", title: "Feeder load, wire, and transformer calculations", description: "Verify feeder load calculations, wire sizes, and transformer capacities on the single-line diagrams against planned design loads." },
+    { code: "EC 2025", title: "2025 NYC Electrical Code Readiness", description: "Verify compliance of electrical system layouts with 2025 NYC Electrical Code and permit limitations for post-June 2026 filings." }
   ],
   fire_code: [
-    { code: "FC 503.1", title: "Fire apparatus access", description: "Verify emergency vehicle driveways and building access width." },
-    { code: "FC 907.2", title: "Fire alarm systems", description: "Verify smoke alarms, heat detectors, and alarm panels are specified." },
-    { code: "FC 1027.1", title: "Means of egress maintenance", description: "Confirm exit corridors, doors, hallways, and stairs are unobstructed, unlocked, and fail-safe during fire alarms (e.g. no fail-secure locks that trap occupants)." },
-    { code: "FC 507.1", title: "Fire water supply and valves", description: "Verify sufficient fire hydrant access, water pressure flows, and that sprinkler control valves are kept open (e.g. gate valve BV-99X must not be locked closed)." },
-    { code: "FC 905.1", title: "Standpipe systems", description: "Verify required wet or dry standpipes in exit stairwells." }
+    { code: "FC 503.1", title: "Fire apparatus access", description: "Verify fire apparatus access roads and building access paths on the site plans against code requirements." },
+    { code: "FC 907.2", title: "Fire alarm systems", description: "Verify fire alarm systems, smoke/heat detectors, and panel locations on the fire protection drawings against code requirements." },
+    { code: "FC 1027.1", title: "Means of egress maintenance", description: "Verify egress corridors, exit doors, and locking hardware are unobstructed, unlocked, and fail-safe during alarm conditions." },
+    { code: "FC 507.1", title: "Fire water supply and valves", description: "Verify fire water supply connection locations, fire hydrants, and valve monitoring on site plans against code requirements." },
+    { code: "FC 905.1", title: "Standpipe systems", description: "Verify standpipe system outlets and riser pipe sizes in exit stairs on the fire protection drawings against code requirements." }
   ],
   zoning_resolution: [
-    { code: "ZR 23-14", title: "Floor Area Ratio (FAR)", description: "Verify building FAR matches allowable density for the district." },
-    { code: "ZR 23-40", title: "Setbacks and yards", description: "Verify minimum front, side, and rear yard clearances are provided." },
+    { code: "ZR 23-14", title: "Floor Area Ratio (FAR)", description: "Verify floor area calculations and Floor Area Ratio (FAR) on the zoning analysis against district maximum limits." },
+    { code: "ZR 23-40", title: "Setbacks and yards", description: "Verify front, side, and rear yard setbacks on the site plan and zoning diagram against district minimum yard requirements." },
     { code: "ZR 23-60", title: "Height and sky exposure plane", description: "Verify roofline and setbacks respect sky exposure angle rules." },
-    { code: "ZR 23-22", title: "Dwelling unit density", description: "Verify the number of residential units complies with lot limits." },
-    { code: "ZR 25-20", title: "Off-street parking", description: "Verify accessory parking spaces meet minimum zoning requirements." }
+    { code: "ZR 23-22", title: "Dwelling unit density", description: "Verify dwelling unit count and density on the zoning analysis against district maximum unit density rules." },
+    { code: "ZR 25-20", title: "Off-street parking", description: "Verify accessory parking spaces and layout on the site plans against zoning requirements." }
   ]
 };
 
@@ -767,7 +776,7 @@ export async function checkStepComplianceTS(
   const index = pc.Index(process.env.PINECONE_INDEX as string);
 
   const searchQueries = stepConfig.queries.map(q => q + " " + filteredPlanText.substring(0, 200));
-  
+
   // Append NYC General Administrative Provisions (GAP) queries for enforcement and seal checks
   searchQueries.push(
     "NYC General Administrative Provisions GAP administrative provisions code enforcement licenses permits DOB fees",
@@ -975,142 +984,142 @@ Return valid JSON in this exact format:
         body: JSON.stringify({
           contents: [{ role: "user", parts }],
           systemInstruction: { parts: [{ text: systemPrompt }] },
-            generationConfig: {
-              temperature: 0,
-              maxOutputTokens: 8192,
-              responseMimeType: "application/json"
-            }
-          })
-        });
-  
-        clearTimeout(timeoutId);
-  
-        if (!response.ok) {
-          const statusCode = response.status;
-          retryCount++;
-          if (statusCode === 429) {
-            // Exponential backoff with jitter for rate limits
-            const baseDelay = 10000; // Increased from 5000 to give more time under heavy rate limits
-            const delay = baseDelay * Math.pow(1.5, retryCount) + Math.random() * 3000;
-            console.warn(`[RAG][${stepConfig.name}] Rate limited (429). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          } else if (statusCode === 503 || statusCode === 500) {
-            // Server overload — longer backoff
-            const delay = 12000 * retryCount + Math.random() * 3000; // Increased from 8000
-            console.warn(`[RAG][${stepConfig.name}] Server error (${statusCode}). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+          generationConfig: {
+            temperature: 0,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json"
           }
-          continue;
+        })
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const statusCode = response.status;
+        retryCount++;
+        if (statusCode === 429) {
+          // Exponential backoff with jitter for rate limits
+          const baseDelay = 10000; // Increased from 5000 to give more time under heavy rate limits
+          const delay = baseDelay * Math.pow(1.5, retryCount) + Math.random() * 3000;
+          console.warn(`[RAG][${stepConfig.name}] Rate limited (429). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else if (statusCode === 503 || statusCode === 500) {
+          // Server overload — longer backoff
+          const delay = 12000 * retryCount + Math.random() * 3000; // Increased from 8000
+          console.warn(`[RAG][${stepConfig.name}] Server error (${statusCode}). Retry ${retryCount}/${maxRetries} after ${Math.round(delay / 1000)}s...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        continue;
+      }
+
+      // Stream the response: read SSE chunks and accumulate text
+      let accumulatedText = "";
+      try {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error("No response body reader available for streaming.");
         }
 
-        // Stream the response: read SSE chunks and accumulate text
-        let accumulatedText = "";
-        try {
-          const reader = response.body?.getReader();
-          if (!reader) {
-            throw new Error("No response body reader available for streaming.");
-          }
+        const decoder = new TextDecoder();
+        let sseBuffer = "";
+        let lastLogLength = 0;
 
-          const decoder = new TextDecoder();
-          let sseBuffer = "";
-          let lastLogLength = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          sseBuffer += decoder.decode(value, { stream: true });
 
-            sseBuffer += decoder.decode(value, { stream: true });
+          // Parse SSE events from the buffer
+          const lines = sseBuffer.split("\n");
+          sseBuffer = lines.pop() || ""; // Keep incomplete line in buffer
 
-            // Parse SSE events from the buffer
-            const lines = sseBuffer.split("\n");
-            sseBuffer = lines.pop() || ""; // Keep incomplete line in buffer
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const jsonStr = line.substring(6).trim();
+              if (!jsonStr || jsonStr === "[DONE]") continue;
 
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const jsonStr = line.substring(6).trim();
-                if (!jsonStr || jsonStr === "[DONE]") continue;
+              try {
+                const chunk = JSON.parse(jsonStr);
+                const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                accumulatedText += chunkText;
 
-                try {
-                  const chunk = JSON.parse(jsonStr);
-                  const chunkText = chunk.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                  accumulatedText += chunkText;
-
-                  // Log progress every ~2K chars to show the connection is alive
-                  if (accumulatedText.length - lastLogLength > 2000) {
-                    console.log(`[RAG][${stepConfig.name}] Streaming... ${accumulatedText.length} chars received`);
-                    lastLogLength = accumulatedText.length;
-                  }
-                } catch (parseErr) {
-                  // Skip malformed SSE chunks silently
+                // Log progress every ~2K chars to show the connection is alive
+                if (accumulatedText.length - lastLogLength > 2000) {
+                  console.log(`[RAG][${stepConfig.name}] Streaming... ${accumulatedText.length} chars received`);
+                  lastLogLength = accumulatedText.length;
                 }
+              } catch (parseErr) {
+                // Skip malformed SSE chunks silently
               }
             }
           }
-
-          console.log(`[RAG][${stepConfig.name}] Stream complete. Total: ${accumulatedText.length} chars`);
-        } catch (streamErr: any) {
-          console.warn(`[RAG][${stepConfig.name}] Stream read error: ${streamErr.message}. Using accumulated text (${accumulatedText.length} chars).`);
         }
 
-        if (!accumulatedText || accumulatedText.trim().length === 0) {
-          throw new Error("Empty response from Gemini streaming.");
-        }
-  
-        const trimmedText = accumulatedText.trim();
-        if (!trimmedText.startsWith('{') && !trimmedText.includes('{')) {
-          throw new Error("Response is not JSON formatted.");
-        }
-  
-        rawOut = accumulatedText;
+        console.log(`[RAG][${stepConfig.name}] Stream complete. Total: ${accumulatedText.length} chars`);
+      } catch (streamErr: any) {
+        console.warn(`[RAG][${stepConfig.name}] Stream read error: ${streamErr.message}. Using accumulated text (${accumulatedText.length} chars).`);
+      }
+
+      if (!accumulatedText || accumulatedText.trim().length === 0) {
+        throw new Error("Empty response from Gemini streaming.");
+      }
+
+      const trimmedText = accumulatedText.trim();
+      if (!trimmedText.startsWith('{') && !trimmedText.includes('{')) {
+        throw new Error("Response is not JSON formatted.");
+      }
+
+      rawOut = accumulatedText;
+      break;
+    } catch (e: any) {
+      console.warn(`[RAG][${stepConfig.name}] Attempt ${retryCount + 1} with Gemini failed: ${e.message || e}`);
+      retryCount++;
+      // Exponential backoff on network/timeout errors too
+      const delay = 5000 * Math.pow(1.5, retryCount - 1) + Math.random() * 3000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  // If Google AI Studio completely failed after all retries, fall back to Groq
+  if (!rawOut) {
+    console.warn(`[RAG] Google AI Studio failed for step ${stepConfig.name} after all retries. Falling back to Groq...`);
+
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error(`Google AI Studio failed for step ${stepConfig.name} and GROQ_API_KEY is not defined.`);
+    }
+
+    let groqRetry = 0;
+    const groqMaxRetries = 5;
+    while (groqRetry <= groqMaxRetries) {
+      try {
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const completion = await groq.chat.completions.create({
+          model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${filteredPlanText.substring(0, 300000)}` }
+          ],
+          temperature: 0,
+          max_tokens: 4096,
+          response_format: { type: "json_object" }
+        });
+        rawOut = completion.choices[0]?.message?.content || "{}";
+        console.log(`[RAG][${stepConfig.name}] Groq fallback completed successfully on attempt ${groqRetry + 1}.`);
         break;
-      } catch (e: any) {
-        console.warn(`[RAG][${stepConfig.name}] Attempt ${retryCount + 1} with Gemini failed: ${e.message || e}`);
-        retryCount++;
-        // Exponential backoff on network/timeout errors too
-        const delay = 5000 * Math.pow(1.5, retryCount - 1) + Math.random() * 3000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  
-    // If Google AI Studio completely failed after all retries, fall back to Groq
-    if (!rawOut) {
-      console.warn(`[RAG] Google AI Studio failed for step ${stepConfig.name} after all retries. Falling back to Groq...`);
-  
-      if (!process.env.GROQ_API_KEY) {
-        throw new Error(`Google AI Studio failed for step ${stepConfig.name} and GROQ_API_KEY is not defined.`);
-      }
-  
-      let groqRetry = 0;
-      const groqMaxRetries = 5;
-      while (groqRetry <= groqMaxRetries) {
-        try {
-          const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-          const completion = await groq.chat.completions.create({
-            model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: `Analyze this architectural plan for ${stepConfig.name} compliance. Text data: ${filteredPlanText.substring(0, 300000)}` }
-            ],
-            temperature: 0,
-            max_tokens: 4096,
-            response_format: { type: "json_object" }
-          });
-          rawOut = completion.choices[0]?.message?.content || "{}";
-          console.log(`[RAG][${stepConfig.name}] Groq fallback completed successfully on attempt ${groqRetry + 1}.`);
-          break;
-        } catch (groqErr: any) {
-          console.warn(`[RAG] Groq fallback attempt ${groqRetry + 1} failed for step ${stepConfig.name}: ${groqErr.message || groqErr}`);
-          groqRetry++;
-          if (groqRetry <= groqMaxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 6000 * groqRetry));
-          } else {
-            console.error(`[RAG] Groq fallback also failed for step ${stepConfig.name} after all retries:`, groqErr);
-            throw new Error(`Both Google AI Studio and Groq failed for step ${stepConfig.name}`);
-          }
+      } catch (groqErr: any) {
+        console.warn(`[RAG] Groq fallback attempt ${groqRetry + 1} failed for step ${stepConfig.name}: ${groqErr.message || groqErr}`);
+        groqRetry++;
+        if (groqRetry <= groqMaxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 6000 * groqRetry));
+        } else {
+          console.error(`[RAG] Groq fallback also failed for step ${stepConfig.name} after all retries:`, groqErr);
+          throw new Error(`Both Google AI Studio and Groq failed for step ${stepConfig.name}`);
         }
       }
     }
-  
+  }
+
   let cleanRaw = rawOut.trim();
   cleanRaw = cleanRaw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
   cleanRaw = cleanRaw.replace(/^```\n?/, '').replace(/\n?```$/, '');
@@ -1245,7 +1254,7 @@ Return valid JSON in this exact format:
     }
 
     const residentialRules = ["EC 210.12", "EC 210.52", "EC 210.8", "ZR 23-22", "BC 1208.2", "BC 1208.3"];
-    
+
     // 1. Force the status in evaluations to not_applicable
     residentialRules.forEach(code => {
       let ev = resultJSON.checklist_evaluations.find((e: any) => e && e.code === code);
@@ -1266,8 +1275,8 @@ Return valid JSON in this exact format:
       console.log(`[RAG][SAFEGUARD] Applying programmatic traps for Project Asclepius on step: ${stepId}`);
       if (stepId === 'building_code') {
         // Trap 1: Sprinkler Density Misclassification (BC 903.2)
-        const hasTrap1 = resultJSON.issues.some((iss: any) => 
-          String(iss.code || iss.rule || "").includes("BC 903.2") || 
+        const hasTrap1 = resultJSON.issues.some((iss: any) =>
+          String(iss.code || iss.rule || "").includes("BC 903.2") ||
           String(iss.title || "").toUpperCase().includes("SPRINKLER")
         );
         if (!hasTrap1) {
@@ -1285,9 +1294,9 @@ Return valid JSON in this exact format:
         }
 
         // Trap 3: Dead-End Corridor (BC 1009.3)
-        const hasTrap3 = resultJSON.issues.some((iss: any) => 
-          String(iss.code || iss.rule || "").includes("BC 1009.3") || 
-          String(iss.title || "").toUpperCase().includes("DEAD-END") || 
+        const hasTrap3 = resultJSON.issues.some((iss: any) =>
+          String(iss.code || iss.rule || "").includes("BC 1009.3") ||
+          String(iss.title || "").toUpperCase().includes("DEAD-END") ||
           String(iss.title || "").toUpperCase().includes("CORRIDOR")
         );
         if (!hasTrap3) {
@@ -1305,8 +1314,8 @@ Return valid JSON in this exact format:
         }
       } else if (stepId === 'fire_code') {
         // Trap 1: Sprinkler Density Misclassification (FC 507.1)
-        const hasTrap1 = resultJSON.issues.some((iss: any) => 
-          String(iss.code || iss.rule || "").includes("FC 507.1") || 
+        const hasTrap1 = resultJSON.issues.some((iss: any) =>
+          String(iss.code || iss.rule || "").includes("FC 507.1") ||
           String(iss.title || "").toUpperCase().includes("SPRINKLER")
         );
         if (!hasTrap1) {
@@ -1324,8 +1333,8 @@ Return valid JSON in this exact format:
         }
 
         // Trap 2: Illegal Fire Alarm Activation Delay (FC 907.2)
-        const hasTrap2 = resultJSON.issues.some((iss: any) => 
-          String(iss.code || iss.rule || "").includes("FC 907.2") || 
+        const hasTrap2 = resultJSON.issues.some((iss: any) =>
+          String(iss.code || iss.rule || "").includes("FC 907.2") ||
           String(iss.title || "").toUpperCase().includes("ALARM DELAY") ||
           String(iss.title || "").toUpperCase().includes("SEQUENCE")
         );
@@ -1344,7 +1353,7 @@ Return valid JSON in this exact format:
         }
 
         // Trap 3: ICU Corridor Dead-End Length Exceeds Limit (FC 1027.1)
-        const hasTrap3 = resultJSON.issues.some((iss: any) => 
+        const hasTrap3 = resultJSON.issues.some((iss: any) =>
           String(iss.title || "").toUpperCase().includes("DEAD-END") ||
           (String(iss.code || "").includes("FC 1027.1") && String(iss.description || "").includes("dead-end"))
         );
@@ -1363,7 +1372,7 @@ Return valid JSON in this exact format:
         }
 
         // Trap 4: Life Support Disconnection / Vertical Evacuation (FC 1027.1)
-        const hasTrap4 = resultJSON.issues.some((iss: any) => 
+        const hasTrap4 = resultJSON.issues.some((iss: any) =>
           String(iss.title || "").toUpperCase().includes("LIFE SUPPORT") ||
           String(iss.title || "").toUpperCase().includes("EVACUATION PROTOCOL") ||
           String(iss.description || "").includes("life support")
@@ -1390,9 +1399,9 @@ Return valid JSON in this exact format:
         if (!iss) return false;
         const titleUpper = String(iss.title || "").toUpperCase();
         const descUpper = String(iss.description || "").toUpperCase();
-        
+
         // Critical Project Omega & Asclepius traps should NEVER be filtered out, even if they have residential codes mapped to them!
-        const isCriticalTrap = 
+        const isCriticalTrap =
           titleUpper.includes("FIREWALL") || descUpper.includes("FIREWALL") ||
           titleUpper.includes("POLYURETHANE") || descUpper.includes("POLYURETHANE") ||
           titleUpper.includes("FOAM") || descUpper.includes("FOAM") ||
@@ -1412,7 +1421,7 @@ Return valid JSON in this exact format:
           titleUpper.includes("POSITIVE ALARM") || descUpper.includes("POSITIVE ALARM") ||
           titleUpper.includes("LIFE SUPPORT") || descUpper.includes("LIFE SUPPORT") ||
           titleUpper.includes("EVACUATION") || descUpper.includes("EVACUATION");
-          
+
         if (isCriticalTrap) {
           // If it is a critical trap but mapped to a residential code, correct the code to the universal code!
           let codeRef = String(iss.code || iss.rule || "").toUpperCase();
@@ -1456,7 +1465,7 @@ Return valid JSON in this exact format:
         if (!iss) return;
         const codeRef = iss.code || iss.rule;
         if (!codeRef) return;
-        
+
         let ev = resultJSON.checklist_evaluations.find((e: any) => e && e.code === codeRef);
         if (ev) {
           ev.status = "violation";
@@ -1475,15 +1484,15 @@ Return valid JSON in this exact format:
   // ZONING RESOLUTION SAFEGUARD (To handle cases with zero zoning dimensions/lot details)
   if (stepId === 'zoning_resolution') {
     const missingDataKeywords = [
-      "not specified", "not provided", "not shown", "missing", "no information", 
-      "no details", "insufficient", "lacks", "unable to verify", "not found", 
+      "not specified", "not provided", "not shown", "missing", "no information",
+      "no details", "insufficient", "lacks", "unable to verify", "not found",
       "not included", "no zoning", "no lot"
     ];
-    
-    const hasZoningKeywords = 
-      textPlanUpper.includes("LOT AREA") || 
-      textPlanUpper.includes("LOT WIDTH") || 
-      textPlanUpper.includes("LOT COVERAGE") || 
+
+    const hasZoningKeywords =
+      textPlanUpper.includes("LOT AREA") ||
+      textPlanUpper.includes("LOT WIDTH") ||
+      textPlanUpper.includes("LOT COVERAGE") ||
       textPlanUpper.includes("FAR LIMIT") ||
       textPlanUpper.includes("SKY EXPOSURE");
 
@@ -1529,7 +1538,7 @@ Return valid JSON in this exact format:
           }
         });
       }
-      
+
       if (Array.isArray(resultJSON.issues)) {
         resultJSON.issues = resultJSON.issues.filter((iss: any) => {
           if (!iss) return false;

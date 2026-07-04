@@ -6,12 +6,12 @@ import { Footer } from "@/components/sections/Sections";
 export default function TermsPage() {
   return (
     <main className="dark min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30 selection:text-blue-200 relative overflow-hidden">
-      
+
       {/* Background decoration */}
       <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-blue-950/10 via-slate-950 to-transparent pointer-events-none z-0" />
 
       <Navbar onOpenModal={() => { }} />
-      
+
       <div className="relative container mx-auto px-6 py-24 max-w-4xl z-10">
         <header className="mb-12 border-b border-slate-800/80 pb-8">
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
@@ -23,7 +23,7 @@ export default function TermsPage() {
         </header>
 
         <div className="prose prose-invert max-w-none text-slate-300 space-y-8 leading-relaxed">
-          
+
           {/* Conspicuous Disclaimer Box */}
           <div className="p-6 border border-amber-500/30 bg-amber-500/[0.03] rounded-lg text-amber-500 space-y-3 font-sans">
             <span className="font-mono text-xs uppercase font-bold tracking-widest block text-amber-400">

@@ -73,7 +73,7 @@ export class SchedulerService {
   public static correctedFindingsCount = 0;
   public static citationCorrectionsCount = 0;
   public static crossInconsistenciesCount = 0;
-  
+
   // Mapping audit disciplines to relevant page categories
   private static STEP_PAGE_MAPPING: Record<string, string[]> = {
     building_code: ['architectural_drawing', 'floor_plan', 'cad', 'structural_engineering', 'mixed_content'],
@@ -127,7 +127,7 @@ export class SchedulerService {
     const fs = require('fs');
     const path = require('path');
     const pdfParse = require('pdf-parse');
-    
+
     ProfilerService.startStage(planId, 'pdfRead');
     let housePlanText = "";
     let totalPages = 1;
@@ -142,7 +142,7 @@ export class SchedulerService {
 
     // 2. Upload file to File API and create Context Cache
     const cacheResult = await GeminiCacheManager.getOrCreateCache(planId, filePath, mimeType);
-    
+
     // 3. Page classification & routing
     ProfilerService.startStage(planId, 'pageRouting');
     const pageRoutes = await RoutingService.routeDocument(
@@ -171,11 +171,11 @@ export class SchedulerService {
           try {
             const pagePath = await PDFSplitter.extractPage(filePath, pageNum);
             const base64Data = fs.readFileSync(pagePath).toString('base64');
-            
+
             preUploadedPages.set(pageNum, {
               inlineData: base64Data
             });
-            
+
             PDFSplitter.cleanupPage(pagePath);
           } catch (e) {
             console.error(`[SchedulerService] Failed to pre-extract and read page ${pageNum}:`, e);
@@ -329,7 +329,7 @@ export class SchedulerService {
         } catch (err: any) {
           console.error(`[SchedulerService] Audit step ${step.id} failed:`, err);
           completedCount++;
-          
+
           // Generate checklist fallback on error
           const fallbackFeatures = (STEP_CODES_CHECKLIST[step.id] || []).map(
             item => `${item.code} - ${item.title}: Verification pending: Automated verification temporarily unavailable.`
@@ -443,21 +443,21 @@ export class SchedulerService {
   private static async runWithConcurrency<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
     const results: Promise<T>[] = [];
     const executing: Promise<any>[] = [];
-    
+
     for (const task of tasks) {
       const p = task();
       results.push(p);
-      
+
       const e = p.then(() => {
         executing.splice(executing.indexOf(e), 1);
       });
       executing.push(e);
-      
+
       if (executing.length >= limit) {
         await Promise.race(executing);
       }
     }
-    
+
     return Promise.all(results);
   }
 
@@ -536,7 +536,7 @@ export class SchedulerService {
         issues: []
       };
     }
-    
+
     // Retrieve Building Code reference materials from Pinecone
     const filteredPlanText = await semanticSearchPlan(planData, stepId);
 
@@ -551,7 +551,7 @@ export class SchedulerService {
         currentVisionConfidence = parseFloat((currentVisionConfidence * 0.8).toFixed(2));
       }
     }
-    
+
     const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
     const index = pc.Index(process.env.PINECONE_INDEX as string);
     const searchQueries = stepConfig.queries.map(q => q + " " + filteredPlanText.substring(0, 200));
@@ -651,8 +651,31 @@ ${m.metadata?.text || ""}`;
     console.log(`[SchedulerService][${stepConfig.name}] Deterministic codes evaluated: ${deterministicCodes.join(', ')}. Non-deterministic remaining: ${nonDeterministicCodes.map(c => c.code).join(', ')}.`);
 
     // System Prompt setup
-    const systemPrompt = `You are an AI-powered informational search and reference assistant designed to cross-reference architectural details and plan parameters against the official textual regulations of the 2022 NYC Building Codes. You are not a licensed professional engineer or architect, and you do not provide professional engineering/design advice or final regulatory certifications. Your role is strictly to act as an informational retrieval and reference tool, identifying potential code alignment issues for review by a licensed professional. You are analyzing details related to the ${stepConfig.name} discipline.
- 
+    const systemPrompt = `You are PermitIQ, an AI-powered decision-support plan review assistant for New York City construction.
+You DO NOT have the legal authority to approve plans, issue permits, or provide professional engineering or architectural advice.
+You act strictly as a pre-submission compliance analyzer for Licensed Professionals (Registered Architects and Professional Engineers). Your goal is to flag potential violations, missing administrative data, and geometry conflicts before the human professional submits the plans to the NYC Department of Buildings (DOB).
+
+LIABILITY & BEHAVIORAL GUARDRAILS:
+1. ZERO-AUTHORITY RULE: Never state that a plan is "approved," "legal," or "certified." Only state that a plan "appears to meet the checked parameters" or "contains no detected flags in the analyzed sections."
+2. HUMAN OVERRIDE: Always append warnings to your final output: "This analysis is for decision-support only. The Applicant of Record (RA/PE) assumes 100% legal liability for DOB compliance, including Professional Certification (Pro Cert) audits."
+3. NO DESIGNING: If a plan fails a check, do not engineer a solution. You may cite the code requirement, but do not instruct the architect on how to redesign the floorplan to fix it.
+
+CORE KNOWLEDGE BASE: 2026 NYC STANDARDS
+Evaluate all uploaded drawings and data against the following primary frameworks, using the date of analysis (current year 2026) to enforce current 2026 laws:
+1. 2022 NYC Construction Codes: (Building, Plumbing, Mechanical, Fuel Gas). Ignore the national IBC.
+2. 2025 NYC Electrical Code: For filings analyzed after June 2026, enforce the 2025 code requirements and electrical permit limits.
+3. NYC Zoning Resolution: Cross-reference the specific property address against current zoning maps, Special Purpose Districts, and contextual zoning mandates.
+4. The All-Electric Mandate: For new low-rise buildings (7 stories or fewer) filed after Jan 1, 2026, flag any presence of fossil-fuel systems (gas heating, cooking) as a fatal violation.
+5. Local Law 97 (Carbon Caps): Flag MEP systems that exceed the building's specific emission limits based on occupancy type.
+6. Local Law 152 & 11: Flag missing inspection protocols for gas piping (152) and facade safety (11/FISP) on applicable existing buildings.
+
+DOB NOW: ADMINISTRATIVE PROTOCOLS
+Before evaluating life safety or zoning, perform a strict administrative "Completeness Check" for the DOB NOW: Build portal.
+1. Data Consistency: The story count, address, block/lot numbers, and occupancy classifications must match exactly across the title sheet, architectural plans, and zoning diagrams.
+2. Form TR1: Flag the absence of Special Inspection requirements (TR1) if the plans indicate structural steel, concrete pouring, or underpinning.
+3. Co-op/Condo Attestation (2026 Rule): If the building is a residential co-op or condo, flag that DOB NOW requires a digital board attestation before filing can proceed.
+4. Agency Pre-Approvals: Scan the scope of work and flag required prior approvals from FDNY (fire alarms/sprinklers), LPC (landmarks), or DEP (asbestos ACP-5/ACP-7).
+
 CRITICAL MISSION:
 1. CITATION INTEGRITY (ABSOLUTE RULE):
    - You may ONLY cite specific code sections that are present in the REFERENCE CONTEXT below.
@@ -669,22 +692,22 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
 5. OCCUPANCY GOLDEN RULES:
    - Group I-2 (Hospitals): Enforce horizontal defend-in-place. Vertical evacuation or ventilator disconnection protocols are CRITICAL (NFPA 101 Sec 19.7.1).
    - Group H (High Hazard): delays prohibited (FC 907.2).
-5. STRESS-TESTS:
+6. STRESS-TESTS:
    - Check for contradictions. If control valve shut, treat as unsprinklered (reduce egress/dead-ends limits).
    - Verify loads/capacities. Reject fabricated formulas.
-6. OCCUPACITY APPLICABILITY:
+7. OCCUPACITY APPLICABILITY:
    - Residential-only checks (AFCI, receptacle spacing, dwelling density, habitable room heights/dimensions, residential GFCI) MUST be marked as "not_applicable" with 0 deduction for non-residential buildings. All other checks are universal.
-7. SCOPE ISOLATION:
+8. SCOPE ISOLATION:
    - Only output violations belonging to ${stepConfig.name}. Do NOT output other disciplines' issues.
-8. MISSING DATA:
+9. MISSING DATA:
    - If plan lacks zoning info, mark ZR checks as "not_applicable" and details to "Incomplete Data / Insufficient Information". Do NOT deduct points.
-9. MISSING LIFE-SAFETY:
+10. MISSING LIFE-SAFETY:
    - Missing core discipline systems in commercial plans is a CRITICAL omission. Score 0% and list critical violation.
-10. JSON FORMAT INSTRUCTIONS:
+11. JSON FORMAT INSTRUCTIONS:
      Return valid JSON in this format:
      {
        "score": <number>,
-       "summary": "<Short technical summary (max 3 sentences)>",
+       "summary": "<Short technical summary (max 3 sentences) accompanied by this warning: 'This analysis is for decision-support only. The Applicant of Record (RA/PE) assumes 100% legal liability for DOB compliance, including Professional Certification (Pro Cert) audits.'>",
        "checklist_evaluations": [
          {
            "code": "<code section>",
@@ -695,7 +718,7 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
        "issues": [
          {
            "title": "<short title>",
-           "description": "<technical description>",
+           "description": "<MUST be formatted exactly like a standard DOB Plan Examiner Objection. Do not write in paragraphs. Use this exact multi-line schema:\n- OBJECTION CATEGORY: [e.g. Zoning, Egress, Administrative, Fire Protection]\n- DOB OBJECTION CODE: [e.g. EN-v.2, or N/A]\n- CITED LAW: [Exact Code Section, e.g. 2022 NYC BC 1006.2.1]\n- DETECTED CONDITION: [Objective statement of what is on the plan]\n- REQUIRED CONDITION: [Objective statement of what the code dictates]>",
            "severity": "critical" | "major" | "minor",
            "citation_chunk_id": "<must be one of the provided chunk IDs e.g. chunk_0, chunk_1, etc. that supports this finding. Set to null if none exists.>",
            "recommendation": "<remedy>",
@@ -722,7 +745,7 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
 
     // Identify pages relevant to this discipline
     const relevantTypes = this.STEP_PAGE_MAPPING[stepId] || ['mixed_content'];
-    const relevantPages = pageRoutes.filter(r => 
+    const relevantPages = pageRoutes.filter(r =>
       relevantTypes.some(t => r.type.toLowerCase().includes(t) || t.includes(r.type.toLowerCase()))
     );
 
@@ -953,7 +976,15 @@ Return a JSON object in this exact format:
 
       // 3. Launch independent Judge to resolve disagreements and make final ruling
       console.log(`[SchedulerService][${stepConfig.name}] Running independent Judge...`);
-      const judgePrompt = `You are the Principal NYC Plans Examiner acting as an independent judge.
+      const judgePrompt = `You are PermitIQ, the Principal NYC Plans Examiner acting as an independent judge.
+You DO NOT have the legal authority to approve plans, issue permits, or provide professional engineering or architectural advice.
+You act strictly as a pre-submission compliance analyzer for Licensed Professionals. Your goal is to flag potential violations, missing administrative data, and geometry conflicts before the human professional submits the plans to the NYC Department of Buildings (DOB).
+
+LIABILITY & BEHAVIORAL GUARDRAILS:
+1. ZERO-AUTHORITY RULE: Never state that a plan is "approved," "legal," or "certified." Only state that a plan "appears to meet the checked parameters" or "contains no detected flags in the analyzed sections."
+2. HUMAN OVERRIDE: Always append warnings to your final output: "This analysis is for decision-support only. The Applicant of Record (RA/PE) assumes 100% legal liability for DOB compliance, including Professional Certification (Pro Cert) audits."
+3. NO DESIGNING: If a plan fails a check, do not engineer a solution. You may cite the code requirement, but do not instruct the architect on how to redesign the floorplan to fix it.
+
 You must review two independent plan audits (Analysis A and Analysis B) and the Challenger's defense arguments, and make a final ruling for each compliance check.
 
 Analysis A Findings:
@@ -973,7 +1004,7 @@ Review each checklist item and violation carefully. Resolve all disagreements be
 Return a JSON object in this exact format:
 {
   "score": <final score, 100 minus sum of deductions>,
-  "summary": "<Forensic summary of final rulings (max 3 sentences)>",
+  "summary": "<Forensic summary of final rulings (max 3 sentences) accompanied by this warning: 'This analysis is for decision-support only. The Applicant of Record (RA/PE) assumes 100% legal liability for DOB compliance, including Professional Certification (Pro Cert) audits.'>",
   "checklist_evaluations": [
     {
       "code": "<code section>",
@@ -984,7 +1015,7 @@ Return a JSON object in this exact format:
   "issues": [
     {
       "title": "<short title>",
-      "description": "<technical description>",
+      "description": "<MUST be formatted exactly like a standard DOB Plan Examiner Objection. Do not write in paragraphs. Use this exact multi-line schema:\n- OBJECTION CATEGORY: [e.g. Zoning, Egress, Administrative, Fire Protection]\n- DOB OBJECTION CODE: [e.g. EN-v.2, or N/A]\n- CITED LAW: [Exact Code Section, e.g. 2022 NYC BC 1006.2.1]\n- DETECTED CONDITION: [Objective statement of what is on the plan]\n- REQUIRED CONDITION: [Objective statement of what the code dictates]>",
       "severity": "critical" | "major" | "minor",
       "citation_chunk_id": "<must be one of the provided chunk IDs e.g. chunk_0, chunk_1, etc. that supports this finding. Set to null if none exists.>",
       "recommendation": "<remedy>",
@@ -1088,7 +1119,7 @@ CRITICAL CITATION INSTRUCTION:
         for (const issue of issues) {
           const chunkId = issue.citation_chunk_id;
           let matchedChunk = topMatches.find(m => (m as any).temp_chunk_id === chunkId);
-          
+
           if (!matchedChunk && issue.code) {
             const cleanCode = issue.code.toLowerCase().replace(/\s+/g, '');
             matchedChunk = topMatches.find(m => {
@@ -1135,7 +1166,7 @@ CRITICAL CITATION INSTRUCTION:
       if (!checkResult.isValid) {
         console.log(`[SchedulerService][${stepConfig.name}] Citation validation failed on first attempt. Retrying judge once...`);
         const retryPrompt = `${judgePrompt}\n\nWARNING: Your previous response contained invalid or hallucinated citations. You may ONLY reference the following allowed chunk IDs:\n${topMatches.map(m => `   - ${(m as any).temp_chunk_id}: ${m.metadata?.source || ''}`).join('\n')}\nRetries must strictly comply with this constraint.`;
-        
+
         const retryResult = await runJudge(retryPrompt);
         if (retryResult) {
           currentJudgeResult = retryResult;
@@ -1150,8 +1181,11 @@ CRITICAL CITATION INSTRUCTION:
         const confidence = issue.confidence !== undefined ? issue.confidence : 1.0;
         if (confidence < 0.90 && issue.code !== 'Citation unavailable') {
           console.log(`[SchedulerService][${stepConfig.name}] Low confidence finding (${confidence}) detected for code ${issue.code}. Running verification pass...`);
-          
-          const verifierPrompt = `You are a Chief NYC Code Compliance Auditor performing a precision verification check on a low-confidence compliance finding.
+
+          const verifierPrompt = `You are PermitIQ, the Chief NYC Code Compliance Auditor performing a precision verification check on a low-confidence compliance finding.
+You DO NOT have the legal authority to approve plans, issue permits, or provide professional engineering or architectural advice.
+You act strictly as a pre-submission compliance analyzer for Licensed Professionals.
+
 Target Compliance Issue to Verify:
 ${JSON.stringify(issue, null, 2)}
 
@@ -1167,7 +1201,7 @@ Return a JSON object in this exact format:
   "explanation": "<detailed explanation of your finding>",
   "corrected_issue": {
     "title": "<short title>",
-    "description": "<technical description>",
+    "description": "<MUST be formatted exactly like a standard DOB Plan Examiner Objection. Do not write in paragraphs. Use this exact multi-line schema:\n- OBJECTION CATEGORY: [e.g. Zoning, Egress, Administrative, Fire Protection]\n- DOB OBJECTION CODE: [e.g. EN-v.2, or N/A]\n- CITED LAW: [Exact Code Section, e.g. 2022 NYC BC 1006.2.1]\n- DETECTED CONDITION: [Objective statement of what is on the plan]\n- REQUIRED CONDITION: [Objective statement of what the code dictates]>",
     "severity": "critical" | "major" | "minor",
     "citation_chunk_id": "<must be one of the provided chunk IDs e.g. chunk_0, chunk_1, etc. that supports this finding. Set to null if none exists.>",
     "recommendation": "<remedy>",
@@ -1236,7 +1270,7 @@ Return a JSON object in this exact format:
         if (verifierResult && verifierResult.verdict === 'CONFIRMED') {
           const corrected = verifierResult.corrected_issue || issue;
           corrected.confidence = verifierResult.confidence || 0.95;
-          
+
           if (corrected.citation_chunk_id) {
             const matchedChunk = topMatches.find(m => (m as any).temp_chunk_id === corrected.citation_chunk_id);
             if (matchedChunk) {
@@ -1247,7 +1281,7 @@ Return a JSON object in this exact format:
               corrected.exact_pdf_citation = `${sourceFile}, Page ${matchedChunk.metadata?.page_number || 'N/A'}`;
             }
           }
-          
+
           verifiedProIssues.push(corrected);
         } else if (verifierResult && verifierResult.verdict === 'DISMISSED') {
           console.log(`[SchedulerService][${stepConfig.name}] Issue DISMISSED by verifier.`);
@@ -1267,7 +1301,10 @@ Return a JSON object in this exact format:
         if (isMissingField && issue.code !== 'Citation unavailable') {
           console.log(`[SchedulerService][${stepConfig.name}] Missing evidence fields detected in issue for code ${issue.code}. Running repair pass...`);
 
-          const repairPrompt = `You are an AI-powered Compliance Reference Assistant. The following informational compliance finding is missing key details.
+          const repairPrompt = `You are PermitIQ, the AI-powered Compliance Reference Assistant. The following informational compliance finding is missing key details.
+You DO NOT have the legal authority to approve plans, issue permits, or provide professional engineering or architectural advice.
+You act strictly as a pre-submission compliance analyzer for Licensed Professionals.
+
 Compliance Issue:
 ${JSON.stringify(issue, null, 2)}
 
@@ -1280,7 +1317,7 @@ Return a JSON object in this exact format:
 {
   "code": "<code section>",
   "exact_pdf_citation": "<drawing name/PDF section>",
-  "description": "<technical reasoning/description>",
+  "description": "<MUST be formatted exactly like a standard DOB Plan Examiner Objection. Do not write in paragraphs. Use this exact multi-line schema:\n- OBJECTION CATEGORY: [e.g. Zoning, Egress, Administrative, Fire Protection]\n- DOB OBJECTION CODE: [e.g. EN-v.2, or N/A]\n- CITED LAW: [Exact Code Section, e.g. 2022 NYC BC 1006.2.1]\n- DETECTED CONDITION: [Objective statement of what is on the plan]\n- REQUIRED CONDITION: [Objective statement of what the code dictates]>",
   "severity": "critical" | "major" | "minor",
   "recommendation": "<remedy>",
   "loophole_details": "<why it failed>",
@@ -1374,11 +1411,11 @@ Return a JSON object in this exact format:
         const visConf = currentVisionConfidence;
         const ragConf = 0.90;
         const reasoningConf = issue.confidence !== undefined ? issue.confidence : 0.85;
-        
+
         const isCitationRemoved = issue.exact_pdf_citation === "Citation unavailable" || issue.code === "Citation unavailable";
         const isOcrLow = visConf < 0.7;
         const isFactMissing = Object.values(planFacts).some(v => v === null);
-        
+
         let overall = visConf * ragConf * reasoningConf;
         if (isFactMissing) overall *= 0.6;
         if (isCitationRemoved) overall *= 0.4;
@@ -1490,7 +1527,7 @@ Return a JSON object in this exact format:
         const hallucinatedCount = validatedIssues.filter((i: any) => i.code === 'Citation unavailable' || i.exact_pdf_citation === 'Citation unavailable').length;
         const hallucinationRate = totalIssues > 0 ? (hallucinatedCount / totalIssues) : 0.0;
         metrics.setGauge('nyc_citation_hallucination_rate', hallucinationRate, { discipline: stepId });
-        
+
         const ocrConf = currentVisionConfidence;
         metrics.setGauge('nyc_ocr_confidence', ocrConf, { discipline: stepId });
 
@@ -1509,7 +1546,7 @@ Return a JSON object in this exact format:
       try {
         const startCPU = process.cpuUsage();
         const startMemory = process.memoryUsage().rss;
-        
+
         EvidenceLogger.logAudit({
           auditId: planId,
           discipline: stepId,
@@ -1617,7 +1654,7 @@ Return a JSON object in this exact format:
     cleanRaw = cleanRaw.replace(/^```\n?/, '').replace(/\n?```$/, '');
     const startIdx = cleanRaw.indexOf('{');
     const endIdx = cleanRaw.lastIndexOf('}');
-    
+
     if (startIdx !== -1 && endIdx !== -1) {
       cleanRaw = cleanRaw.substring(startIdx, endIdx + 1);
     }
@@ -1842,7 +1879,7 @@ Return a JSON object in this exact format:
         console.log(`[ChallengerDebate][${stepConfig.name}] Violation REJECTED/CONFIRMED for code ${issue.code}.`);
         const explanation = ruling?.explanation || "Auditor stood by the violation.";
         const defenseArg = rebuttal?.argument || "No defense argument provided.";
-        
+
         const debateLog = `\n\n--- ⚖️ AI DEBATE LOG ---\n* **Defense Argument:** ${defenseArg}\n* **Judge Ruling (REJECT):** ${explanation}`;
         issue.description = (issue.description || "") + debateLog;
 
@@ -2059,7 +2096,7 @@ JSON Schema:
       );
       SchedulerService.proCallsCount++;
       const result = this.parseJsonResult(response.text, "Visual Fact Extractor");
-      
+
       const rawFacts = result?.facts || {};
       const flattenedFacts: any = {};
       const parameterKeys = Object.keys(rawFacts);
