@@ -314,6 +314,7 @@ export default function PlanDetailPage() {
           doc.text(splitParagraph, 25, disclaimerY);
           disclaimerY += (splitParagraph.length * 2.8) + 1;
         });
+        currentY += 5 + disclaimerBoxHeight;
       }
 
       // DETAILED FINDINGS TABLE

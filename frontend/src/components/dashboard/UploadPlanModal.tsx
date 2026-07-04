@@ -741,6 +741,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
           doc.text(splitParagraph, 25, disclaimerY);
           disclaimerY += (splitParagraph.length * 2.8) + 1;
         });
+        currentY += 5 + disclaimerBoxHeight;
       }
 
       // --- HEADER & FOOTER SYSTEM ---
