@@ -41,6 +41,10 @@ PermitIQ is an AI-powered system designed to automate the NYC Building Code comp
 - **Branching Strategy**: Use feature branches (like the `blue` branch) for development and merge into `main` via Pull Requests.
 - **Migrations**: Database schema changes are tracked in `backend/migrations`.
 - **Environment Variables**: Configure `.env` for backend and `.env.local` for frontend.
+- **AI Compliance & Quarantine**:
+  - **Snippet Scanning**: Every PR must run automated dependency and snippet scanning to prevent GPL/copyleft license contamination in AI-generated code.
+  - **Isolation**: Encapsulate generative AI modules (e.g. Gemini clients, vector helpers) to keep them decoupled from proprietary business logic.
+  - **Zero Telemetry**: All IDE coding assistants and API connections must have telemetry and model training disabled to protect IP privacy.
 
 ---
 *For more details, refer to the [README.md](./README.md).*
