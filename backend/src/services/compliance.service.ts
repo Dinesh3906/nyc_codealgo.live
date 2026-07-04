@@ -210,7 +210,7 @@ export class CompliancePipeline {
           'Deterministic Analysis: Completed',
           'Manual Review: Recommended'
         ] : [
-          `Completed plan examiner audit across ${checkedSteps.length} active categories.`,
+          `Completed advisory code alignment search and reference check across ${checkedSteps.length} active categories.`,
           ...checkedSteps.flatMap((r: any) => r.compliant_features.map((f: string) => `Compliant feature detected in ${r.name}: ${f}`)).slice(0, 4)
         ],
         betterments: checkedSteps.map((r: any) => `Enhance detail validation for ${r.name} sub-assemblies.`),

@@ -651,7 +651,7 @@ ${m.metadata?.text || ""}`;
     console.log(`[SchedulerService][${stepConfig.name}] Deterministic codes evaluated: ${deterministicCodes.join(', ')}. Non-deterministic remaining: ${nonDeterministicCodes.map(c => c.code).join(', ')}.`);
 
     // System Prompt setup
-    const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner specializing in the ${stepConfig.name} discipline.
+    const systemPrompt = `You are an AI-powered informational search and reference assistant designed to cross-reference architectural details and plan parameters against the official textual regulations of the 2022 NYC Building Codes. You are not a licensed professional engineer or architect, and you do not provide professional engineering/design advice or final regulatory certifications. Your role is strictly to act as an informational retrieval and reference tool, identifying potential code alignment issues for review by a licensed professional. You are analyzing details related to the ${stepConfig.name} discipline.
  
 CRITICAL MISSION:
 1. CITATION INTEGRITY (ABSOLUTE RULE):
@@ -873,15 +873,15 @@ ${nonDeterministicCodes.map(c => `   - ${c.code}: ${c.title} (Check: ${c.descrip
 
       // 2. Launch adversarial Challenger to criticize all findings
       console.log(`[SchedulerService][${stepConfig.name}] Running adversarial Challenger...`);
-      const challengerPrompt = `You are a licensed contractor and expert NYC plans consultant playing the role of a defense attorney.
-The Plan Examiners have flagged the following code compliance issues in their independent analyses:
+      const challengerPrompt = `You are an AI-powered compliance reference consultant playing the role of a fact-checking auditor.
+The informational search assistant has flagged the following potential code alignment issues in its independent reference analysis:
 Analysis A Issues:
 ${JSON.stringify(issuesA, null, 2)}
 
 Analysis B Issues:
 ${JSON.stringify(issuesB, null, 2)}
 
-Your goal is to inspect the drawings and RAG code context, and aggressively criticize these findings. For each issue, argue why it is actually COMPLIANT. Cite specific drawing pages, exceptions in the NYC Building/Plumbing/Mechanical Code, occupant loads, or design tolerances that the examiners might have missed or misinterpreted. Try to find false positives, incorrect deductions, or contradictions.
+Your goal is to inspect the drawings and RAG code context, and fact-check these findings. For each issue, identify any possible exceptions in the NYC Building/Plumbing/Mechanical Code, design tolerances, or data parameters that indicate compliance or highlight potential false positives in the initial search results.
 
 Return a JSON object in this exact format:
 {
@@ -1267,7 +1267,7 @@ Return a JSON object in this exact format:
         if (isMissingField && issue.code !== 'Citation unavailable') {
           console.log(`[SchedulerService][${stepConfig.name}] Missing evidence fields detected in issue for code ${issue.code}. Running repair pass...`);
 
-          const repairPrompt = `You are a Plan Examiner Assistant. The following compliance finding is missing key details.
+          const repairPrompt = `You are an AI-powered Compliance Reference Assistant. The following informational compliance finding is missing key details.
 Compliance Issue:
 ${JSON.stringify(issue, null, 2)}
 

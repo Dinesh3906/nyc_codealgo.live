@@ -24,6 +24,19 @@ export default function TermsPage() {
 
         <div className="prose prose-invert max-w-none text-slate-300 space-y-8 leading-relaxed">
           
+          {/* Conspicuous Disclaimer Box */}
+          <div className="p-6 border border-amber-500/30 bg-amber-500/[0.03] rounded-lg text-amber-500 space-y-3 font-sans">
+            <span className="font-mono text-xs uppercase font-bold tracking-widest block text-amber-400">
+              ⚠️ IMPORTANT REGULATORY & PROFESSIONAL SERVICES DISCLAIMER
+            </span>
+            <p className="text-sm leading-relaxed">
+              <strong>PermitIQ by Aureon is strictly an informational search, reference, and indexing tool.</strong> The software provider is not a licensed engineering or architectural firm, does not employ licensed design professionals to verify individual plans through this service, and does not engage in the practice of engineering or architecture.
+            </p>
+            <p className="text-sm leading-relaxed">
+              All compliance evaluations, dimensional data, calculations, electrical dedicated circuit requirements, and material selections generated or cited by the platform <strong>do not constitute professional design advice</strong>. All such data and parameters <strong>must be independently reviewed and verified by a licensed New York Professional Engineer (PE) or Registered Architect (RA)</strong> prior to any construction, implementation, or official permit submission to the New York City Department of Buildings (DOB), the PASSPort system, or via Form ED16A.
+            </p>
+          </div>
+
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">1. Acceptance</h2>
             <p>
@@ -92,18 +105,24 @@ export default function TermsPage() {
               <li>Regulatory penalties</li>
               <li>Indirect or consequential damages</li>
             </ul>
+            <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-md mb-4 text-xs font-sans text-slate-400 leading-relaxed">
+              <strong>GOVERNMENT AGENCY DISCLOSURE MIRROR:</strong> PermitIQ by Aureon takes no position as to whether the design or construction of any building, system, or facility complies with any building, fire, electrical, or energy code. Mirroring the legal disclaimers of regulatory and government bodies (such as the NIST disclaimers regarding WTC code compliance investigations), we cannot verify interpretations of codes used by local authorities. Users and their licensed professional engineers or registered architects remain solely liable for determining actual, physical compliance.
+            </div>
             <p>Total liability shall not exceed the amount paid by the user in the previous 12 months.</p>
           </section>
 
           <section>
             <h2 className="text-2xl font-bold text-white mb-3">8. Disclaimer of Warranties</h2>
             <p className="mb-2">The service is provided "AS IS" and "AS AVAILABLE", without warranties of any kind, including:</p>
-            <ul className="list-disc pl-6 space-y-1 text-slate-400">
+            <ul className="list-disc pl-6 space-y-1 text-slate-400 mb-4">
               <li>Accuracy of compliance scoring</li>
               <li>Reliability</li>
               <li>Fitness for a particular purpose</li>
               <li>System availability</li>
             </ul>
+            <p className="text-sm font-sans text-slate-400 leading-relaxed">
+              PermitIQ does not guarantee or warrant that the platform's outputs meet local safety regulations, nor does it generate novel building plans, affix electronic seals, or certify engineering plans.
+            </p>
           </section>
 
           <section>

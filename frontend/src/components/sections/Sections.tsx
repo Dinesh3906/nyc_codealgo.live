@@ -1076,12 +1076,17 @@ export function AccuracyDisclaimer() {
   return (
     <section className="py-12 bg-[#F1EFEA] dark:bg-[#0A0D10] border-b border-border/40 transition-colors duration-300">
       <div className="container mx-auto px-6 max-w-4xl">
-        <div className="border border-amber-500/20 bg-amber-500/[0.02] p-4 rounded-sm flex items-start gap-3.5 font-mono text-[9px] text-amber-600 dark:text-amber-500 transition-colors duration-300">
-          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600/80 dark:text-amber-500/80 mt-0.5" />
-          <div className="space-y-1.5 leading-relaxed font-sans">
-            <span className="font-mono text-[10px] uppercase font-bold tracking-wider block">Administrative Accuracy Disclaimer</span>
+        <div className="border border-amber-500/20 bg-amber-500/[0.02] p-5 rounded-sm flex items-start gap-3.5 font-mono text-[9px] text-amber-600 dark:text-amber-500 transition-colors duration-300">
+          <AlertCircle className="w-4.5 h-4.5 shrink-0 text-amber-600/80 dark:text-amber-500/80 mt-0.5" />
+          <div className="space-y-2 leading-relaxed font-sans text-xs">
+            <span className="font-mono text-[10px] uppercase font-bold tracking-wider block text-amber-600 dark:text-amber-500">
+              ⚠️ REGULATORY COMPLIANCE & PROFESSIONAL SERVICES DISCLAIMER
+            </span>
             <p>
-              PermitIQ compliance engine leverages artificial intelligence and machine learning models to parse layout coordinates, text structures, and code datasets. AI-assisted reviews are built to support, not replace, experienced engineering and architectural judgement. All plans must undergo final structural engineering review and stamp approvals by licensed New York State design professionals before formal submission to the NYC Department of Buildings.
+              PermitIQ is strictly an informational search, indexing, and reference utility. It is NOT a licensed engineering or architectural firm, does not employ licensed design professionals to verify individual plans, and does not engage in the practice of engineering or architecture.
+            </p>
+            <p>
+              AI-assisted analyses, calculations, and checklist findings (including dedicated electrical circuit ratings, capacity limits, zoning heights, and permit requirements) do not constitute professional design or engineering advice, and no professional seal or certification is affixed. <strong>All design outputs and structural/permitting parameters must be independently verified by a New York-licensed Professional Engineer (PE) or Registered Architect (RA)</strong> prior to submission to the NYC Department of Buildings (DOB), PASSPort system, or Form ED16A.
             </p>
           </div>
         </div>

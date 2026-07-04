@@ -816,7 +816,7 @@ export async function checkStepComplianceTS(
 
   const stepCodes = STEP_CODES_CHECKLIST[stepId] || [];
 
-  const systemPrompt = `You are a senior NYC Department of Buildings Plan Examiner specializing in the ${stepConfig.name} discipline.
+  const systemPrompt = `You are an AI-powered informational search and reference assistant designed to cross-reference architectural details and plan parameters against the official textual regulations of the 2022 NYC Building Codes. You are not a licensed professional engineer or architect, and you do not provide professional engineering/design advice or final regulatory certifications. Your role is strictly to act as an informational retrieval and reference tool, identifying potential code alignment issues for review by a licensed professional. You are analyzing details related to the ${stepConfig.name} discipline.
  
  CRITICAL MISSION:
   1. SCORING:
@@ -1720,7 +1720,7 @@ export async function checkComplianceTS(housePlanPath: string, selectedSteps?: s
     systems_detected: checkedSteps.map(r => `${r.name}: ${r.status.toUpperCase()}`),
     betterments: checkedSteps.map(r => `Enhance detail validation for ${r.name} sub-assemblies.`),
     appreciation: [
-      `Completed plan examiner audit across ${checkedSteps.length} active categories.`,
+      `Completed advisory code alignment search and reference check across ${checkedSteps.length} active categories.`,
       ...combinedFeatures.slice(0, 4)
     ],
     steps: stepResults
