@@ -16,7 +16,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "nyc-building-code-checklist-2026",
     title: "NYC Building Code Checklist 2026: Everything Architects Must Know",
     keyword: "nyc building code checklist",
-    description: "A comprehensive, category-by-category checklist covering every NYC building code requirement architects must verify before DOB submission in 2026.",
+    description: "A comprehensive, category-by-category checklist covering every NYC building code requirement architects must verify before submission in 2026.",
     datePublished: "2026-06-01",
     dateModified: "2026-06-01",
     relatedSlugs: ["nyc-existing-building-code-2026-guide", "nyc-dob-code-requirements-explained", "nyc-building-code-fire-safety-requirements"],

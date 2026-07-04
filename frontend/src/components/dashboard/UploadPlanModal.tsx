@@ -849,7 +849,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
               <div className="bg-amber-950/40 border border-amber-700/50 rounded-lg p-4 flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-200">
-                  AI analysis is for advisory purposes only. Professional review recommended before DOB submission.
+                  AI analysis is for advisory purposes only. Professional review recommended before submission.
                 </p>
               </div>
 

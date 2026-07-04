@@ -58,7 +58,7 @@ export default function Hero({ onOpenModal }: { onOpenModal: () => void }) {
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-sans font-bold tracking-tight text-foreground leading-[1.1]">
               Review Building Plans <br />
-              <span className="text-primary">Before</span> DOB Submission
+              <span className="text-primary">Before</span> Submission
             </h1>
 
             <p className="text-sm md:text-base text-muted-foreground max-w-2xl leading-relaxed font-sans">

@@ -57,7 +57,7 @@ export default function LandingPage() {
                 Plan Submission Readiness
               </div>
               <h2 className="text-3xl md:text-5xl font-sans font-bold text-foreground max-w-3xl mx-auto">
-                Pre-Audit Your Drawings Before DOB Submission
+                Pre-Audit Your Drawings Before Submission
               </h2>
               <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed font-sans">
                 Review spatial configurations, zoning setback compliance, and egress paths in minutes. Minimize administrative risks.
