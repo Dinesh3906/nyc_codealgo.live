@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Hexagon, Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Hexagon, Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import api from "@/lib/api";
@@ -126,6 +126,16 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-background p-6 relative overflow-hidden">
+      {/* Go to Landing Page Button */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
+        <Button variant="outline" size="sm" asChild className="gap-2 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-border/40 hover:bg-muted text-foreground transition-all duration-200 hover:-translate-y-0.5">
+          <Link href="/">
+            <ArrowLeft className="w-4 h-4" />
+            <span>Go to Landing Page</span>
+          </Link>
+        </Button>
+      </div>
+
       {/* Background orbs */}
       <div className="absolute -top-1/3 -right-1/3 w-[60%] h-[60%] rounded-full bg-primary/5 blur-[160px]" />
       <div className="absolute -bottom-1/3 -left-1/3 w-[60%] h-[60%] rounded-full bg-accent/5 blur-[160px]" />
