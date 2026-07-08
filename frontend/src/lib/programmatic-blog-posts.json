@@ -28222,5 +28222,341 @@
       "nyc-compliance-checklist-zoning-resolution-complete",
       "common-dob-violations-zoning-resolution-complete"
     ]
+  },
+  {
+    "slug": "nyc-dob-cbl-buildings-code-and-rule-matrix-pdf-guide",
+    "title": "NYC DOB CBL Buildings Code and Rule Matrix PDF & Regulatory Guide",
+    "keyword": "cbl buildings code and rule matrix pdf",
+    "description": "Official NYC Department of Buildings reference for CBL Buildings Code and Rule Matrix. A detailed guide to the 12-page document `cbl_matrix.pdf` for NYC Building Code (BC) compliance.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Navigating the dense regulatory requirements in New York City requires access to the official building directives. \n            This guide serves as a technical walkthrough for the <strong>12-page</strong> DOB document <code>cbl_matrix.pdf</code>, \n            which establishes the standards for <strong>CBL Buildings Code and Rule Matrix</strong> under the NYC Building Code (BC).\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Regulatory Structure of CBL Buildings Code and Rule Matrix</h2>\n        <p class=\"mb-6\">\n            The document <code>cbl_matrix.pdf</code> is a critical chapter of the NYC Building Code (BC). It governs key guidelines including \n            fire-resistance separations, means of egress, accessibility standards, and structural load calculations. Registered Architects (RA) and Professional Engineers (PE) must cross-reference this chapter during the initial \n            drafting phase to prevent structural and design compliance errors. Under Section 28-104.7 of the NYC Administrative Code, \n            construction documents must be complete and clear, specifically detailing how the proposed work meets these parameters.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Key Sections Inside the 12-Page PDF</h2>\n        <p class=\"mb-6\">\n            When reviewing <code>cbl_matrix.pdf</code>, pay close attention to structural requirements and technical specifications:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Chapter Scope & Definitions:</strong> Section 1 defines all primary terminology, building types, and applicable scopes.</li>\n            <li><strong>Material & Installation Standards:</strong> Outlines certified materials and approval methods for building codes, fire safety, and egress structures.</li>\n            <li><strong>Borough-Specific Adjustments:</strong> Detailing overlay regulations for historic districts and high-density zones in Manhattan, Brooklyn, and Queens.</li>\n            <li><strong>Inspection Protocols:</strong> Mandating specialized progress inspections by licensed agencies during construction.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How to Download and Reference This Code</h2>\n        <p class=\"mb-6\">\n            The full <code>cbl_matrix.pdf</code> is available on the NYC DOB portal. In 2026, building rules are strictly enforced through the DOB NOW filing portal. \n            Before you submit, it is highly recommended to cross-reference related files in NYC Building Code (BC) to check for secondary conflicts, \n            such as mechanical shaft locations or fire rating separations that boundary this code area.\n        </p>",
+    "faqs": [
+      {
+        "question": "What does the NYC DOB CBL Buildings Code and Rule Matrix document cover?",
+        "answer": "The document cbl_matrix.pdf covers the rules and regulatory standards for CBL Buildings Code and Rule Matrix in New York City. It contains 12 pages of detailed compliance directives."
+      },
+      {
+        "question": "Is cbl_matrix.pdf applicable to residential buildings?",
+        "answer": "Yes, depending on the occupancy group, the rules in cbl_matrix.pdf apply citywide to residential (Group R), commercial (Group B), and other structures."
+      },
+      {
+        "question": "How often is the NYC Building Code (BC) updated?",
+        "answer": "The codes are updated regularly by the NYC Department of Buildings (DOB), with the latest major cycles including the 2022 Construction Codes and 2026 Existing Building Code updates."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-compliance-checklist-cbl-buildings-code-and-rule-matrix",
+      "common-dob-violations-cbl-buildings-code-and-rule-matrix",
+      "permitiq-ai-compliance-check-cbl-buildings-code-and-rule-matrix"
+    ]
+  },
+  {
+    "slug": "nyc-compliance-checklist-cbl-buildings-code-and-rule-matrix",
+    "title": "DOB Compliance Checklist for NYC CBL Buildings Code and Rule Matrix",
+    "keyword": "nyc compliance checklist cbl buildings code and rule matrix",
+    "description": "Plan review and audit checklist for NYC DOB CBL Buildings Code and Rule Matrix. How to verify plan compliance against `cbl_matrix.pdf` to pass examiner inspections.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Filing construction plans in New York City requires absolute accuracy. Plan examiners reject files for even minor dimension errors. \n            This compliance checklist outlines the verification steps required to align your architectural layouts with the official \n            CBL Buildings Code and Rule Matrix rules defined in <code>cbl_matrix.pdf</code>.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Plan Submission Audit Steps for CBL Buildings Code and Rule Matrix</h2>\n        <p class=\"mb-6\">\n            To ensure your plans pass the plan examiner's review without triggering objections, follow this structured compliance loop:\n        </p>\n        <ol class=\"list-decimal pl-6 mb-8\">\n            <li><strong>Coordinate Title Block Information:</strong> Verify that the correct building code cycle (2022/2026) is cited on your title sheets.</li>\n            <li><strong>Check Mechanical & Architectural Cross-Over:</strong> Ensure partition schedules match the mechanical diagrams for building codes, fire safety, and egress structures.</li>\n            <li><strong>Verify Key Clearances:</strong> Cross-check dimensional thresholds for fire-resistance separations, means of egress, accessibility standards, and structural load calculations inside your drawings against the 12 pages of the code.</li>\n            <li><strong>Include Required Specialized Inspections:</strong> Ensure the TR1 form list lists the mandatory progress inspections for this category.</li>\n        </ol>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Key Dimension & Verification Metrics</h2>\n        <p class=\"mb-6\">\n            While building codes contain thousands of rules, the primary metrics for <code>CBL Buildings Code and Rule Matrix</code> often focus on:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Clearances:</strong> Ensuring structural paths, service panels, and exits maintain mandated widths.</li>\n            <li><strong>Ratings:</strong> Double-checking fire separation hourly indexes.</li>\n            <li><strong>Ventilation:</strong> Confirming natural/mechanical ratios meet Chapter 12 and Mechanical Code requirements.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Pre-Filing Compliance Reviews</h2>\n        <p class=\"mb-6\">\n            Reviewing plans manually can take hours. Before submitting your PW1 and drawings to DOB NOW, run an automated compliance scan. \n            This checks all clearances, labels, and schedules against <code>cbl_matrix.pdf</code> to catch mistakes before they delay your permit.\n        </p>",
+    "faqs": [
+      {
+        "question": "How do I verify compliance with NYC Code CBL Buildings Code and Rule Matrix?",
+        "answer": "You must check all drawings against the dimensions and requirements listed in cbl_matrix.pdf. Ensure architectural notes and MEP diagrams are completely consistent."
+      },
+      {
+        "question": "What is the consequence of code non-compliance?",
+        "answer": "Non-compliance triggers plan objections from the DOB examiner, which puts your application on hold. Resolving objections usually takes 2-4 weeks, causing project delays."
+      },
+      {
+        "question": "Does my project need specialized inspections?",
+        "answer": "Most structural, fire safety, and MEP installations related to CBL Buildings Code and Rule Matrix require specialized progress inspections certified on DOB form TR1."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-cbl-buildings-code-and-rule-matrix-pdf-guide",
+      "common-dob-violations-cbl-buildings-code-and-rule-matrix",
+      "permitiq-ai-compliance-check-cbl-buildings-code-and-rule-matrix"
+    ]
+  },
+  {
+    "slug": "common-dob-violations-cbl-buildings-code-and-rule-matrix",
+    "title": "Common DOB Plan Rejections: NYC CBL Buildings Code and Rule Matrix",
+    "keyword": "common dob violations cbl buildings code and rule matrix",
+    "description": "Top plan objections and violations for CBL Buildings Code and Rule Matrix under NYC Building Code `cbl_matrix.pdf`. How to design around common objections.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            An analysis of thousands of DOB NOW objection letters reveals that certain code sections trigger rejections far more frequently than others. \n            For plans touching <strong>CBL Buildings Code and Rule Matrix</strong>, ignoring specific paragraphs in the <code>cbl_matrix.pdf</code> document \n            is a primary cause of project delay.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Top 3 Plan Violations for CBL Buildings Code and Rule Matrix</h2>\n        <p class=\"mb-6\">\n            Plan examiners focus heavily on structural safety and documentation consistency. The most common plan rejections in this category are:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Missing Dimension Details:</strong> Failing to clearly label clearances or widths on partition schedules.</li>\n            <li><strong>Outdated Section References:</strong> Citing prior code cycles (such as referencing 2014 codes instead of the 2022/2026 standards).</li>\n            <li><strong>Architectural vs MEP Discrepancies:</strong> Inconsistent room layouts or panel locations between architectural plans and consultant engineering sheets.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How to Avoid Objections in DOB NOW</h2>\n        <p class=\"mb-6\">\n            To prevent your plans from being held up, implement a strict coordination review before submission. The building code mandates \n            under Section BC 107.2 that all drawings must be self-explanatory and fully detailed. For CBL Buildings Code and Rule Matrix, this means detailing all \n            fire-resistance separations, means of egress, accessibility standards, and structural load calculations with precise dimensions, clear wall styles, and specific specialized inspection callouts.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Zoning vs. Building Code Conflicts</h2>\n        <p class=\"mb-6\">\n            Often, designers confuse building code regulations with zoning restrictions. While zoning resolutions set general setbacks and FAR limits, \n            the building code defines localized safety parameters (such as exit paths, ventilation openings, or fire boundaries). Mismatching these \n            requirements is a quick path to a DOB audit objection.\n        </p>",
+    "faqs": [
+      {
+        "question": "Why are plans rejected under CBL Buildings Code and Rule Matrix?",
+        "answer": "Common rejection reasons include incomplete title sheets, mismatched dimensions, and lack of specialized inspection forms matching the requirements of cbl_matrix.pdf."
+      },
+      {
+        "question": "How do I resolve a DOB plan objection?",
+        "answer": "You must revise the drawing to meet the examiner's objections, add clarifying details or dimensions, update the PW1 if needed, and submit the corrected sheets via DOB NOW."
+      },
+      {
+        "question": "Does PermitIQ check for these objections?",
+        "answer": "Yes, PermitIQ's compliance checker scans your architectural plans for missing clearances, conflicting notes, and incorrect code citations matching the 12 pages of cbl_matrix.pdf."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-cbl-buildings-code-and-rule-matrix-pdf-guide",
+      "nyc-compliance-checklist-cbl-buildings-code-and-rule-matrix",
+      "permitiq-ai-compliance-check-cbl-buildings-code-and-rule-matrix"
+    ]
+  },
+  {
+    "slug": "permitiq-ai-compliance-check-cbl-buildings-code-and-rule-matrix",
+    "title": "Automated NYC CBL Buildings Code and Rule Matrix Code Checking via AI",
+    "keyword": "permitiq ai cbl buildings code and rule matrix checker",
+    "description": "How to use PermitIQ by Aureon's AI compliance engine to automatically audit plans against NYC Building Code `cbl_matrix.pdf` in seconds.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Manual code checking is slow and prone to human error. With over 260+ PDFs and 10,000+ requirements in the municipal codes, \n            architects face massive compliance audits. <strong>PermitIQ by Aureon</strong> automates this workflow, scanning your drawings \n            against the official <strong>CBL Buildings Code and Rule Matrix</strong> guidelines in <code>cbl_matrix.pdf</code> instantly.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How the PermitIQ AI Engine Works</h2>\n        <p class=\"mb-6\">\n            PermitIQ's core technology utilizes an advanced Retrieval-Augmented Generation (RAG) architecture running locally on secure AWS EC2 servers:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Vector Embeddings:</strong> We index 113 specialized NYC Building Code documents in Pinecone serverless vector databases.</li>\n            <li><strong>Local Encoding:</strong> Our server generates local embeddings using Xenova MiniLM models, ensuring 100% cost efficiency.</li>\n            <li><strong>Multimodal Processing:</strong> When you upload a drawing, the system performs OCR and vision extraction, feeding the layout directly into multi-model Google Gemini APIs.</li>\n            <li><strong>Grounding & Verification:</strong> The engine executes 15 targeted search vectors (checking egress, fire, accessibility, etc.), retrieves up to 40 unique code documents including <code>cbl_matrix.pdf</code>, and verifies compliance.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Checking CBL Buildings Code and Rule Matrix Automatically</h2>\n        <p class=\"mb-6\">\n            When auditing layouts for <code>CBL Buildings Code and Rule Matrix</code>, PermitIQ scans the drawings for specific rules like fire-resistance separations, means of egress, accessibility standards, and structural load calculations. \n            The system rotates between <code>gemini-2.5-pro</code> and <code>gemini-2.5-flash</code> with an exponential backoff loop \n            to guarantee results are delivered in under 60 seconds, displaying real-time updates through WebSockets.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Self-Healing JSON Compliance Reports</h2>\n        <p class=\"mb-6\">\n            Our pipeline features a self-healing JSON parser. If the AI output cuts off, our code closes the string quotes, balances braces, \n            and compiles a forensic PDF certificate. This contains an issues log, layout betterments, and direct code section citations.\n        </p>",
+    "faqs": [
+      {
+        "question": "Can PermitIQ check my plans for CBL Buildings Code and Rule Matrix violations?",
+        "answer": "Yes. PermitIQ is grounded directly in the 113 vector-indexed chapters of the NYC Building Code, including cbl_matrix.pdf. It scans for dimension discrepancies and rules in seconds."
+      },
+      {
+        "question": "What formats does PermitIQ accept?",
+        "answer": "The platform accepts plan drawings and construction documents in PDF format, up to a maximum file size of 10MB."
+      },
+      {
+        "question": "Is my proprietary data secure?",
+        "answer": "Yes. PermitIQ uses isolated API calls with telemetry and training disabled, ensuring your architectural plans remain 100% confidential and secure."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-cbl-buildings-code-and-rule-matrix-pdf-guide",
+      "nyc-compliance-checklist-cbl-buildings-code-and-rule-matrix",
+      "common-dob-violations-cbl-buildings-code-and-rule-matrix"
+    ]
+  },
+  {
+    "slug": "nyc-dob-local-law-97-greenhouse-gas-emissions-reductions-pdf-guide",
+    "title": "NYC DOB Local Law 97 Greenhouse Gas Emissions Reductions PDF & Regulatory Guide",
+    "keyword": "local law 97 greenhouse gas emissions reductions pdf",
+    "description": "Official NYC Department of Buildings reference for Local Law 97 Greenhouse Gas Emissions Reductions. A detailed guide to the 28-page document `ll97_greenhouse_gas_emissions_reductions.pdf` for NYC Energy Conservation Code (NYCECC) compliance.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Navigating the dense regulatory requirements in New York City requires access to the official building directives. \n            This guide serves as a technical walkthrough for the <strong>28-page</strong> DOB document <code>ll97_greenhouse_gas_emissions_reductions.pdf</code>, \n            which establishes the standards for <strong>Local Law 97 Greenhouse Gas Emissions Reductions</strong> under the NYC Energy Conservation Code (NYCECC).\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Regulatory Structure of Local Law 97 Greenhouse Gas Emissions Reductions</h2>\n        <p class=\"mb-6\">\n            The document <code>ll97_greenhouse_gas_emissions_reductions.pdf</code> is a critical chapter of the NYC Energy Conservation Code (NYCECC). It governs key guidelines including \n            envelope thermal insulation, U-factors, lighting power densities, and mechanical system controls. Registered Architects (RA) and Professional Engineers (PE) must cross-reference this chapter during the initial \n            drafting phase to prevent structural and design compliance errors. Under Section 28-104.7 of the NYC Administrative Code, \n            construction documents must be complete and clear, specifically detailing how the proposed work meets these parameters.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Key Sections Inside the 28-Page PDF</h2>\n        <p class=\"mb-6\">\n            When reviewing <code>ll97_greenhouse_gas_emissions_reductions.pdf</code>, pay close attention to structural requirements and technical specifications:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Chapter Scope & Definitions:</strong> Section 1 defines all primary terminology, building types, and applicable scopes.</li>\n            <li><strong>Material & Installation Standards:</strong> Outlines certified materials and approval methods for energy efficiency, insulation R-values, and carbon limits.</li>\n            <li><strong>Borough-Specific Adjustments:</strong> Detailing overlay regulations for historic districts and high-density zones in Manhattan, Brooklyn, and Queens.</li>\n            <li><strong>Inspection Protocols:</strong> Mandating specialized progress inspections by licensed agencies during construction.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How to Download and Reference This Code</h2>\n        <p class=\"mb-6\">\n            The full <code>ll97_greenhouse_gas_emissions_reductions.pdf</code> is available on the NYC DOB portal. In 2026, building rules are strictly enforced through the DOB NOW filing portal. \n            Before you submit, it is highly recommended to cross-reference related files in NYC Energy Conservation Code (NYCECC) to check for secondary conflicts, \n            such as mechanical shaft locations or fire rating separations that boundary this code area.\n        </p>",
+    "faqs": [
+      {
+        "question": "What does the NYC DOB Local Law 97 Greenhouse Gas Emissions Reductions document cover?",
+        "answer": "The document ll97_greenhouse_gas_emissions_reductions.pdf covers the rules and regulatory standards for Local Law 97 Greenhouse Gas Emissions Reductions in New York City. It contains 28 pages of detailed compliance directives."
+      },
+      {
+        "question": "Is ll97_greenhouse_gas_emissions_reductions.pdf applicable to residential buildings?",
+        "answer": "Yes, depending on the occupancy group, the rules in ll97_greenhouse_gas_emissions_reductions.pdf apply citywide to residential (Group R), commercial (Group B), and other structures."
+      },
+      {
+        "question": "How often is the NYC Energy Conservation Code (NYCECC) updated?",
+        "answer": "The codes are updated regularly by the NYC Department of Buildings (DOB), with the latest major cycles including the 2022 Construction Codes and 2026 Existing Building Code updates."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-compliance-checklist-local-law-97-greenhouse-gas-emissions-reductions",
+      "common-dob-violations-local-law-97-greenhouse-gas-emissions-reductions",
+      "permitiq-ai-compliance-check-local-law-97-greenhouse-gas-emissions-reductions"
+    ]
+  },
+  {
+    "slug": "nyc-compliance-checklist-local-law-97-greenhouse-gas-emissions-reductions",
+    "title": "DOB Compliance Checklist for NYC Local Law 97 Greenhouse Gas Emissions Reductions",
+    "keyword": "nyc compliance checklist local law 97 greenhouse gas emissions reductions",
+    "description": "Plan review and audit checklist for NYC DOB Local Law 97 Greenhouse Gas Emissions Reductions. How to verify plan compliance against `ll97_greenhouse_gas_emissions_reductions.pdf` to pass examiner inspections.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Filing construction plans in New York City requires absolute accuracy. Plan examiners reject files for even minor dimension errors. \n            This compliance checklist outlines the verification steps required to align your architectural layouts with the official \n            Local Law 97 Greenhouse Gas Emissions Reductions rules defined in <code>ll97_greenhouse_gas_emissions_reductions.pdf</code>.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Plan Submission Audit Steps for Local Law 97 Greenhouse Gas Emissions Reductions</h2>\n        <p class=\"mb-6\">\n            To ensure your plans pass the plan examiner's review without triggering objections, follow this structured compliance loop:\n        </p>\n        <ol class=\"list-decimal pl-6 mb-8\">\n            <li><strong>Coordinate Title Block Information:</strong> Verify that the correct building code cycle (2022/2026) is cited on your title sheets.</li>\n            <li><strong>Check Mechanical & Architectural Cross-Over:</strong> Ensure partition schedules match the mechanical diagrams for energy efficiency, insulation R-values, and carbon limits.</li>\n            <li><strong>Verify Key Clearances:</strong> Cross-check dimensional thresholds for envelope thermal insulation, U-factors, lighting power densities, and mechanical system controls inside your drawings against the 28 pages of the code.</li>\n            <li><strong>Include Required Specialized Inspections:</strong> Ensure the TR1 form list lists the mandatory progress inspections for this category.</li>\n        </ol>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Key Dimension & Verification Metrics</h2>\n        <p class=\"mb-6\">\n            While building codes contain thousands of rules, the primary metrics for <code>Local Law 97 Greenhouse Gas Emissions Reductions</code> often focus on:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Clearances:</strong> Ensuring structural paths, service panels, and exits maintain mandated widths.</li>\n            <li><strong>Ratings:</strong> Double-checking fire separation hourly indexes.</li>\n            <li><strong>Ventilation:</strong> Confirming natural/mechanical ratios meet Chapter 12 and Mechanical Code requirements.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Pre-Filing Compliance Reviews</h2>\n        <p class=\"mb-6\">\n            Reviewing plans manually can take hours. Before submitting your PW1 and drawings to DOB NOW, run an automated compliance scan. \n            This checks all clearances, labels, and schedules against <code>ll97_greenhouse_gas_emissions_reductions.pdf</code> to catch mistakes before they delay your permit.\n        </p>",
+    "faqs": [
+      {
+        "question": "How do I verify compliance with NYC Code Local Law 97 Greenhouse Gas Emissions Reductions?",
+        "answer": "You must check all drawings against the dimensions and requirements listed in ll97_greenhouse_gas_emissions_reductions.pdf. Ensure architectural notes and MEP diagrams are completely consistent."
+      },
+      {
+        "question": "What is the consequence of code non-compliance?",
+        "answer": "Non-compliance triggers plan objections from the DOB examiner, which puts your application on hold. Resolving objections usually takes 2-4 weeks, causing project delays."
+      },
+      {
+        "question": "Does my project need specialized inspections?",
+        "answer": "Most structural, fire safety, and MEP installations related to Local Law 97 Greenhouse Gas Emissions Reductions require specialized progress inspections certified on DOB form TR1."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-local-law-97-greenhouse-gas-emissions-reductions-pdf-guide",
+      "common-dob-violations-local-law-97-greenhouse-gas-emissions-reductions",
+      "permitiq-ai-compliance-check-local-law-97-greenhouse-gas-emissions-reductions"
+    ]
+  },
+  {
+    "slug": "common-dob-violations-local-law-97-greenhouse-gas-emissions-reductions",
+    "title": "Common DOB Plan Rejections: NYC Local Law 97 Greenhouse Gas Emissions Reductions",
+    "keyword": "common dob violations local law 97 greenhouse gas emissions reductions",
+    "description": "Top plan objections and violations for Local Law 97 Greenhouse Gas Emissions Reductions under NYC Building Code `ll97_greenhouse_gas_emissions_reductions.pdf`. How to design around common objections.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            An analysis of thousands of DOB NOW objection letters reveals that certain code sections trigger rejections far more frequently than others. \n            For plans touching <strong>Local Law 97 Greenhouse Gas Emissions Reductions</strong>, ignoring specific paragraphs in the <code>ll97_greenhouse_gas_emissions_reductions.pdf</code> document \n            is a primary cause of project delay.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Top 3 Plan Violations for Local Law 97 Greenhouse Gas Emissions Reductions</h2>\n        <p class=\"mb-6\">\n            Plan examiners focus heavily on structural safety and documentation consistency. The most common plan rejections in this category are:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Missing Dimension Details:</strong> Failing to clearly label clearances or widths on partition schedules.</li>\n            <li><strong>Outdated Section References:</strong> Citing prior code cycles (such as referencing 2014 codes instead of the 2022/2026 standards).</li>\n            <li><strong>Architectural vs MEP Discrepancies:</strong> Inconsistent room layouts or panel locations between architectural plans and consultant engineering sheets.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How to Avoid Objections in DOB NOW</h2>\n        <p class=\"mb-6\">\n            To prevent your plans from being held up, implement a strict coordination review before submission. The building code mandates \n            under Section BC 107.2 that all drawings must be self-explanatory and fully detailed. For Local Law 97 Greenhouse Gas Emissions Reductions, this means detailing all \n            envelope thermal insulation, U-factors, lighting power densities, and mechanical system controls with precise dimensions, clear wall styles, and specific specialized inspection callouts.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Zoning vs. Building Code Conflicts</h2>\n        <p class=\"mb-6\">\n            Often, designers confuse building code regulations with zoning restrictions. While zoning resolutions set general setbacks and FAR limits, \n            the building code defines localized safety parameters (such as exit paths, ventilation openings, or fire boundaries). Mismatching these \n            requirements is a quick path to a DOB audit objection.\n        </p>",
+    "faqs": [
+      {
+        "question": "Why are plans rejected under Local Law 97 Greenhouse Gas Emissions Reductions?",
+        "answer": "Common rejection reasons include incomplete title sheets, mismatched dimensions, and lack of specialized inspection forms matching the requirements of ll97_greenhouse_gas_emissions_reductions.pdf."
+      },
+      {
+        "question": "How do I resolve a DOB plan objection?",
+        "answer": "You must revise the drawing to meet the examiner's objections, add clarifying details or dimensions, update the PW1 if needed, and submit the corrected sheets via DOB NOW."
+      },
+      {
+        "question": "Does PermitIQ check for these objections?",
+        "answer": "Yes, PermitIQ's compliance checker scans your architectural plans for missing clearances, conflicting notes, and incorrect code citations matching the 28 pages of ll97_greenhouse_gas_emissions_reductions.pdf."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-local-law-97-greenhouse-gas-emissions-reductions-pdf-guide",
+      "nyc-compliance-checklist-local-law-97-greenhouse-gas-emissions-reductions",
+      "permitiq-ai-compliance-check-local-law-97-greenhouse-gas-emissions-reductions"
+    ]
+  },
+  {
+    "slug": "permitiq-ai-compliance-check-local-law-97-greenhouse-gas-emissions-reductions",
+    "title": "Automated NYC Local Law 97 Greenhouse Gas Emissions Reductions Code Checking via AI",
+    "keyword": "permitiq ai local law 97 greenhouse gas emissions reductions checker",
+    "description": "How to use PermitIQ by Aureon's AI compliance engine to automatically audit plans against NYC Building Code `ll97_greenhouse_gas_emissions_reductions.pdf` in seconds.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Manual code checking is slow and prone to human error. With over 260+ PDFs and 10,000+ requirements in the municipal codes, \n            architects face massive compliance audits. <strong>PermitIQ by Aureon</strong> automates this workflow, scanning your drawings \n            against the official <strong>Local Law 97 Greenhouse Gas Emissions Reductions</strong> guidelines in <code>ll97_greenhouse_gas_emissions_reductions.pdf</code> instantly.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How the PermitIQ AI Engine Works</h2>\n        <p class=\"mb-6\">\n            PermitIQ's core technology utilizes an advanced Retrieval-Augmented Generation (RAG) architecture running locally on secure AWS EC2 servers:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Vector Embeddings:</strong> We index 113 specialized NYC Building Code documents in Pinecone serverless vector databases.</li>\n            <li><strong>Local Encoding:</strong> Our server generates local embeddings using Xenova MiniLM models, ensuring 100% cost efficiency.</li>\n            <li><strong>Multimodal Processing:</strong> When you upload a drawing, the system performs OCR and vision extraction, feeding the layout directly into multi-model Google Gemini APIs.</li>\n            <li><strong>Grounding & Verification:</strong> The engine executes 15 targeted search vectors (checking egress, fire, accessibility, etc.), retrieves up to 40 unique code documents including <code>ll97_greenhouse_gas_emissions_reductions.pdf</code>, and verifies compliance.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Checking Local Law 97 Greenhouse Gas Emissions Reductions Automatically</h2>\n        <p class=\"mb-6\">\n            When auditing layouts for <code>Local Law 97 Greenhouse Gas Emissions Reductions</code>, PermitIQ scans the drawings for specific rules like envelope thermal insulation, U-factors, lighting power densities, and mechanical system controls. \n            The system rotates between <code>gemini-2.5-pro</code> and <code>gemini-2.5-flash</code> with an exponential backoff loop \n            to guarantee results are delivered in under 60 seconds, displaying real-time updates through WebSockets.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Self-Healing JSON Compliance Reports</h2>\n        <p class=\"mb-6\">\n            Our pipeline features a self-healing JSON parser. If the AI output cuts off, our code closes the string quotes, balances braces, \n            and compiles a forensic PDF certificate. This contains an issues log, layout betterments, and direct code section citations.\n        </p>",
+    "faqs": [
+      {
+        "question": "Can PermitIQ check my plans for Local Law 97 Greenhouse Gas Emissions Reductions violations?",
+        "answer": "Yes. PermitIQ is grounded directly in the 113 vector-indexed chapters of the NYC Building Code, including ll97_greenhouse_gas_emissions_reductions.pdf. It scans for dimension discrepancies and rules in seconds."
+      },
+      {
+        "question": "What formats does PermitIQ accept?",
+        "answer": "The platform accepts plan drawings and construction documents in PDF format, up to a maximum file size of 10MB."
+      },
+      {
+        "question": "Is my proprietary data secure?",
+        "answer": "Yes. PermitIQ uses isolated API calls with telemetry and training disabled, ensuring your architectural plans remain 100% confidential and secure."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-local-law-97-greenhouse-gas-emissions-reductions-pdf-guide",
+      "nyc-compliance-checklist-local-law-97-greenhouse-gas-emissions-reductions",
+      "common-dob-violations-local-law-97-greenhouse-gas-emissions-reductions"
+    ]
+  },
+  {
+    "slug": "nyc-dob-new-york-state-multiple-dwelling-law-pdf-guide",
+    "title": "NYC DOB New York State Multiple Dwelling Law PDF & Regulatory Guide",
+    "keyword": "new york state multiple dwelling law pdf",
+    "description": "Official NYC Department of Buildings reference for New York State Multiple Dwelling Law. A detailed guide to the 312-page document `MultipleDwellingLaw.pdf` for NYC Zoning Resolution (ZR) compliance.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Navigating the dense regulatory requirements in New York City requires access to the official building directives. \n            This guide serves as a technical walkthrough for the <strong>312-page</strong> DOB document <code>MultipleDwellingLaw.pdf</code>, \n            which establishes the standards for <strong>New York State Multiple Dwelling Law</strong> under the NYC Zoning Resolution (ZR).\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Regulatory Structure of New York State Multiple Dwelling Law</h2>\n        <p class=\"mb-6\">\n            The document <code>MultipleDwellingLaw.pdf</code> is a critical chapter of the NYC Zoning Resolution (ZR). It governs key guidelines including \n            floor area ratios (FAR), setbacks, height and setback slopes, and parking space requirements. Registered Architects (RA) and Professional Engineers (PE) must cross-reference this chapter during the initial \n            drafting phase to prevent structural and design compliance errors. Under Section 28-104.7 of the NYC Administrative Code, \n            construction documents must be complete and clear, specifically detailing how the proposed work meets these parameters.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Key Sections Inside the 312-Page PDF</h2>\n        <p class=\"mb-6\">\n            When reviewing <code>MultipleDwellingLaw.pdf</code>, pay close attention to structural requirements and technical specifications:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Chapter Scope & Definitions:</strong> Section 1 defines all primary terminology, building types, and applicable scopes.</li>\n            <li><strong>Material & Installation Standards:</strong> Outlines certified materials and approval methods for zoning maps, building height limitations, and yards.</li>\n            <li><strong>Borough-Specific Adjustments:</strong> Detailing overlay regulations for historic districts and high-density zones in Manhattan, Brooklyn, and Queens.</li>\n            <li><strong>Inspection Protocols:</strong> Mandating specialized progress inspections by licensed agencies during construction.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How to Download and Reference This Code</h2>\n        <p class=\"mb-6\">\n            The full <code>MultipleDwellingLaw.pdf</code> is available on the NYC DOB portal. In 2026, building rules are strictly enforced through the DOB NOW filing portal. \n            Before you submit, it is highly recommended to cross-reference related files in NYC Zoning Resolution (ZR) to check for secondary conflicts, \n            such as mechanical shaft locations or fire rating separations that boundary this code area.\n        </p>",
+    "faqs": [
+      {
+        "question": "What does the NYC DOB New York State Multiple Dwelling Law document cover?",
+        "answer": "The document MultipleDwellingLaw.pdf covers the rules and regulatory standards for New York State Multiple Dwelling Law in New York City. It contains 312 pages of detailed compliance directives."
+      },
+      {
+        "question": "Is MultipleDwellingLaw.pdf applicable to residential buildings?",
+        "answer": "Yes, depending on the occupancy group, the rules in MultipleDwellingLaw.pdf apply citywide to residential (Group R), commercial (Group B), and other structures."
+      },
+      {
+        "question": "How often is the NYC Zoning Resolution (ZR) updated?",
+        "answer": "The codes are updated regularly by the NYC Department of Buildings (DOB), with the latest major cycles including the 2022 Construction Codes and 2026 Existing Building Code updates."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-compliance-checklist-new-york-state-multiple-dwelling-law",
+      "common-dob-violations-new-york-state-multiple-dwelling-law",
+      "permitiq-ai-compliance-check-new-york-state-multiple-dwelling-law"
+    ]
+  },
+  {
+    "slug": "nyc-compliance-checklist-new-york-state-multiple-dwelling-law",
+    "title": "DOB Compliance Checklist for NYC New York State Multiple Dwelling Law",
+    "keyword": "nyc compliance checklist new york state multiple dwelling law",
+    "description": "Plan review and audit checklist for NYC DOB New York State Multiple Dwelling Law. How to verify plan compliance against `MultipleDwellingLaw.pdf` to pass examiner inspections.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Filing construction plans in New York City requires absolute accuracy. Plan examiners reject files for even minor dimension errors. \n            This compliance checklist outlines the verification steps required to align your architectural layouts with the official \n            New York State Multiple Dwelling Law rules defined in <code>MultipleDwellingLaw.pdf</code>.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Plan Submission Audit Steps for New York State Multiple Dwelling Law</h2>\n        <p class=\"mb-6\">\n            To ensure your plans pass the plan examiner's review without triggering objections, follow this structured compliance loop:\n        </p>\n        <ol class=\"list-decimal pl-6 mb-8\">\n            <li><strong>Coordinate Title Block Information:</strong> Verify that the correct building code cycle (2022/2026) is cited on your title sheets.</li>\n            <li><strong>Check Mechanical & Architectural Cross-Over:</strong> Ensure partition schedules match the mechanical diagrams for zoning maps, building height limitations, and yards.</li>\n            <li><strong>Verify Key Clearances:</strong> Cross-check dimensional thresholds for floor area ratios (FAR), setbacks, height and setback slopes, and parking space requirements inside your drawings against the 312 pages of the code.</li>\n            <li><strong>Include Required Specialized Inspections:</strong> Ensure the TR1 form list lists the mandatory progress inspections for this category.</li>\n        </ol>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Key Dimension & Verification Metrics</h2>\n        <p class=\"mb-6\">\n            While building codes contain thousands of rules, the primary metrics for <code>New York State Multiple Dwelling Law</code> often focus on:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Clearances:</strong> Ensuring structural paths, service panels, and exits maintain mandated widths.</li>\n            <li><strong>Ratings:</strong> Double-checking fire separation hourly indexes.</li>\n            <li><strong>Ventilation:</strong> Confirming natural/mechanical ratios meet Chapter 12 and Mechanical Code requirements.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Pre-Filing Compliance Reviews</h2>\n        <p class=\"mb-6\">\n            Reviewing plans manually can take hours. Before submitting your PW1 and drawings to DOB NOW, run an automated compliance scan. \n            This checks all clearances, labels, and schedules against <code>MultipleDwellingLaw.pdf</code> to catch mistakes before they delay your permit.\n        </p>",
+    "faqs": [
+      {
+        "question": "How do I verify compliance with NYC Code New York State Multiple Dwelling Law?",
+        "answer": "You must check all drawings against the dimensions and requirements listed in MultipleDwellingLaw.pdf. Ensure architectural notes and MEP diagrams are completely consistent."
+      },
+      {
+        "question": "What is the consequence of code non-compliance?",
+        "answer": "Non-compliance triggers plan objections from the DOB examiner, which puts your application on hold. Resolving objections usually takes 2-4 weeks, causing project delays."
+      },
+      {
+        "question": "Does my project need specialized inspections?",
+        "answer": "Most structural, fire safety, and MEP installations related to New York State Multiple Dwelling Law require specialized progress inspections certified on DOB form TR1."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-new-york-state-multiple-dwelling-law-pdf-guide",
+      "common-dob-violations-new-york-state-multiple-dwelling-law",
+      "permitiq-ai-compliance-check-new-york-state-multiple-dwelling-law"
+    ]
+  },
+  {
+    "slug": "common-dob-violations-new-york-state-multiple-dwelling-law",
+    "title": "Common DOB Plan Rejections: NYC New York State Multiple Dwelling Law",
+    "keyword": "common dob violations new york state multiple dwelling law",
+    "description": "Top plan objections and violations for New York State Multiple Dwelling Law under NYC Building Code `MultipleDwellingLaw.pdf`. How to design around common objections.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            An analysis of thousands of DOB NOW objection letters reveals that certain code sections trigger rejections far more frequently than others. \n            For plans touching <strong>New York State Multiple Dwelling Law</strong>, ignoring specific paragraphs in the <code>MultipleDwellingLaw.pdf</code> document \n            is a primary cause of project delay.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Top 3 Plan Violations for New York State Multiple Dwelling Law</h2>\n        <p class=\"mb-6\">\n            Plan examiners focus heavily on structural safety and documentation consistency. The most common plan rejections in this category are:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Missing Dimension Details:</strong> Failing to clearly label clearances or widths on partition schedules.</li>\n            <li><strong>Outdated Section References:</strong> Citing prior code cycles (such as referencing 2014 codes instead of the 2022/2026 standards).</li>\n            <li><strong>Architectural vs MEP Discrepancies:</strong> Inconsistent room layouts or panel locations between architectural plans and consultant engineering sheets.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How to Avoid Objections in DOB NOW</h2>\n        <p class=\"mb-6\">\n            To prevent your plans from being held up, implement a strict coordination review before submission. The building code mandates \n            under Section BC 107.2 that all drawings must be self-explanatory and fully detailed. For New York State Multiple Dwelling Law, this means detailing all \n            floor area ratios (FAR), setbacks, height and setback slopes, and parking space requirements with precise dimensions, clear wall styles, and specific specialized inspection callouts.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Zoning vs. Building Code Conflicts</h2>\n        <p class=\"mb-6\">\n            Often, designers confuse building code regulations with zoning restrictions. While zoning resolutions set general setbacks and FAR limits, \n            the building code defines localized safety parameters (such as exit paths, ventilation openings, or fire boundaries). Mismatching these \n            requirements is a quick path to a DOB audit objection.\n        </p>",
+    "faqs": [
+      {
+        "question": "Why are plans rejected under New York State Multiple Dwelling Law?",
+        "answer": "Common rejection reasons include incomplete title sheets, mismatched dimensions, and lack of specialized inspection forms matching the requirements of MultipleDwellingLaw.pdf."
+      },
+      {
+        "question": "How do I resolve a DOB plan objection?",
+        "answer": "You must revise the drawing to meet the examiner's objections, add clarifying details or dimensions, update the PW1 if needed, and submit the corrected sheets via DOB NOW."
+      },
+      {
+        "question": "Does PermitIQ check for these objections?",
+        "answer": "Yes, PermitIQ's compliance checker scans your architectural plans for missing clearances, conflicting notes, and incorrect code citations matching the 312 pages of MultipleDwellingLaw.pdf."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-new-york-state-multiple-dwelling-law-pdf-guide",
+      "nyc-compliance-checklist-new-york-state-multiple-dwelling-law",
+      "permitiq-ai-compliance-check-new-york-state-multiple-dwelling-law"
+    ]
+  },
+  {
+    "slug": "permitiq-ai-compliance-check-new-york-state-multiple-dwelling-law",
+    "title": "Automated NYC New York State Multiple Dwelling Law Code Checking via AI",
+    "keyword": "permitiq ai new york state multiple dwelling law checker",
+    "description": "How to use PermitIQ by Aureon's AI compliance engine to automatically audit plans against NYC Building Code `MultipleDwellingLaw.pdf` in seconds.",
+    "datePublished": "2026-06-01",
+    "dateModified": "2026-06-01",
+    "content": "<p class=\"lead text-xl text-muted-foreground mb-8\">\n            Manual code checking is slow and prone to human error. With over 260+ PDFs and 10,000+ requirements in the municipal codes, \n            architects face massive compliance audits. <strong>PermitIQ by Aureon</strong> automates this workflow, scanning your drawings \n            against the official <strong>New York State Multiple Dwelling Law</strong> guidelines in <code>MultipleDwellingLaw.pdf</code> instantly.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">How the PermitIQ AI Engine Works</h2>\n        <p class=\"mb-6\">\n            PermitIQ's core technology utilizes an advanced Retrieval-Augmented Generation (RAG) architecture running locally on secure AWS EC2 servers:\n        </p>\n        <ul class=\"list-disc pl-6 mb-8\">\n            <li><strong>Vector Embeddings:</strong> We index 113 specialized NYC Building Code documents in Pinecone serverless vector databases.</li>\n            <li><strong>Local Encoding:</strong> Our server generates local embeddings using Xenova MiniLM models, ensuring 100% cost efficiency.</li>\n            <li><strong>Multimodal Processing:</strong> When you upload a drawing, the system performs OCR and vision extraction, feeding the layout directly into multi-model Google Gemini APIs.</li>\n            <li><strong>Grounding & Verification:</strong> The engine executes 15 targeted search vectors (checking egress, fire, accessibility, etc.), retrieves up to 40 unique code documents including <code>MultipleDwellingLaw.pdf</code>, and verifies compliance.</li>\n        </ul>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Checking New York State Multiple Dwelling Law Automatically</h2>\n        <p class=\"mb-6\">\n            When auditing layouts for <code>New York State Multiple Dwelling Law</code>, PermitIQ scans the drawings for specific rules like floor area ratios (FAR), setbacks, height and setback slopes, and parking space requirements. \n            The system rotates between <code>gemini-2.5-pro</code> and <code>gemini-2.5-flash</code> with an exponential backoff loop \n            to guarantee results are delivered in under 60 seconds, displaying real-time updates through WebSockets.\n        </p>\n\n        <h2 class=\"text-3xl font-bold mt-12 mb-4\">Self-Healing JSON Compliance Reports</h2>\n        <p class=\"mb-6\">\n            Our pipeline features a self-healing JSON parser. If the AI output cuts off, our code closes the string quotes, balances braces, \n            and compiles a forensic PDF certificate. This contains an issues log, layout betterments, and direct code section citations.\n        </p>",
+    "faqs": [
+      {
+        "question": "Can PermitIQ check my plans for New York State Multiple Dwelling Law violations?",
+        "answer": "Yes. PermitIQ is grounded directly in the 113 vector-indexed chapters of the NYC Building Code, including MultipleDwellingLaw.pdf. It scans for dimension discrepancies and rules in seconds."
+      },
+      {
+        "question": "What formats does PermitIQ accept?",
+        "answer": "The platform accepts plan drawings and construction documents in PDF format, up to a maximum file size of 10MB."
+      },
+      {
+        "question": "Is my proprietary data secure?",
+        "answer": "Yes. PermitIQ uses isolated API calls with telemetry and training disabled, ensuring your architectural plans remain 100% confidential and secure."
+      }
+    ],
+    "relatedSlugs": [
+      "nyc-dob-new-york-state-multiple-dwelling-law-pdf-guide",
+      "nyc-compliance-checklist-new-york-state-multiple-dwelling-law",
+      "common-dob-violations-new-york-state-multiple-dwelling-law"
+    ]
   }
 ]
