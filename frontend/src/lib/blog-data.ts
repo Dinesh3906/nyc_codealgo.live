@@ -1,3 +1,5 @@
+import programmaticPosts from './programmatic-blog-posts.json';
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -218,13 +220,6 @@ export const BLOG_POSTS: BlogPost[] = [
     relatedSlugs: ["nyc-building-code-checklist-2026", "nyc-certificate-of-occupancy-guide", "nyc-dob-plan-review-process"],
   },
 
-  // ── CLUSTER 2+ (remaining 70 programmatic posts) ──
-  ...Array.from({ length: 70 }).map((_, i) => ({
-    slug: `nyc-building-code-guide-part-${i + 31}`,
-    title: `NYC Building Code Deep Dive Part ${i + 31}: Advanced Compliance`,
-    keyword: `nyc building code guide part ${i + 31}`,
-    datePublished: "2026-06-01",
-    dateModified: "2026-06-01",
-    relatedSlugs: ["nyc-building-code-checklist-2026", "nyc-dob-code-requirements-explained", "nyc-building-code-fire-safety-requirements"],
-  })),
+  // ── PROGRAMMATIC POSTS (1000+ posts from generate_seo_data.py) ──
+  ...(programmaticPosts as BlogPost[])
 ];

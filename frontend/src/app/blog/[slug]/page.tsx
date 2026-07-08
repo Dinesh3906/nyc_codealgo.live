@@ -10,7 +10,6 @@ import { headers } from 'next/headers';
 
 // Fix 5: ISR revalidation — 30 days
 export const revalidate = 2592000;
-export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
@@ -48,13 +47,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-/*
 export async function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({
     slug: post.slug,
   }));
 }
-*/
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const nonce = (await headers()).get('x-nonce') || undefined;
@@ -198,98 +195,111 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         {/* Fix 6C: AuthorCard below H1 */}
         <AuthorCard author={author} lastUpdated={modDate} />
 
-        <p className="lead text-xl text-muted-foreground mb-8">
-          Welcome to the definitive guide on <strong>{post.keyword}</strong>. Whether you are a Registered Architect (RA),
-          Licensed Engineer (PE), or developer working in New York City, understanding and complying with these requirements
-          is essential to avoid DOB objections and costly project delays.
-        </p>
+        {post.content ? (
+          <div dangerouslySetInnerHTML={{ __html: post.content }} />
+        ) : (
+          <>
+            <p className="lead text-xl text-muted-foreground mb-8">
+              Welcome to the definitive guide on <strong>{post.keyword}</strong>. Whether you are a Registered Architect (RA),
+              Licensed Engineer (PE), or developer working in New York City, understanding and complying with these requirements
+              is essential to avoid DOB objections and costly project delays.
+            </p>
 
-        <h2 className="text-3xl font-bold mt-12 mb-4">Understanding {post.keyword} in the NYC Building Code</h2>
-        <p className="mb-6">
-          The New York City Building Code is among the most stringent and frequently updated in the nation. When it comes to {post.keyword},
-          the requirements are designed to guarantee life safety, structural integrity, and accessibility for all building occupants.
-          Architects must carefully detail every aspect of the design—from egress pathways and fire-rated separations to MEP coordination—before
-          submitting plans to the Department of Buildings (DOB).
-        </p>
-        <p className="mb-6">
-          Whether you are designing a commercial high-rise in Manhattan, a mixed-use building in Brooklyn, or a residential conversion in Queens,
-          the rules governing {post.keyword} directly impact your floor plans, material selections, and mechanical layouts. Non-compliance
-          is the single leading cause of DOB plan objections across all five boroughs.
-        </p>
+            <h2 className="text-3xl font-bold mt-12 mb-4">Understanding {post.keyword} in the NYC Building Code</h2>
+            <p className="mb-6">
+              The New York City Building Code is among the most stringent and frequently updated in the nation. When it comes to {post.keyword},
+              the requirements are designed to guarantee life safety, structural integrity, and accessibility for all building occupants.
+              Architects must carefully detail every aspect of the design—from egress pathways and fire-rated separations to MEP coordination—before
+              submitting plans to the Department of Buildings (DOB).
+            </p>
+            <p className="mb-6">
+              Whether you are designing a commercial high-rise in Manhattan, a mixed-use building in Brooklyn, or a residential conversion in Queens,
+              the rules governing {post.keyword} directly impact your floor plans, material selections, and mechanical layouts. Non-compliance
+              is the single leading cause of DOB plan objections across all five boroughs.
+            </p>
 
-        <h2 className="text-3xl font-bold mt-12 mb-4">Key Compliance Requirements for {post.keyword}</h2>
-        <p className="mb-6">
-          <strong>1. Dimensional Accuracy:</strong> DOB examiners apply zero tolerance for dimensional errors. All clearances, heights, and distances
-          related to {post.keyword} must be drawn and constructed exactly as mandated by the 2026 Construction Code updates. Even minor discrepancies
-          between plan sheets can trigger objections under BC Section 107.2 (construction documents).
-        </p>
-        <p className="mb-6">
-          <strong>2. Complete Documentation:</strong> All PW1 forms, zoning diagrams (ZD1), and specific technical certifications referencing
-          {post.keyword} must be fully completed and internally consistent with your drawing set. Incomplete documentation under
-          BC Section 28-104.7 is among the top five rejection reasons citywide.
-        </p>
-        <p className="mb-6">
-          <strong>3. Interdisciplinary Coordination:</strong> {post.keyword} rarely exists in isolation. It interacts with mechanical, electrical,
-          and plumbing codes as well as the NYC Zoning Resolution. Ensure all consultants—structural, MEP, fire protection—are aligned to prevent
-          costly mid-construction change orders and supplemental filings.
-        </p>
+            <h2 className="text-3xl font-bold mt-12 mb-4">Key Compliance Requirements for {post.keyword}</h2>
+            <p className="mb-6">
+              <strong>1. Dimensional Accuracy:</strong> DOB examiners apply zero tolerance for dimensional errors. All clearances, heights, and distances
+              related to {post.keyword} must be drawn and constructed exactly as mandated by the 2026 Construction Code updates. Even minor discrepancies
+              between plan sheets can trigger objections under BC Section 107.2 (construction documents).
+            </p>
+            <p className="mb-6">
+              <strong>2. Complete Documentation:</strong> All PW1 forms, zoning diagrams (ZD1), and specific technical certifications referencing
+              {post.keyword} must be fully completed and internally consistent with your drawing set. Incomplete documentation under
+              BC Section 28-104.7 is among the top five rejection reasons citywide.
+            </p>
+            <p className="mb-6">
+              <strong>3. Interdisciplinary Coordination:</strong> {post.keyword} rarely exists in isolation. It interacts with mechanical, electrical,
+              and plumbing codes as well as the NYC Zoning Resolution. Ensure all consultants—structural, MEP, fire protection—are aligned to prevent
+              costly mid-construction change orders and supplemental filings.
+            </p>
 
-        <h2 className="text-3xl font-bold mt-12 mb-4">How the NYC Building Code Has Evolved</h2>
-        <p className="mb-6">
-          New York City maintains one of the oldest and most frequently updated building codes in the world. Originally created to combat
-          the catastrophic spread of fires through tenement buildings in the early 20th century, the code has evolved into a comprehensive
-          set of volumes addressing everything from carbon emissions (Local Law 97) to seismic resilience and hurricane wind loads.
-        </p>
-        <p className="mb-6">
-          The enactment of the 2026 Existing Building Code, the strengthened push for ADA accessibility under Local Law 58,
-          and the continuous cycle of code amendments all shape modern architectural practice. When addressing {post.keyword},
-          professionals must verify that they are referencing the current code cycle—rules from as recently as 2022 may already be superseded.
-          The DOB NOW digital filing system has also introduced new technical requirements for plan submissions that did not exist under the
-          prior paper-based workflow.
-        </p>
+            <h2 className="text-3xl font-bold mt-12 mb-4">How the NYC Building Code Has Evolved</h2>
+            <p className="mb-6">
+              New York City maintains one of the oldest and most frequently updated building codes in the world. Originally created to combat
+              the catastrophic spread of fires through tenement buildings in the early 20th century, the code has evolved into a comprehensive
+              set of volumes addressing everything from carbon emissions (Local Law 97) to seismic resilience and hurricane wind loads.
+            </p>
+            <p className="mb-6">
+              The enactment of the 2026 Existing Building Code, the strengthened push for ADA accessibility under Local Law 58,
+              and the continuous cycle of code amendments all shape modern architectural practice. When addressing {post.keyword},
+              professionals must verify that they are referencing the current code cycle—rules from as recently as 2022 may already be superseded.
+              The DOB NOW digital filing system has also introduced new technical requirements for plan submissions that did not exist under the
+              prior paper-based workflow.
+            </p>
 
-        <h3 className="text-2xl font-bold mt-8 mb-4">Practical Checklist for {post.keyword}</h3>
-        <ul className="list-disc pl-6 mb-8">
-          <li>Verify your drawings reference the correct code year (2026 Construction Codes)</li>
-          <li>Cross-check all dimensional callouts against the applicable BC section requirements</li>
-          <li>Confirm all PW1 form fields are completed and consistent with drawings</li>
-          <li>Coordinate with MEP consultants to resolve any interdisciplinary conflicts</li>
-          <li>Run a pre-submission compliance check using PermitIQ by Aureon or similar tools</li>
-          <li>Review DOB NOW filing requirements for your specific job type (NB, Alt-1, Alt-2, Alt-3)</li>
-        </ul>
+            <h3 className="text-2xl font-bold mt-8 mb-4">Practical Checklist for {post.keyword}</h3>
+            <ul className="list-disc pl-6 mb-8">
+              <li>Verify your drawings reference the correct code year (2026 Construction Codes)</li>
+              <li>Cross-check all dimensional callouts against the applicable BC section requirements</li>
+              <li>Confirm all PW1 form fields are completed and consistent with drawings</li>
+              <li>Coordinate with MEP consultants to resolve any interdisciplinary conflicts</li>
+              <li>Run a pre-submission compliance check using PermitIQ by Aureon or similar tools</li>
+              <li>Review DOB NOW filing requirements for your specific job type (NB, Alt-1, Alt-2, Alt-3)</li>
+            </ul>
 
-        <h2 className="text-3xl font-bold mt-12 mb-4">Common Mistakes Architects Make with {post.keyword}</h2>
-        <p className="mb-6">
-          Based on analysis of thousands of DOB objection letters, the most frequent mistakes related to {post.keyword} include:
-          using outdated code references on title blocks, failing to show required dimensions on plan sheets, omitting required
-          fire-rating designations on partition schedules, and submitting inconsistent information between architectural and MEP drawings.
-          Each of these errors triggers a formal objection that adds weeks to the review cycle.
-        </p>
-        <p className="mb-6">
-          The Zoning Resolution (ZR) and the Construction Codes often create apparent contradictions. For example, while zoning may allow
-          a specific floor area ratio (FAR), the actual usable space can be significantly reduced by egress requirements, fire separation
-          distances, and mechanical shaft allocations mandated by the building code. Understanding how {post.keyword} fits within this
-          regulatory framework is essential for maximizing project value while maintaining full compliance.
-        </p>
+            <h2 className="text-3xl font-bold mt-12 mb-4">Common Mistakes Architects Make with {post.keyword}</h2>
+            <p className="mb-6">
+              Based on analysis of thousands of DOB objection letters, the most frequent mistakes related to {post.keyword} include:
+              using outdated code references on title blocks, failing to show required dimensions on plan sheets, omitting required
+              fire-rating designations on partition schedules, and submitting inconsistent information between architectural and MEP drawings.
+              Each of these errors triggers a formal objection that adds weeks to the review cycle.
+            </p>
+            <p className="mb-6">
+              The Zoning Resolution (ZR) and the Construction Codes often create apparent contradictions. For example, while zoning may allow
+              a specific floor area ratio (FAR), the actual usable space can be significantly reduced by egress requirements, fire separation
+              distances, and mechanical shaft allocations mandated by the building code. Understanding how {post.keyword} fits within this
+              regulatory framework is essential for maximizing project value while maintaining full compliance.
+            </p>
+          </>
+        )}
 
         <h2 className="text-3xl font-bold mt-12 mb-4">Frequently Asked Questions</h2>
         <div className="space-y-6 mb-12">
-          <div>
-            <h3 className="text-xl font-semibold">What is the most important rule regarding {post.keyword}?</h3>
-            <p>When dealing with {post.keyword}, strict adherence to both the NYC Building Code and the applicable zoning resolutions is mandatory for DOB approval. The examiner will check every relevant drawing sheet against the current code requirements.</p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold">How does {post.keyword} affect my DOB filing?</h3>
-            <p>Non-compliance with {post.keyword} requirements results in formal objections from the plan examiner, requiring written responses and potentially revised drawings. Each objection cycle adds 2-4 weeks to your project timeline.</p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold">Do all 5 boroughs follow the same rules for {post.keyword}?</h3>
-            <p>The NYC Construction Codes apply uniformly across Manhattan, Brooklyn, Queens, the Bronx, and Staten Island. However, local zoning overlays, historic district requirements, and special purpose districts may impose additional constraints.</p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold">How can I automatically check my plans for {post.keyword}?</h3>
-            <p>PermitIQ by Aureon&apos;s AI scanner checks uploaded architectural plans against {post.keyword} and 260+ other building code PDFs instantly, generating a detailed violation report with specific code section references.</p>
-          </div>
+          {(post.faqs ?? [
+            {
+              question: `What is the most important rule regarding ${post.keyword}?`,
+              answer: `When dealing with ${post.keyword}, strict adherence to both the NYC Building Code and the applicable zoning resolutions is mandatory for DOB approval. The examiner will check every relevant drawing sheet against the current code requirements.`
+            },
+            {
+              question: `How does ${post.keyword} affect my DOB filing?`,
+              answer: `Non-compliance with ${post.keyword} requirements results in formal objections from the plan examiner, requiring written responses and potentially revised drawings. Each objection cycle adds 2-4 weeks to your project timeline.`
+            },
+            {
+              question: `Do all 5 boroughs follow the same rules for ${post.keyword}?`,
+              answer: `The NYC Construction Codes apply uniformly across Manhattan, Brooklyn, Queens, the Bronx, and Staten Island. However, local zoning overlays, historic district requirements, and special purpose districts may impose additional constraints.`
+            },
+            {
+              question: `How can I automatically check my plans for ${post.keyword}?`,
+              answer: `PermitIQ by Aureon's AI scanner checks uploaded architectural plans against ${post.keyword} and 260+ other building code PDFs instantly, generating a detailed violation report with specific code section references.`
+            }
+          ]).map((faq, index) => (
+            <div key={index}>
+              <h3 className="text-xl font-semibold">{faq.question}</h3>
+              <p>{faq.answer}</p>
+            </div>
+          ))}
         </div>
 
         {/* Fix 9B: Related Articles section */}
