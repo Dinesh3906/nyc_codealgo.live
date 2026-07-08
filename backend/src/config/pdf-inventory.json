@@ -129,6 +129,10 @@
       "pages": 17
     },
     {
+      "filename": "2022BC_Chapter13_EnergyWBwm.pdf",
+      "pages": 1
+    },
+    {
       "filename": "2022BC_Chapter14_ExteriorWallsWBwm.pdf",
       "pages": 18
     },
@@ -181,6 +185,18 @@
       "pages": 17
     },
     {
+      "filename": "2022BC_Chapter27_ElectricalWBwm.pdf",
+      "pages": 4
+    },
+    {
+      "filename": "2022BC_Chapter28_MechanicalWBwm.pdf",
+      "pages": 1
+    },
+    {
+      "filename": "2022BC_Chapter29_PlumbingWBwm.pdf",
+      "pages": 1
+    },
+    {
       "filename": "2022BC_Chapter30_ElevatorsWBwm.pdf",
       "pages": 15
     },
@@ -203,13 +219,33 @@
     {
       "filename": "2022BC_Chapter35_RefStandardsWBwm.pdf",
       "pages": 33
+    },
+    {
+      "filename": "2022GAP_Chapter1_AdministrationWBwm.pdf",
+      "pages": 81
+    },
+    {
+      "filename": "2022GAP_Chapter2_EnforcementWBwm.pdf",
+      "pages": 33
+    },
+    {
+      "filename": "2022GAP_Chapter3_MaintenanceWBwm.pdf",
+      "pages": 48
+    },
+    {
+      "filename": "2022GAP_Chapter4_LicensingWBwm.pdf",
+      "pages": 48
+    },
+    {
+      "filename": "2022GAP_Chapter5_MiscellaneousWBwm.pdf",
+      "pages": 18
+    },
+    {
+      "filename": "cbl_matrix.pdf",
+      "pages": 1
     }
   ],
   "plumbing_code": [
-    {
-      "filename": "2022BC_Chapter29_PlumbingWBwm.pdf",
-      "pages": 1
-    },
     {
       "filename": "2022PC_AppendixA_ReservedWBwm.pdf",
       "pages": 1
@@ -229,6 +265,10 @@
     {
       "filename": "2022PC_AppendixE_WaterPipingWBwm.pdf",
       "pages": 19
+    },
+    {
+      "filename": "2022PC_Chapter1_AdministrationWBwm.pdf",
+      "pages": 9
     },
     {
       "filename": "2022PC_Chapter10_TrapsWBwm.pdf",
@@ -253,10 +293,6 @@
     {
       "filename": "2022PC_Chapter15_RefStandardsWBwm.pdf",
       "pages": 14
-    },
-    {
-      "filename": "2022PC_Chapter1_AdministrationWBwm.pdf",
-      "pages": 9
     },
     {
       "filename": "2022PC_Chapter2_DefinitionsWBwm.pdf",
@@ -293,10 +329,6 @@
   ],
   "mechanical_code": [
     {
-      "filename": "2022BC_Chapter28_MechanicalWBwm.pdf",
-      "pages": 1
-    },
-    {
       "filename": "2022MC_AppendixA_ChimneyConnectorWB.pdf",
       "pages": 2
     },
@@ -307,6 +339,10 @@
     {
       "filename": "2022MC_AppendixC_FuelOilStorageWB.pdf",
       "pages": 3
+    },
+    {
+      "filename": "2022MC_Chapter1_AdministrationWB.pdf",
+      "pages": 7
     },
     {
       "filename": "2022MC_Chapter10_BoilersWB.pdf",
@@ -331,10 +367,6 @@
     {
       "filename": "2022MC_Chapter15_RefStandardsWB.pdf",
       "pages": 13
-    },
-    {
-      "filename": "2022MC_Chapter1_AdministrationWB.pdf",
-      "pages": 7
     },
     {
       "filename": "2022MC_Chapter2_DefinitionsWB.pdf",
@@ -433,6 +465,10 @@
   ],
   "electrical_code": [
     {
+      "filename": "2025electrical_code.pdf",
+      "pages": 67
+    },
+    {
       "filename": "eab_eliminated_sn.pdf",
       "pages": 1
     },
@@ -446,6 +482,14 @@
     }
   ],
   "energy_code": [
+    {
+      "filename": "2025_acknowledgements_energy.pdf",
+      "pages": 2
+    },
+    {
+      "filename": "2025nyc_ashrae.pdf",
+      "pages": 409
+    },
     {
       "filename": "2025nycecc_appendix_rf.pdf",
       "pages": 14
@@ -495,12 +539,8 @@
       "pages": 5
     },
     {
-      "filename": "2025nyc_ashrae.pdf",
-      "pages": 409
-    },
-    {
-      "filename": "2025_acknowledgements_energy.pdf",
-      "pages": 2
+      "filename": "ll97_greenhouse_gas_emissions_reductions.pdf",
+      "pages": 6
     }
   ],
   "fire_code": [
@@ -861,6 +901,10 @@
     {
       "filename": "Article XIV.pdf",
       "pages": 172
+    },
+    {
+      "filename": "MultipleDwellingLaw.pdf",
+      "pages": 175
     },
     {
       "filename": "r1-r3-qrs-regulations.pdf",

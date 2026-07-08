@@ -4,7 +4,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import * as fs from "fs";
 import * as path from "path";
 import dotenv from "dotenv";
-import * as pdfjs from "pdfjs-dist";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { pipeline } from "@xenova/transformers";
 import Tesseract from "tesseract.js";
 

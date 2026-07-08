@@ -12,7 +12,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import dotenv from "dotenv";
-import * as pdfjs from "pdfjs-dist";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { pipeline } from "@xenova/transformers";
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
