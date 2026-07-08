@@ -58,7 +58,6 @@ export class AiProviderService {
   private static providerStats: Record<string, ProviderStats> = {
     gemini: { successes: 0, failures: 0, quotaExhausted: false, coolDownUntil: 0 },
     openrouter: { successes: 0, failures: 0, quotaExhausted: false, coolDownUntil: 0 },
-    groq: { successes: 0, failures: 0, quotaExhausted: false, coolDownUntil: 0 },
     openai: { successes: 0, failures: 0, quotaExhausted: false, coolDownUntil: 0 },
     anthropic: { successes: 0, failures: 0, quotaExhausted: false, coolDownUntil: 0 },
     vertex: { successes: 0, failures: 0, quotaExhausted: false, coolDownUntil: 0 },
@@ -69,7 +68,6 @@ export class AiProviderService {
   private static providerPriority = [
     'gemini',
     'openrouter',
-    'groq',
     'openai',
     'anthropic',
     'vertex',
@@ -107,8 +105,6 @@ export class AiProviderService {
         return rawKeys.trim().length > 0;
       case 'openrouter':
         return !!process.env.OPENROUTER_API_KEY;
-      case 'groq':
-        return !!process.env.GROQ_API_KEY;
       case 'openai':
         return !!process.env.OPENAI_API_KEY;
       case 'anthropic':
@@ -227,38 +223,6 @@ export class AiProviderService {
               this.coolDown('openrouter');
             }
             throw new Error(`OpenRouter API error ${res.status}: ${errText}`);
-          }
-
-          const data: any = await res.json();
-          responseText = data.choices?.[0]?.message?.content || '';
-          break;
-        }
-        case 'groq': {
-          const key = process.env.GROQ_API_KEY;
-          if (!key) throw new Error('GROQ_API_KEY is not set');
-          actualModel = 'llama3-70b-8192';
-
-          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${key}`
-            },
-            body: JSON.stringify({
-              model: actualModel,
-              messages: [
-                ...(system ? [{ role: 'system', content: system }] : []),
-                { role: 'user', content: user }
-              ]
-            })
-          });
-
-          if (!res.ok) {
-            const errText = await res.text();
-            if (res.status === 429) {
-              this.coolDown('groq');
-            }
-            throw new Error(`Groq API error ${res.status}: ${errText}`);
           }
 
           const data: any = await res.json();

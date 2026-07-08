@@ -15,6 +15,7 @@ import { RagOptimizerService } from './rag-optimizer.service';
 import { KnowledgeBaseValidationService } from './kb-validation.service';
 import { metrics } from './metrics.service';
 import { EvidenceLogger } from './evidence-logger';
+import { ApifyService } from './apify.service';
 
 export interface GlobalFacts {
   project_name: string | null;
@@ -246,6 +247,22 @@ export class SchedulerService {
       };
     }
 
+    // Fetch property violations & records via Apify based on extracted address
+    let propertyRecords: any = null;
+    if (globalFacts && globalFacts.project_address) {
+      emitStatus({
+        planId,
+        status: 'FETCHING_PROPERTY_DATA',
+        progress: 15,
+        message: `Querying NYC DOB property violations for "${globalFacts.project_address}"...`
+      });
+      try {
+        propertyRecords = await ApifyService.fetchPropertyData(globalFacts.project_address);
+      } catch (apifyErr) {
+        console.error('[SchedulerService] Apify fetch error:', apifyErr);
+      }
+    }
+
     EvidenceLogger.logAudit({
       auditId: planId,
       uploadedPlan: filePath,
@@ -433,7 +450,8 @@ export class SchedulerService {
         ...profileSummary,
         ragTraces
       },
-      tracking
+      tracking,
+      propertyRecords
     };
   }
 

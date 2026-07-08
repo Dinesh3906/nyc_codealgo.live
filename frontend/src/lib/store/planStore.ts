@@ -69,7 +69,8 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     );
 
     const socket = io(socketUrl, {
-      withCredentials: true
+      withCredentials: true,
+      transports: ['polling']
     });
 
     socket.on('connect', () => {

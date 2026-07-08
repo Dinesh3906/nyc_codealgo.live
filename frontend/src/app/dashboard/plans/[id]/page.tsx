@@ -854,6 +854,85 @@ export default function PlanDetailPage() {
           </div>
 
           <div className="space-y-8">
+            {/* NYC DOB Property Records & Violations */}
+            {analysisResult.property_records && (
+              <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
+                <CardHeader className="bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-100 dark:border-slate-800/50 py-4">
+                  <CardTitle className="text-slate-900 dark:text-white text-base flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-amber-500" />
+                    DOB Property Profile
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-400">
+                    NYC Buildings Information System (BIS)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-400">Query Address</p>
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {analysisResult.property_records.address}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <div className="p-2.5 rounded bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-750/50">
+                      <p className="text-[9px] uppercase font-bold text-slate-450 dark:text-slate-400">Active Violations</p>
+                      <p className="text-base font-black text-slate-800 dark:text-slate-200">
+                        {analysisResult.property_records.activeViolationsCount}
+                      </p>
+                    </div>
+                    <div className="p-2.5 rounded bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-750/50">
+                      <p className="text-[9px] uppercase font-bold text-slate-450 dark:text-slate-400">Open Complaints</p>
+                      <p className="text-base font-black text-slate-800 dark:text-slate-200">
+                        {analysisResult.property_records.openComplaintsCount}
+                      </p>
+                    </div>
+                  </div>
+
+                  {analysisResult.property_records.violations && analysisResult.property_records.violations.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <p className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-400 font-sans">Violation Records</p>
+                      <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        {analysisResult.property_records.violations.map((v: any) => (
+                          <div 
+                            key={v.id} 
+                            className="p-2 rounded text-xs bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 space-y-1"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="font-mono font-bold text-[10px] text-slate-500 dark:text-slate-400">
+                                {v.number}
+                              </span>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-[8px] uppercase px-1.5 py-0 ${
+                                  v.status === 'open'
+                                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                }`}
+                              >
+                                {v.status}
+                              </Badge>
+                            </div>
+                            <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-snug">
+                              {v.description}
+                            </p>
+                            <div className="flex justify-between items-center text-[9px] text-slate-400 pt-0.5">
+                              <span>Severity: <span className="font-semibold uppercase">{v.severity}</span></span>
+                              <span>{v.date}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-slate-400 flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span>Source: {analysisResult.property_records.source}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Building Info / Rooms */}
             {analysisResult.building_info?.rooms && analysisResult.building_info.rooms.length > 0 && (
               <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">

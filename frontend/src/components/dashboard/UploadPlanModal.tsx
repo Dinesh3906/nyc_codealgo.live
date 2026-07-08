@@ -104,7 +104,9 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
 
   useEffect(() => {
     if (status === 'analyzing' && activePlanId) {
-      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://api-permitiq.codealgo.live");
+      const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://api-permitiq.codealgo.live", {
+        transports: ['polling']
+      });
 
       socket.on('analysis-status', (data) => {
         if (data.planId !== activePlanId) return;
@@ -114,6 +116,7 @@ export default function UploadPlanModal({ isOpen, onClose }: UploadPlanModalProp
         const messages: Record<string, string> = {
           'INITIALIZING': 'Initializing NYC Vectorless RAG Agent...',
           'EXTRACTING_DATA': 'Extracting architectural metadata...',
+          'FETCHING_PROPERTY_DATA': 'Querying NYC DOB Buildings Information System (BIS)...',
           'RETRIEVING_RULES': 'Retrieving 2022 NYC Building Codes...',
           'AI_ANALYZING': 'Performing forensic compliance audit...',
           'CHECKING_COMPLIANCE': 'Verifying safety & egress mandates...',

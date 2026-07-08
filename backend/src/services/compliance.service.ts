@@ -50,6 +50,7 @@ export interface ComplianceResult {
   deterministicChecks?: string;
   ragRetrieval?: string;
   reason?: string;
+  property_records?: any;
   auditMetadata?: {
     completedSteps: number;
     totalSteps: number;
@@ -150,9 +151,11 @@ export class CompliancePipeline {
       const tracking = pipelineRun.tracking || { successfulCalls: 0, failedCalls: 0, providersUsed: [], aiExecuted: false };
       const aiAnalysesExecuted = tracking.successfulCalls;
 
-      let finalScore: number | null = checkedSteps.length > 0
+      let finalScore: number = checkedSteps.length > 0
         ? Math.round(checkedSteps.reduce((acc: number, r: any) => acc + r.score!, 0) / checkedSteps.length)
-        : 100;      let severity = { critical: 0, major: 0, minor: 0 };
+        : 100;
+
+      let severity = { critical: 0, major: 0, minor: 0 };
 
       const combinedIssues: AnalysisIssue[] = checkedSteps.flatMap((r: any) =>
         r.issues.map((iss: any) => ({
@@ -170,6 +173,28 @@ export class CompliancePipeline {
           requiredElements: iss.requiredElements || iss.required_elements || "N/A"
         }))
       );
+
+      // Integrate property violations from Apify into combinedIssues and apply deductions to finalScore
+      if (pipelineRun.propertyRecords && pipelineRun.propertyRecords.violations) {
+        pipelineRun.propertyRecords.violations.forEach((v: any) => {
+          if (v.status === 'open') {
+            const deduction = v.severity === 'critical' ? 15 : (v.severity === 'major' ? 10 : 5);
+            finalScore = Math.max(0, finalScore - deduction);
+            combinedIssues.push({
+              title: `Property Violation: ${v.number}`,
+              description: `NYC DOB Active Violation: ${v.description}`,
+              severity: v.severity,
+              rule: 'NYC DOB BIS Record',
+              suggestion: 'Resolve the outstanding violation with the NYC Department of Buildings (DOB) and obtain clearance before proceeding.',
+              stepId: 'property_violation',
+              deductionPercentage: deduction,
+              exactPdfCitation: 'NYC DOB Buildings Information System (BIS) Portal',
+              loopholeDetails: 'Property has open violations which can block plan examiner approval or certificate of occupancy issuance.',
+              requiredElements: 'DOB Violation Dismissal / Certificate of Correction'
+            });
+          }
+        });
+      }
 
       combinedIssues.forEach(issue => {
         if (issue.severity === 'critical') severity.critical++;
@@ -222,6 +247,7 @@ export class CompliancePipeline {
         deterministicChecks: 'Completed',
         ragRetrieval: 'Completed',
         reason: isManualReview ? 'AI quota unavailable during audit.' : undefined,
+        property_records: pipelineRun.propertyRecords || null,
         auditMetadata: {
           completedSteps: checkedSteps.length,
           totalSteps: stepResults.length,
