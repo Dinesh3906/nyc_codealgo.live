@@ -14,3 +14,9 @@ backend/dist/
 .vscode/
 backend/pdfs/
 backend/scratch/
+__pycache__/
+*.pyc
+.pytest_cache/
+permit_iq.db
+storage_uploads/
+temp_uploads/
