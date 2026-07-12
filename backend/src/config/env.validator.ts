@@ -15,6 +15,15 @@ interface EnvRule {
   sensitive?: boolean; // Don't log the value
 }
 
+const WEAK_SECRET_VALUES = new Set([
+  'secret',
+  'password',
+  'changeme',
+  'default',
+  'nyc_house_code_secret_v1_2024',
+  'permit-iq-super-secure-key-123456',
+]);
+
 const ENV_RULES: EnvRule[] = [
   // Required secrets
   { name: 'GOOGLE_AI_STUDIO_KEY', required: true, type: 'string', minLength: 10, sensitive: true },
@@ -42,6 +51,7 @@ const ENV_RULES: EnvRule[] = [
   { name: 'GEMINI_TIMEOUT_MS', required: false, type: 'number', default: '120000' },
   { name: 'CACHE_TTL_MINUTES', required: false, type: 'number', default: '30' },
   { name: 'LOG_LEVEL', required: false, type: 'string', default: 'INFO' },
+  { name: 'METRICS_API_KEY', required: false, type: 'string', minLength: 24, sensitive: true },
 
   // Pinecone
   { name: 'PINECONE_ENVIRONMENT', required: false, type: 'string', default: 'us-east-1' },
@@ -154,8 +164,18 @@ export function validateEnvironment(): string[] {
 
   // Production-specific checks
   if (process.env.NODE_ENV === 'production') {
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'secret' || process.env.JWT_SECRET === 'nyc_house_code_secret_v1_2024') {
+    if (!process.env.JWT_SECRET || WEAK_SECRET_VALUES.has(process.env.JWT_SECRET.toLowerCase())) {
       errors.push('CRITICAL: JWT_SECRET cannot be the default or a weak key in production!');
+    }
+    if (process.env.JWT_ALGORITHM && process.env.JWT_ALGORITHM !== 'HS256') {
+      errors.push('CRITICAL: JWT_ALGORITHM must be HS256 unless asymmetric key verification is explicitly implemented.');
+    }
+    if (!process.env.METRICS_API_KEY || process.env.METRICS_API_KEY.length < 24) {
+      errors.push('CRITICAL: METRICS_API_KEY is required in production to protect metrics and detailed health endpoints.');
+    }
+    const configuredOrigins = `${process.env.CORS_ORIGIN || ''},${process.env.CORS_ALLOWED_ORIGINS || ''},${process.env.FRONTEND_URL || ''}`;
+    if (configuredOrigins.includes('*') || configuredOrigins.includes('http://')) {
+      errors.push('CRITICAL: Production CORS/FRONTEND origins must be explicit HTTPS origins.');
     }
   }
 

@@ -1,5 +1,5 @@
 from rank_bm25 import BM25Okapi
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from ..schemas.models import RetrievalCandidate
 from ..pinecone.client import MOCK_CORPUS
 
@@ -38,7 +38,6 @@ class BM25Retriever:
         
         # 1. Apply hard metadata filters
         filtered_corpus_indices = []
-        filtered_tokenized_corpus = []
         
         for idx, item in enumerate(self.corpus):
             matches_filter = True
@@ -55,22 +54,19 @@ class BM25Retriever:
             
             if matches_filter:
                 filtered_corpus_indices.append(idx)
-                filtered_tokenized_corpus.append(self.tokenized_corpus[idx])
 
-        # If no items match filters, fallback to full corpus
         if not filtered_corpus_indices:
-            filtered_corpus_indices = list(range(len(self.corpus)))
-            filtered_tokenized_corpus = self.tokenized_corpus
+            return []
 
         # 2. Score using BM25
-        # We instantiate a temporary BM25 index over the filtered corpus to avoid out-of-index mapping
-        temp_bm25 = BM25Okapi(filtered_tokenized_corpus)
-        scores = temp_bm25.get_scores(query_tokens)
+        scores = self.bm25.get_scores(query_tokens)
 
         # Zip scores with filtered corpus indices
         scored_items = []
-        for i, score in enumerate(scores):
-            original_idx = filtered_corpus_indices[i]
+        for original_idx in filtered_corpus_indices:
+            score = float(scores[original_idx])
+            if score <= 0.0:
+                continue
             scored_items.append((score, self.corpus[original_idx]))
 
         # Sort by BM25 score descending

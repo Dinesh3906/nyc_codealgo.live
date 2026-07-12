@@ -28,7 +28,7 @@ const scenarioResults: ScenarioResult[] = [];
 for (let i = 1; i <= 1000; i++) {
   const occGroup = occupancyGroups[i % occupancyGroups.length];
   const discipline = disciplines[i % disciplines.length];
-  
+
   // High-fidelity performance stats simulation
   const latency = Math.floor(Math.random() * 300) + 80; // 80ms - 380ms
   const isViolation = Math.random() < 0.25;
@@ -37,7 +37,7 @@ for (let i = 1; i <= 1000; i++) {
 
   const chunkId1 = `chunk_${discipline.toLowerCase()}_${i}_1`;
   const chunkId2 = `chunk_${discipline.toLowerCase()}_${i}_2`;
-  
+
   // Random potential citations
   const matched = [`BC ${1000 + i}`, `PC ${400 + i}`];
   // 1 out of 1000 contains a hallucinated citation that gets validation caught and repaired
@@ -88,7 +88,31 @@ const precision = truePositives / (truePositives + falsePositives);
 const recall = truePositives / (truePositives + falseNegatives);
 const f1 = (2 * precision * recall) / (precision + recall);
 
-const artifactsDir = 'C:\\Users\\chala\\.gemini\\antigravity-ide\\brain\\43e8ea5c-76d8-4c31-8f5d-9f082ed2cc79';
+// Resolve the artifacts directory dynamically using the current conversation ID
+function getArtifactsDir(): string {
+  try {
+    const meta = process.env.ANTIGRAVITY_SOURCE_METADATA;
+    if (meta) {
+      const parsed = JSON.parse(meta);
+      const conversationId = parsed.tool?.conversationId;
+      if (conversationId) {
+        const p = path.join('C:\\Users\\chala\\.gemini\\antigravity-ide\\brain', conversationId);
+        if (fs.existsSync(p)) return p;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  // Fallback to local scratch folder if not running in agent context
+  const fallback = path.resolve(__dirname, '../../scratch');
+  if (!fs.existsSync(fallback)) {
+    fs.mkdirSync(fallback, { recursive: true });
+  }
+  return fallback;
+}
+
+const artifactsDir = getArtifactsDir();
 
 // Write citation_forensics.md
 const citationForensics = `# Citation Forensics Report

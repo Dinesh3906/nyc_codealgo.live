@@ -1,4 +1,3 @@
-import pytest
 from retrieval.schemas.models import RetrievalCandidate
 from retrieval.dedup.deduplicator import Deduplicator
 

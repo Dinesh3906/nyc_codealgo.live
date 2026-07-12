@@ -1,4 +1,3 @@
-import pytest
 from reranking.schemas.models import EvidenceChunk
 from reranking.diversity.engine import DiversityEngine
 

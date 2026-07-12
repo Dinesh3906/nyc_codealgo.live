@@ -1,4 +1,3 @@
-from typing import Dict, Any, List
 from ..schemas.models import EvidenceChunk
 from ..config import settings
 from retrieval.schemas.models import RetrievalCandidate

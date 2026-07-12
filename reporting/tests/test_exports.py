@@ -1,4 +1,3 @@
-import pytest
 from reporting.exports.writer import ExportWriter
 
 def test_markdown_rendering(mock_compliance_report):

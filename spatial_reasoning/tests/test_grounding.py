@@ -1,4 +1,3 @@
-import pytest
 from spatial_reasoning.grounding.engine import GroundingEngine
 
 def test_dimension_grounding(mock_building_object_model):

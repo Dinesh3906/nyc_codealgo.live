@@ -1,5 +1,4 @@
 import re
-from typing import List, Dict, Any
 from ..schemas.models import ParsedQuery
 from ..ontology.engine import OntologyEngine
 
@@ -21,7 +20,6 @@ class QueryParser:
         building_components = []
         regulatory_concepts = []
         measurements = []
-        discipline = None
         occupancy = None
 
         # 1. Component Extraction (Regex search)

@@ -1,4 +1,3 @@
-import pytest
 from query_understanding.parser.query_parser import QueryParser
 
 def test_query_parsing_simple():

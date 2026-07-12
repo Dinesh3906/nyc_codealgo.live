@@ -1,10 +1,9 @@
 import uuid
-from typing import List, Tuple, Dict, Any
-from shapely.geometry import LineString, Polygon, MultiLineString
+from typing import List, Tuple, Dict
+from shapely.geometry import LineString, Polygon
 from shapely.ops import polygonize, unary_union
 from document_ingestion.models import Page as IngestionPage, BoundingBox
 from ..models import SemanticBuildingObject
-from ..config import settings
 
 class GeometryBuildingDetector:
     """

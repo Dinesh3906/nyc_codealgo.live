@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from shared.cors import configure_cors
 from retrieval.schemas.models import CandidateEvidenceSet
 from ..schemas.models import EvidencePackage
 from ..backfill.engine import RerankingPipeline
@@ -10,13 +10,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+configure_cors(app)
 
 # Instantiate pipeline
 pipeline_helper = RerankingPipeline()

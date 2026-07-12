@@ -1,7 +1,6 @@
 import re
-from typing import List, Dict, Any, Optional
-from document_ingestion.models import Page as IngestionPage, TextObject, BoundingBox
-from ..models import TitleBlockMetadata, SemanticRegion, RegionType
+from document_ingestion.models import Page as IngestionPage
+from ..models import TitleBlockMetadata, SemanticRegion
 
 class TitleBlockMetadataExtractor:
     """
@@ -33,7 +32,7 @@ class TitleBlockMetadataExtractor:
         # Sort top-to-bottom
         tb_texts.sort(key=lambda o: o.coordinates.ymax, reverse=True)
         tb_str_list = [o.text.strip() for o in tb_texts]
-        combined_tb_text = "\n".join(tb_str_list)
+        "\n".join(tb_str_list)
 
         # 1. Sheet Number Extraction
         # Look for sheet tags like A-101, M-202, SEC-01 at the end of the text list (typically bottom-right)

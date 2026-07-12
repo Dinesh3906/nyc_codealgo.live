@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Dict, Any
+from typing import List, Dict
 from document_ingestion.models import Page as IngestionPage, BoundingBox
 from ..models import SemanticBuildingObject
 

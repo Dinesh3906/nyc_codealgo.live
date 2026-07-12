@@ -1,5 +1,5 @@
-from typing import List, Dict, Any, Optional
-from ..schemas.models import ComplianceRetrievalPlan, ParsedQuery, MetadataFilter, QueryIntent
+from typing import List, Any, Optional
+from ..schemas.models import ComplianceRetrievalPlan, MetadataFilter, QueryIntent
 from ..parser.query_parser import QueryParser
 from ..intent.classifier import IntentClassifier
 from ..ontology.engine import OntologyEngine

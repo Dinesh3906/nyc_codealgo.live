@@ -1,5 +1,3 @@
-import pytest
-import networkx as nx
 from spatial_reasoning.graph.builder import BuildingGraphBuilder
 from spatial_reasoning.routing.path_analyzer import EgressPathAnalyzer
 from spatial_reasoning.topology.engine import TopologyEngine

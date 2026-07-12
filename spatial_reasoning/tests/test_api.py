@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from spatial_reasoning.api.app import app
 
@@ -13,7 +12,7 @@ def test_health_check_endpoint():
 
 def test_graph_endpoint(mock_building_object_model):
     # Serialize SemanticBuildingObjectModel to dict
-    payload = mock_building_object_model.dict()
+    payload = mock_building_object_model.model_dump()
     
     response = client.post("/graph", json=payload)
     

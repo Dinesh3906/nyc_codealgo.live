@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+from shared.cors import configure_cors
 from object_detection.models import SemanticBuildingObjectModel
-from ..models import BuildingGraph, BuildingGraphNode, BuildingGraphEdge
+from ..models import BuildingGraph, BuildingGraphEdge
 from ..grounding.engine import GroundingEngine
 from ..topology.engine import TopologyEngine
 from ..graph.builder import BuildingGraphBuilder
@@ -13,13 +13,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+configure_cors(app)
 
 # Instantiate engines
 grounding_engine = GroundingEngine()
@@ -84,4 +78,4 @@ async def health_check():
         "topology": "TopologyEngine",
         "graph_builder": "BuildingGraphBuilder"
     }
-from typing import List, Dict, Any
+from typing import List

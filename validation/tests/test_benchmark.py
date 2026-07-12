@@ -1,4 +1,3 @@
-import pytest
 from validation.benchmark.suite import AIBenchmarkSuite
 
 def test_iou_perfect_match():
@@ -26,7 +25,9 @@ def test_benchmark_suite_execution():
     suite = AIBenchmarkSuite()
     res = suite.run_benchmark_evaluations()
     
-    assert res.precision == 0.98
-    assert res.recall == 0.97
-    assert res.f1 == 0.975
-    assert res.iou > 0.95
+    assert res.evaluated is False
+    assert res.precision == 0.0
+    assert res.recall == 0.0
+    assert res.f1 == 0.0
+    assert res.iou == 0.0
+    assert res.warnings

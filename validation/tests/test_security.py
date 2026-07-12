@@ -1,4 +1,3 @@
-import pytest
 from validation.security.audit import SecurityAuditScanner
 
 def test_headers_auditing_pass(mock_good_headers):

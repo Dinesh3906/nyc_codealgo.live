@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 from PIL import Image
 from document_ingestion.preprocessing.filters import ImagePreprocessor

@@ -14,71 +14,147 @@ spec:
       labels:
         app: permit-iq-api
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-      - name: permit-iq-api
-        image: permit-iq-api:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: db-secrets
-              key: database-url
-        - name: REDIS_URL
-          value: "redis://redis-service:6379/0"
-        resources:
-          limits:
-            cpu: "1.0"
-            memory: 1024Mi
-          requests:
-            cpu: "0.5"
-            memory: 512Mi
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 10
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: permit-iq-worker
-  labels:
-    app: permit-iq-worker
-spec:
-  replicas: 5
-  selector:
-    matchLabels:
-      app: permit-iq-worker
-  template:
-    metadata:
-      labels:
-        app: permit-iq-worker
-    spec:
-      containers:
-      - name: permit-iq-worker
-        image: permit-iq-api:latest
-        command: ["celery", "-A", "workers.tasks.celery_app", "worker", "--loglevel=info"]
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: db-secrets
-              key: database-url
-        - name: REDIS_URL
-          value: "redis://redis-service:6379/0"
-        resources:
-          limits:
-            cpu: "2.0"
-            memory: 2048Mi
-          requests:
-            cpu: "1.0"
-            memory: 1024Mi
+        - name: permit-iq-api
+          # Replace with an immutable image digest at deploy time.
+          image: permit-iq-api@sha256:REPLACE_WITH_IMAGE_DIGEST
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "5000"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-name
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: jwt-secret
+            - name: GOOGLE_AI_STUDIO_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: google-ai-studio-key
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: groq-api-key
+            - name: PINECONE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: pinecone-api-key
+            - name: PINECONE_INDEX
+              valueFrom:
+                configMapKeyRef:
+                  name: permit-iq-config
+                  key: pinecone-index
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: google-client-id
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: google-client-secret
+            - name: RAZORPAY_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: razorpay-key-id
+            - name: RAZORPAY_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: razorpay-key-secret
+            - name: CORS_ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: permit-iq-config
+                  key: cors-allowed-origins
+            - name: METRICS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: metrics-api-key
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "1500m"
+              memory: 1536Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: uploads
+              mountPath: /app/uploads
+            - name: scratch
+              mountPath: /app/scratch
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: uploads
+          emptyDir: {}
+        - name: scratch
+          emptyDir: {}

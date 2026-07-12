@@ -1,6 +1,5 @@
-import uuid
-from typing import List, Dict, Any, Tuple
-from document_ingestion.models import Page as IngestionPage, BoundingBox
+from typing import List, Any, Tuple
+from document_ingestion.models import Page as IngestionPage
 from ..models import ParsedTable, SemanticRegion
 from ..config import settings
 

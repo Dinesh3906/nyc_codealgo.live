@@ -1,4 +1,3 @@
-import pytest
 from query_understanding.ontology.engine import OntologyEngine
 
 def test_synonym_resolution():

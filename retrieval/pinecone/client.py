@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from ..schemas.models import RetrievalCandidate
 from ..config import settings
 
@@ -113,6 +113,12 @@ class PineconeRetriever:
         Executes an async semantic search over the index.
         Filters candidate chunks by hard metadata parameters and scores them.
         """
+        if not settings.ALLOW_MOCK_RETRIEVAL:
+            raise RuntimeError(
+                "Semantic retrieval is not configured. Set PINECONE_API_KEY and integrate the "
+                "Pinecone SDK, or enable ALLOW_MOCK_RETRIEVAL only for local tests."
+            )
+
         # Simulate small network latency (as requested: target Pinecone <100ms)
         await asyncio.sleep(0.02)
         
@@ -140,9 +146,8 @@ class PineconeRetriever:
             if matches_filter:
                 filtered_corpus.append(item)
 
-        # Fallback to entire corpus if filters removed everything
         if not filtered_corpus:
-            filtered_corpus = list(MOCK_CORPUS)
+            return []
 
         # 2. Simple simulated Cosine Similarity using word overlap
         query_words = set(query.lower().split())

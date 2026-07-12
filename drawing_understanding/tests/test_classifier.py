@@ -1,4 +1,3 @@
-import pytest
 from drawing_understanding.sheet_classifier.engine import SheetClassifierEngine
 from drawing_understanding.models import PageClassificationType
 

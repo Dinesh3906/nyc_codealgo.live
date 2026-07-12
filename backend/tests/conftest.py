@@ -1,5 +1,9 @@
 import pytest
+import os
 from fastapi.testclient import TestClient
+
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-value-at-least-32-characters-long")
+
 from backend.api.app import app
 from backend.database.connection import get_db, Base, engine, SessionLocal
 

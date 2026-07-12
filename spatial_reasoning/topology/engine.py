@@ -1,9 +1,8 @@
 import uuid
-from typing import List, Tuple, Dict, Any
+from typing import List
 from shapely.geometry import Polygon, Point, LineString
 from object_detection.models import SemanticBuildingObject
 from ..models import BuildingGraphEdge
-from ..config import settings
 
 class TopologyEngine:
     """

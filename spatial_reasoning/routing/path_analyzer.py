@@ -1,5 +1,5 @@
 import networkx as nx
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from ..models import BuildingGraph
 from ..graph import builder
 from ..config import settings

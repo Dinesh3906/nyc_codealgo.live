@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from shared.cors import configure_cors
 from ..schemas.models import ContextRequest, ContextPackage
 from ..compression.engine import ContextCompressor
 from ..citations.preservation import CitationPreserver
@@ -13,13 +13,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+configure_cors(app)
 
 # Instantiate engines
 compressor = ContextCompressor()

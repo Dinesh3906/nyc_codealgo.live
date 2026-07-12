@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Tuple
+from typing import List
 from document_ingestion.models import Page as IngestionPage, BoundingBox
 from ..models import SemanticRegion, RegionType
 from ..config import settings

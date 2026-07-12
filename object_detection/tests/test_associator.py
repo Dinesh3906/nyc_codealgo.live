@@ -1,4 +1,3 @@
-import pytest
 from document_ingestion.models import Page as IngestionPage, PDFType, BoundingBox
 from object_detection.models import SemanticBuildingObject
 from object_detection.annotations.associator import AnnotationAssociator

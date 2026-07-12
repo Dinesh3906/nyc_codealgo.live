@@ -1,6 +1,5 @@
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from document_ingestion.api.app import app
 from document_ingestion.models import Document, PDFType
 

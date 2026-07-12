@@ -1,8 +1,8 @@
 import asyncio
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+from shared.cors import configure_cors
 from query_understanding.schemas.models import ComplianceRetrievalPlan
-from ..schemas.models import CandidateEvidenceSet, RetrievalCandidate
+from ..schemas.models import CandidateEvidenceSet
 from ..pinecone.client import PineconeRetriever
 from ..bm25.engine import BM25Retriever
 from ..rrf.fusion import RRFFusion
@@ -15,13 +15,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+configure_cors(app)
 
 # Instantiate engines
 pinecone_client = PineconeRetriever()
@@ -58,7 +52,7 @@ async def retrieve_evidence(plan: ComplianceRetrievalPlan):
         results = await asyncio.gather(*tasks)
         pinecone_results = results[0]
         bm25_results = results[1]
-    except Exception as e:
+    except Exception:
         # Fallback degradation: if one fails, continue with whatever succeeded
         # We try to run them individually to catch which one failed
         try:

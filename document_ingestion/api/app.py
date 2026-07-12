@@ -2,8 +2,7 @@ import os
 import shutil
 import uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from shared.cors import configure_cors
 
 from ..config import settings
 from ..normalization.engine import NormalizationEngine
@@ -16,13 +15,7 @@ app = FastAPI(
 )
 
 # Enable CORS for frontend clients
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+configure_cors(app)
 
 # Instantiate engine once on startup
 normalization_engine = NormalizationEngine()

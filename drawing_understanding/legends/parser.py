@@ -1,6 +1,5 @@
-import uuid
 from typing import List, Dict, Any
-from document_ingestion.models import Page as IngestionPage, BoundingBox
+from document_ingestion.models import Page as IngestionPage
 from ..models import ParsedLegend, SemanticRegion
 from ..config import settings
 

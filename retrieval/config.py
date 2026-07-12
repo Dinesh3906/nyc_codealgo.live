@@ -6,9 +6,10 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
 
     # Pinecone credentials
-    PINECONE_API_KEY: str = "mock-key-123"
+    PINECONE_API_KEY: str = ""
     PINECONE_ENVIRONMENT: str = "us-east1-gcp"
     PINECONE_INDEX_NAME: str = "building-codes"
+    ALLOW_MOCK_RETRIEVAL: bool = False
 
     # RRF Scoring Config
     RRF_CONSTANT_K: int = 60

@@ -1,4 +1,13 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
+
+
+WEAK_JWT_SECRETS = {
+    "",
+    "secret",
+    "permit-iq-super-secure-key-123456",
+    "nyc_house_code_secret_v1_2024",
+}
 
 class Settings(BaseSettings):
     # API Gateway
@@ -10,7 +19,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # Security JWT keys
-    JWT_SECRET: str = "permit-iq-super-secure-key-123456"
+    JWT_SECRET: Optional[str] = None
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
 
@@ -24,5 +33,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    def require_jwt_secret(self) -> str:
+        if not self.JWT_SECRET or self.JWT_SECRET in WEAK_JWT_SECRETS or len(self.JWT_SECRET) < 32:
+            raise RuntimeError("JWT_SECRET must be supplied from environment and be at least 32 characters.")
+        return self.JWT_SECRET
 
 settings = Settings()

@@ -1,4 +1,3 @@
-import pytest
 from query_understanding.schemas.models import QueryIntent
 from query_understanding.intent.classifier import IntentClassifier
 

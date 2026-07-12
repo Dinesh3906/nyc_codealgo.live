@@ -174,16 +174,39 @@ async function testProviderFailover() {
   AiProviderService.coolDown('gemini', 5000);
   assert(AiProviderService.isCoolingDown('gemini') === true, 'Gemini is cooled down');
 
-  AiProviderService.setPriorityList(['gemini', 'openai', 'groq']);
+  const originalPriority = AiProviderService.getPriorityList();
+  AiProviderService.setPriorityList(['gemini', 'openai', 'openrouter']);
 
-  const result = await AiProviderService.executePromptWithFailover(
-    { contents: [{ role: 'user', parts: [{ text: 'simulate' }] }] },
-    'test-plan',
-    'building'
-  );
+  const originalFetch = global.fetch;
+  const originalOpenaiKey = process.env.OPENAI_API_KEY;
 
-  assert(result.provider === 'openai', 'Automatically failed over to openai');
-  assert(result.text.includes('OpenAI Mock Analysis') || result.text.includes('compliant'), 'Returned openai response content');
+  process.env.OPENAI_API_KEY = 'mock-openai-key-longer-than-32-chars-long-12345';
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      choices: [{ message: { content: 'OpenAI Mock Analysis compliant' } }]
+    })
+  } as any);
+
+  try {
+    const result = await AiProviderService.executePromptWithFailover(
+      { contents: [{ role: 'user', parts: [{ text: 'simulate' }] }] },
+      'test-plan',
+      'building'
+    );
+
+    assert(result.provider === 'openai', 'Automatically failed over to openai');
+    assert(result.text.includes('OpenAI Mock Analysis') || result.text.includes('compliant'), 'Returned openai response content');
+  } finally {
+    global.fetch = originalFetch;
+    AiProviderService.setPriorityList(originalPriority);
+    if (originalOpenaiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalOpenaiKey;
+    }
+  }
 }
 
 // ─── Test 4: Degradation Mode Scoring Suppression (Task 3 & 6) ───

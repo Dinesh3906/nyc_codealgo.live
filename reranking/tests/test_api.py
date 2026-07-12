@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from reranking.api.app import app
 
@@ -13,7 +12,7 @@ def test_health_check_endpoint():
 
 def test_rerank_endpoint(mock_candidate_set):
     # Serialize CandidateEvidenceSet to dict
-    payload = mock_candidate_set.dict()
+    payload = mock_candidate_set.model_dump()
     
     response = client.post("/rerank", json=payload)
     

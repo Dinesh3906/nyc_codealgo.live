@@ -1,4 +1,3 @@
-import pytest
 from document_ingestion.models import Page as IngestionPage, PDFType
 from object_detection.symbols.recognizer import SymbolRecognizerEngine
 

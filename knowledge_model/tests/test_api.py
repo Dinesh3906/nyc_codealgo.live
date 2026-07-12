@@ -13,7 +13,7 @@ def test_health_check_endpoint():
 
 def test_knowledge_endpoint(mock_building_graph):
     # Serialize BuildingGraph to dict
-    payload = mock_building_graph.dict()
+    payload = mock_building_graph.model_dump()
     
     response = client.post("/knowledge", json=payload)
     

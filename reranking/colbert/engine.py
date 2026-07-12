@@ -1,11 +1,12 @@
 import numpy as np
-from typing import List, Dict, Any
+import hashlib
+from typing import List
 from ..config import settings
 
 class ColbertEngine:
     """
-    Simulates ColBERTv2 Late Interaction (MaxSim) token-alignment scoring.
-    Supports PyTorch GPU acceleration with graceful CPU/NumPy fallback.
+    Local deterministic late-interaction scorer used when a real ColBERT service is
+    not configured. It intentionally avoids mutating global RNG state.
     """
 
     def __init__(self):
@@ -32,10 +33,15 @@ class ColbertEngine:
 
         embeddings = []
         for token in tokens:
-            # Generate a pseudo-random seed based on token hash
-            val = hash(token)
-            np.random.seed(abs(val) % (2**32))
-            vec = np.random.randn(dim)
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            values = []
+            while len(values) < dim:
+                for byte in digest:
+                    values.append((byte / 255.0) * 2.0 - 1.0)
+                    if len(values) == dim:
+                        break
+                digest = hashlib.sha256(digest).digest()
+            vec = np.array(values, dtype=float)
             norm = np.linalg.norm(vec)
             embeddings.append(vec / norm if norm > 0 else vec)
 

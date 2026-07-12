@@ -1,7 +1,7 @@
 import uuid
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
 from shapely.geometry import Point, Polygon
-from document_ingestion.models import Page as IngestionPage, BoundingBox
+from document_ingestion.models import Page as IngestionPage
 from ..models import SemanticBuildingObject, ObjectRelationship, ObjectRelationshipType
 from ..config import settings
 

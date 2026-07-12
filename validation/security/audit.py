@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Any, List
+from typing import Dict
 from ..schemas.models import SecurityHeadersSummary
 
 class SecurityAuditScanner:

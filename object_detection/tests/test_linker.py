@@ -1,4 +1,3 @@
-import pytest
 from document_ingestion.models import BoundingBox
 from drawing_understanding.models import ParsedTable
 from object_detection.models import SemanticBuildingObject

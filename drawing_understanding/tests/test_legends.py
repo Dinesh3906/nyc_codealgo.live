@@ -1,4 +1,3 @@
-import pytest
 from document_ingestion.models import (
     Page as IngestionPage, TextObject, BoundingBox, CoordinateSystem, CoordinateSystemType, PDFType
 )

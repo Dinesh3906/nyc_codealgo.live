@@ -1,5 +1,8 @@
-from typing import Dict, Any, List
+import json
+from pathlib import Path
+from typing import List
 from ..schemas.models import BenchmarkResult
+from ..config import settings
 
 class AIBenchmarkSuite:
     """
@@ -36,21 +39,65 @@ class AIBenchmarkSuite:
         """
         Runs evaluations over the active regression set, calculating F1, NDCG, and IoU.
         """
-        # Simulated comparison metrics between current pipeline runs and gold standard
-        precision = 0.98
-        recall = 0.97
-        f1 = (2 * precision * recall) / (precision + recall)
-        
-        # Mock compute geometric average IoU
-        pred_poly = [[0,0], [10,0], [10,10], [0,10]]
-        gt_poly = [[0,0], [9.8,0], [9.8,9.8], [0,9.8]]
-        avg_iou = self.compute_spatial_iou(pred_poly, gt_poly)
+        if not settings.GOLDEN_DATASET_PATH:
+            return BenchmarkResult(
+                precision=0.0,
+                recall=0.0,
+                f1=0.0,
+                iou=0.0,
+                ndcg=0.0,
+                citation_accuracy=0.0,
+                evaluated=False,
+                warnings=["GOLDEN_DATASET_PATH is not configured; AI quality is unverified."]
+            )
+
+        dataset_path = Path(settings.GOLDEN_DATASET_PATH)
+        if not dataset_path.exists():
+            return BenchmarkResult(
+                precision=0.0,
+                recall=0.0,
+                f1=0.0,
+                iou=0.0,
+                ndcg=0.0,
+                citation_accuracy=0.0,
+                evaluated=False,
+                evidence_source=str(dataset_path),
+                warnings=["Configured golden dataset file does not exist."]
+            )
+
+        with dataset_path.open("r", encoding="utf-8") as fh:
+            records = json.load(fh)
+
+        if not isinstance(records, list) or not records:
+            return BenchmarkResult(
+                precision=0.0,
+                recall=0.0,
+                f1=0.0,
+                iou=0.0,
+                ndcg=0.0,
+                citation_accuracy=0.0,
+                evaluated=False,
+                evidence_source=str(dataset_path),
+                warnings=["Golden dataset is empty or malformed."]
+            )
+
+        # This loader accepts precomputed, externally generated benchmark rows.
+        # It does not fabricate scores when the evidence file is absent.
+        precision = sum(float(r.get("precision", 0.0)) for r in records) / len(records)
+        recall = sum(float(r.get("recall", 0.0)) for r in records) / len(records)
+        iou = sum(float(r.get("iou", 0.0)) for r in records) / len(records)
+        ndcg = sum(float(r.get("ndcg", 0.0)) for r in records) / len(records)
+        citation_accuracy = sum(float(r.get("citation_accuracy", 0.0)) for r in records) / len(records)
+        f1 = (2 * precision * recall) / (precision + recall) if precision + recall else 0.0
 
         return BenchmarkResult(
-            precision=precision,
-            recall=recall,
+            precision=round(precision, 3),
+            recall=round(recall, 3),
             f1=round(f1, 3),
-            iou=round(avg_iou, 3),
-            ndcg=0.965,
-            citation_accuracy=1.00 # Perfect alignment
+            iou=round(iou, 3),
+            ndcg=round(ndcg, 3),
+            citation_accuracy=round(citation_accuracy, 3),
+            evaluated=True,
+            sample_count=len(records),
+            evidence_source=str(dataset_path)
         )

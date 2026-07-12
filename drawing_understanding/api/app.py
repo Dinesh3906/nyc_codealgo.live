@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
+from shared.cors import configure_cors
 from document_ingestion.models import Document as IngestionDocument
 from ..models import (
-    SemanticDocumentModel, SemanticPage, TitleBlockMetadata, 
-    ParsedTable, ParsedLegend, RegionType
+    SemanticDocumentModel, SemanticPage, ParsedTable, ParsedLegend, RegionType
 )
 from ..sheet_classifier.engine import SheetClassifierEngine
 from ..regions.segmentor import LayoutSegmentor
@@ -18,13 +17,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+configure_cors(app)
 
 # Instantiate engines
 sheet_classifier = SheetClassifierEngine()

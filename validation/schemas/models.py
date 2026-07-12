@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List
+from typing import Dict, List
 
 class BenchmarkResult(BaseModel):
     precision: float
@@ -8,6 +8,10 @@ class BenchmarkResult(BaseModel):
     iou: float
     ndcg: float
     citation_accuracy: float
+    evaluated: bool = False
+    sample_count: int = 0
+    evidence_source: str = "not_configured"
+    warnings: List[str] = Field(default_factory=list)
 
 class SecurityHeadersSummary(BaseModel):
     content_security_policy: bool
@@ -21,11 +25,17 @@ class PerformanceBaseline(BaseModel):
     avg_job_creation_ms: float
     max_concurrency_users: int
     load_failure_rate: float
+    measured: bool = False
+    evidence_source: str = "not_configured"
+    warnings: List[str] = Field(default_factory=list)
 
 class ChaosReport(BaseModel):
     redis_recovery_status: str
     db_pool_health: str
     pinecone_fallback_ok: bool
+    measured: bool = False
+    evidence_source: str = "not_configured"
+    warnings: List[str] = Field(default_factory=list)
 
 class ReadinessScores(BaseModel):
     security_score: float
@@ -44,3 +54,4 @@ class CertificationReport(BaseModel):
     chaos: ChaosReport
     active_versions: Dict[str, str] = Field(default_factory=dict)
     checklist_passed: bool
+    blocking_issues: List[str] = Field(default_factory=list)

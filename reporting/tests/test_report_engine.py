@@ -1,4 +1,3 @@
-import pytest
 from reporting.report_engine.engine import ReportEngine
 
 def test_scorecard_calculation(mock_compliance_report):

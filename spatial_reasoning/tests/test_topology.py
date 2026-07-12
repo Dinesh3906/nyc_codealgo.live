@@ -1,4 +1,3 @@
-import pytest
 from spatial_reasoning.topology.engine import TopologyEngine
 
 def test_topological_relationship_extraction(mock_building_objects):

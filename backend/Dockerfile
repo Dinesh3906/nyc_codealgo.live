@@ -1,18 +1,35 @@
-# Multi-stage production container build
-FROM python:3.11-slim as builder
+# syntax=docker/dockerfile:1.7
 
+FROM node:20-bookworm-slim AS deps
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
 
-FROM python:3.11-slim as runner
+FROM deps AS build
+COPY tsconfig.json ./
+COPY src ./src
+COPY certs ./certs
+RUN npm run build
 
+FROM node:20-bookworm-slim AS runtime
+ENV NODE_ENV=production
+ENV PORT=5000
 WORKDIR /app
-COPY --from=builder /root/.local /root/.local
-COPY . /app
 
-ENV PATH=/root/.local/bin:$PATH
-ENV PYTHONUNBUFFERED=1
+RUN groupadd --system permitiq && useradd --system --gid permitiq --home-dir /app permitiq
 
-EXPOSE 8000
-CMD ["python", "main.py"]
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/certs ./certs
+COPY src/config ./src/config
+COPY src/data ./src/data
+
+RUN mkdir -p uploads scratch && chown -R permitiq:permitiq /app
+USER permitiq
+
+EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "dist/server.js"]

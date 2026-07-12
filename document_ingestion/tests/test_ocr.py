@@ -1,4 +1,3 @@
-import pytest
 from document_ingestion.ocr.client import MockOCRClient, get_ocr_client
 from document_ingestion.config import settings, OCREngineType
 

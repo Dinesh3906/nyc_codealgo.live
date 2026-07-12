@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
-from ..models import SemanticBuildingObject, ObjectRelationship
+from typing import List, Any
+from ..models import SemanticBuildingObject
 
 class ScheduleLinker:
     """

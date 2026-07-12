@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node validate-build.js && next start -p $PORT",
-    "lint": "next lint"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

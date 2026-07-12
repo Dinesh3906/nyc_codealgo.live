@@ -1,4 +1,3 @@
-import pytest
 from reranking.backfill.engine import RerankingPipeline
 
 def test_pipeline_selection_loop(mock_candidate_set):

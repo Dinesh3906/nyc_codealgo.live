@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 
 class ReportRequest(BaseModel):
     compliance_report: Dict[str, Any] # Output of ComplianceDecisionEngine

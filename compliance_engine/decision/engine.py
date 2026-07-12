@@ -30,7 +30,7 @@ class ComplianceDecisionEngine:
         # 1. Run deterministic rule evaluation
         findings = self.rules.evaluate_building_model(building_model, query)
 
-        # 2. Enrich with AI narrative reasoning
+        # 2. Enrich with deterministic narrative text
         findings = self.reasoner.generate_narrative_reasoning(query, context_package, findings)
 
         # 3. Verify citations
@@ -41,8 +41,8 @@ class ComplianceDecisionEngine:
 
         # 5. Fuse overall verdict
         if not findings:
-            verdict = "PASS"
-            explanation_summary = "No relevant code rules matched the query topic. Auto-passed compliance checks."
+            verdict = "REQUIRES_HUMAN_REVIEW"
+            explanation_summary = "No implemented deterministic rules matched the query topic. Manual review required."
         else:
             decisions = {f.decision for f in findings}
             if "FAIL" in decisions:

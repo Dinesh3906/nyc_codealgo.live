@@ -2,23 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: permit-iq-api-service
+  labels:
+    app: permit-iq-api
 spec:
   type: ClusterIP
   selector:
     app: permit-iq-api
   ports:
-  - port: 8000
-    targetPort: 8000
-    protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis-service
-spec:
-  type: ClusterIP
-  selector:
-    app: redis
-  ports:
-  - port: 6379
-    targetPort: 6379
+    - name: http
+      port: 5000
+      targetPort: http
+      protocol: TCP

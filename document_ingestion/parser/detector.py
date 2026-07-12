@@ -1,6 +1,6 @@
 import os
 import pypdf
-from typing import Dict, Any, Tuple, List
+from typing import Tuple, List
 from ..models import PDFType
 from ..config import settings
 
@@ -117,7 +117,7 @@ class PDFTypeDetector:
                     page_types.append(p_type)
                     confidences.append(p_conf)
 
-        except Exception as e:
+        except Exception:
             # Handle corrupted or encrypted PDFs gracefully
             return PDFType.UNKNOWN, 0.0, []
 

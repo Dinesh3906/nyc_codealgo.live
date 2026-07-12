@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from object_detection.api.app import app
 
@@ -13,7 +12,7 @@ def test_health_check_endpoint():
 
 def test_detect_endpoint(mock_semantic_document):
     # Serialize SemanticDocumentModel to dict
-    payload = mock_semantic_document.dict()
+    payload = mock_semantic_document.model_dump()
     
     response = client.post("/detect", json=payload)
     

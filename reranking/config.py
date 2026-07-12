@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     TARGET_EVIDENCE_SIZE: int = 10
     USE_GPU: bool = False
     GPU_DEVICE: str = "cuda:0"
+    COLBERT_MODEL_NAME: str = ""
 
     # Scoring Weights (Must sum to 1.0)
     COLBERT_WEIGHT: float = 0.60

@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 from query_understanding.api.app import app
 

@@ -1,4 +1,5 @@
 import { Logger } from './logger';
+import crypto from 'crypto';
 
 const logger = new Logger({ stage: 'apify-service' });
 
@@ -48,12 +49,13 @@ export class ApifyService {
 
       // Call Apify API to run the web scraper actor
       const actorId = process.env.APIFY_ACTOR_ID || 'apify~web-scraper';
-      const url = `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiKey}&wait=5`;
+      const url = `https://api.apify.com/v2/acts/${actorId}/runs?wait=5`;
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           address: cleanAddress,
@@ -75,8 +77,14 @@ export class ApifyService {
       }
 
       // Fetch the results from the dataset
-      const datasetUrl = `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiKey}`;
-      const datasetResponse = await fetch(datasetUrl);
+      const datasetController = new AbortController();
+      const datasetTimeoutId = setTimeout(() => datasetController.abort(), 8000);
+      const datasetUrl = `https://api.apify.com/v2/datasets/${datasetId}/items`;
+      const datasetResponse = await fetch(datasetUrl, {
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        signal: datasetController.signal,
+      });
+      clearTimeout(datasetTimeoutId);
       if (!datasetResponse.ok) {
         throw new Error(`Failed to fetch dataset items: ${datasetResponse.status}`);
       }
@@ -111,7 +119,7 @@ export class ApifyService {
       }
       if (item.violationNumber) {
         violations.push({
-          id: item.violationId || Math.random().toString(36).substr(2, 9),
+          id: item.violationId || crypto.randomUUID(),
           number: item.violationNumber,
           severity: item.severity === 'critical' || item.severity === 'major' ? item.severity : 'minor',
           description: item.violationDescription || 'NYC DOB Building Code Violation',

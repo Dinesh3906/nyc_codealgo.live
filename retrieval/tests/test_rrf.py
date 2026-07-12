@@ -1,4 +1,3 @@
-import pytest
 from retrieval.schemas.models import RetrievalCandidate
 from retrieval.rrf.fusion import RRFFusion
 

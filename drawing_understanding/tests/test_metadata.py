@@ -1,4 +1,3 @@
-import pytest
 from drawing_understanding.regions.segmentor import LayoutSegmentor
 from drawing_understanding.metadata.extractor import TitleBlockMetadataExtractor
 from drawing_understanding.models import RegionType

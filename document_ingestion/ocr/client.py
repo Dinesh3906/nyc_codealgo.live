@@ -1,7 +1,8 @@
+import os
 import uuid
 import time
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import requests
 from ..models import OCRObject, BoundingBox, CoordinateSystem, CoordinateSystemType
 from ..config import settings, OCREngineType
@@ -161,7 +162,7 @@ class AzureOCRClient(OCRClient):
         azure_page = azure_pages[0]
         az_width = azure_page.get("width", page_width)
         az_height = azure_page.get("height", page_height)
-        unit = azure_page.get("unit", "pixel") # "inch" or "pixel"
+        azure_page.get("unit", "pixel") # "inch" or "pixel"
 
         # Conversion factor to PDF points
         x_scale = page_width / az_width
@@ -201,7 +202,7 @@ class AzureOCRClient(OCRClient):
             rotation = math.degrees(math.atan2(dy, dx))
 
             # Retrieve word confidences
-            spans = line.get("spans", [])
+            line.get("spans", [])
             word_confidences = [0.95] # Default fallback
 
             objects.append(

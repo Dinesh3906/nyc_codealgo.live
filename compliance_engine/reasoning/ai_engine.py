@@ -3,8 +3,8 @@ from ..schemas.models import ComplianceFinding
 
 class AIComplianceReasoner:
     """
-    Simulates Gemini reasoning for narrative interpretations, exceptions,
-    and cross-reference mappings.
+    Deterministic narrative enricher. This class does not call an LLM; it only
+    attaches citation references and plain explanations to rule-engine findings.
     """
 
     def generate_narrative_reasoning(
@@ -28,22 +28,18 @@ class AIComplianceReasoner:
                     matched_cit_id = cit.get("citation_id")
                     break
 
-            # Fallback: assign CIT-01 if available
-            if not matched_cit_id and citations:
-                matched_cit_id = citations[0]["citation_id"]
-
             finding.verified_citation_id = matched_cit_id
 
-            # Add AI narrative explanation depending on decision
+            citation_phrase = f"citation {matched_cit_id}" if matched_cit_id else "no matching citation"
             if finding.decision == "PASS":
                 finding.explanation += (
-                    f" Verified against citation {matched_cit_id}. "
+                    f" Verified against {citation_phrase}. "
                     f"Design facts satisfy code minimum values."
                 )
             else:
                 finding.explanation += (
                     f" Non-compliant layout flagged. "
-                    f"Requires correction based on citation {matched_cit_id}."
+                    f"Requires correction based on {citation_phrase}."
                 )
 
         return deterministic_findings

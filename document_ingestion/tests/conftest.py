@@ -1,8 +1,6 @@
-import os
 import pytest
 import pypdf
 from unittest.mock import MagicMock
-from document_ingestion.models import PDFType
 
 @pytest.fixture
 def mock_pypdf_page():

@@ -1,4 +1,3 @@
-import pytest
 from reranking.colbert.engine import ColbertEngine
 
 def test_colbert_late_interaction_math():

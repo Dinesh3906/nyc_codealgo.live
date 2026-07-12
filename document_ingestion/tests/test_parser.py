@@ -1,6 +1,3 @@
-import pytest
-import pypdf
-from unittest.mock import MagicMock, patch
 from document_ingestion.parser.detector import PDFTypeDetector
 from document_ingestion.parser.classifier import PageClassifier
 from document_ingestion.models import PDFType, PageClassificationType

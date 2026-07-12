@@ -1,7 +1,5 @@
-import pytest
 from fastapi.testclient import TestClient
 from drawing_understanding.api.app import app
-from drawing_understanding.models import DocumentRelationshipType
 
 client = TestClient(app)
 
@@ -14,7 +12,7 @@ def test_health_check_endpoint():
 
 def test_understand_endpoint(mock_ingestion_document):
     # Serialize Document representation to dict
-    doc_payload = mock_ingestion_document.dict()
+    doc_payload = mock_ingestion_document.model_dump()
     
     response = client.post("/understand", json=doc_payload)
     

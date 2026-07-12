@@ -73,9 +73,9 @@ async function runTests() {
 
     // 2. Expired JWT
     console.log('\nTest 2: Expired JWT');
-    const originalExpiresIn = process.env.JWT_EXPIRES_IN;
+    const originalExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
     try {
-      process.env.JWT_EXPIRES_IN = '1ms'; // set to expire immediately
+      process.env.JWT_ACCESS_EXPIRES_IN = '1ms'; // set to expire immediately
       const expiredToken = JwtService.signUserToken(testUserId, testEmail, 1);
       // Wait for token to expire
       await new Promise(resolve => setTimeout(resolve, 5));
@@ -87,9 +87,9 @@ async function runTests() {
       }
     } finally {
       if (originalExpiresIn === undefined) {
-        delete process.env.JWT_EXPIRES_IN;
+        delete process.env.JWT_ACCESS_EXPIRES_IN;
       } else {
-        process.env.JWT_EXPIRES_IN = originalExpiresIn;
+        process.env.JWT_ACCESS_EXPIRES_IN = originalExpiresIn;
       }
     }
 

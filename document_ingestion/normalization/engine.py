@@ -1,14 +1,13 @@
 import os
 import hashlib
-import uuid
 import pypdf
-from typing import List, Dict, Any, Tuple
+from typing import List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
 from ..config import settings
 from ..models import (
     Document, Page, PDFType, TextObject, GeometryObject, 
-    ImageObject, OCRObject, CoordinateSystem, CoordinateSystemType, BoundingBox
+    ImageObject, OCRObject
 )
 from ..parser.detector import PDFTypeDetector
 from ..parser.classifier import PageClassifier
@@ -66,7 +65,7 @@ class NormalizationEngine:
                 image_objects = i_objs
                 
                 extracted_texts.extend([t.text for t in text_objects])
-            except Exception as e:
+            except Exception:
                 # Recover gracefully by degrading to Raster if vector parsing crashes
                 page_type = PDFType.RASTER
 
@@ -81,7 +80,7 @@ class NormalizationEngine:
                 ocr_objects = ocr_results
                 
                 extracted_texts.extend([o.text for o in ocr_objects])
-            except Exception as e:
+            except Exception:
                 # Logging error, continue processing without OCR results
                 pass
 

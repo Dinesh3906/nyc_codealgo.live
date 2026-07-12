@@ -1,4 +1,3 @@
-import pytest
 from query_understanding.retrieval_planner.planner import ComplianceRetrievalPlanner
 
 def test_planner_lexical_strategy():

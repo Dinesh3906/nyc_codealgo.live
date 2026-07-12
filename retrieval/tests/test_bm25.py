@@ -13,3 +13,15 @@ async def test_bm25_retriever_query():
     assert candidates[0].chunk_id == "chunk_toilet_1"
     assert "water closet" in candidates[0].chunk_text.lower()
     assert candidates[0].bm25_rank == 1
+
+@pytest.mark.anyio
+async def test_bm25_retriever_does_not_ignore_hard_filters():
+    retriever = BM25Retriever()
+
+    candidates = await retriever.query_lexical_index(
+        "water closet partition",
+        {"code_book": "Fire Code", "jurisdiction": "NYC"},
+        top_k=2
+    )
+
+    assert candidates == []

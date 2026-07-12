@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { CookieOptions, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -49,38 +49,36 @@ const getOAuthUrls = (req: Request) => {
   };
 };
 
+const baseCookieOptions = (path: string): CookieOptions => ({
+  secure: IS_PRODUCTION,
+  sameSite: 'lax',
+  domain: COOKIE_DOMAIN,
+  path,
+});
+
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string) {
   res.cookie('access_token', accessToken, {
+    ...baseCookieOptions('/'),
     httpOnly: true,
-    secure: IS_PRODUCTION,
-    sameSite: 'lax',
-    domain: COOKIE_DOMAIN,
     maxAge: 15 * 60 * 1000, // 15 minutes
-    path: '/',
   });
   res.cookie('refresh_token', refreshToken, {
+    ...baseCookieOptions('/api/auth'),
     httpOnly: true,
-    secure: IS_PRODUCTION,
-    sameSite: 'lax',
-    domain: COOKIE_DOMAIN,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/api/auth', // Only sent to auth endpoints
   });
   res.cookie('csrf_token', csrfToken, {
+    ...baseCookieOptions('/'),
     httpOnly: false, // Must be readable by client JS to send in header
-    secure: IS_PRODUCTION,
-    sameSite: 'lax',
-    domain: COOKIE_DOMAIN,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/',
   });
 }
 
 function clearAuthCookies(res: Response) {
-  res.clearCookie('access_token', { domain: COOKIE_DOMAIN, path: '/' });
-  res.clearCookie('refresh_token', { domain: COOKIE_DOMAIN, path: '/api/auth' });
-  res.clearCookie('csrf_token', { domain: COOKIE_DOMAIN, path: '/' });
-  res.clearCookie('admin_session', { domain: COOKIE_DOMAIN, path: '/' });
+  res.clearCookie('access_token', baseCookieOptions('/'));
+  res.clearCookie('refresh_token', baseCookieOptions('/api/auth'));
+  res.clearCookie('csrf_token', baseCookieOptions('/'));
+  res.clearCookie('admin_session', baseCookieOptions('/'));
 }
 
 // ─── Helpers ───
@@ -455,11 +453,9 @@ export const googleAuthRedirect = async (req: Request, res: Response) => {
   // Generate OAuth state to prevent CSRF
   const state = crypto.randomBytes(32).toString('hex');
   res.cookie('oauth_state', state, {
+    ...baseCookieOptions('/'),
     httpOnly: true,
-    secure: IS_PRODUCTION,
-    sameSite: 'lax',
     maxAge: 10 * 60 * 1000, // 10 minutes
-    path: '/',
   });
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email&state=${state}`;
@@ -477,7 +473,7 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     return res.redirect(`${frontendUrl}/login?error=Invalid+OAuth+state.+Please+try+again.`);
   }
   // Clear state cookie
-  res.clearCookie('oauth_state', { path: '/' });
+  res.clearCookie('oauth_state', baseCookieOptions('/'));
 
   if (!code) {
     return res.redirect(`${frontendUrl}/login?error=Google+authentication+failed`);

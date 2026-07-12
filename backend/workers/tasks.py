@@ -76,7 +76,7 @@ def process_compliance_job(job_id: str, filepath: str):
         # 3. Plan Retrieval Scope (Phase 7)
         query = "Verify restroom clearances and doors width compliance"
         planner = ComplianceRetrievalPlanner()
-        retrieval_plan = planner.generate_retrieval_plan(query, kb_model.dict())
+        retrieval_plan = planner.generate_retrieval_plan(query, kb_model.model_dump())
 
         # 4. Hybrid Retrieve Evidence chunks (Phase 8)
         # We invoke the retrieve_evidence async function synchronously for Celery
@@ -93,14 +93,14 @@ def process_compliance_job(job_id: str, filepath: str):
         # Build raw dict structure of Reranked evidence package
         evidence_package_dict = {
             "query": query,
-            "evidence_chunks": [c.dict() for c in reranked_chunks],
+            "evidence_chunks": [c.model_dump() for c in reranked_chunks],
             "overall_confidence": 0.88
         }
 
         # 6. Build Context Prompt Package (Phase 10)
         context_req = ContextRequest(
             query=query,
-            building_model=kb_model.dict(),
+            building_model=kb_model.model_dump(),
             evidence_package=evidence_package_dict
         )
         context_package = asyncio.run(build_context_package(context_req))
@@ -108,13 +108,13 @@ def process_compliance_job(job_id: str, filepath: str):
         # 7. Compliance Audit Decisions (Phase 11)
         decision_engine = ComplianceDecisionEngine()
         compliance_report = decision_engine.generate_compliance_report(
-            kb_model.dict(),
-            context_package.dict()
+            kb_model.model_dump(),
+            context_package.model_dump()
         )
 
         # 8. Report layout and export generator (Phase 12)
         report_req = ReportRequest(
-            compliance_report=compliance_report.dict(),
+            compliance_report=compliance_report.model_dump(),
             project_metadata={
                 "project_name": "Audited Permit Office Complex",
                 "address": "450 Broadway, New York, NY",
@@ -126,7 +126,7 @@ def process_compliance_job(job_id: str, filepath: str):
         # Complete job
         job.status = "completed"
         job.progress = 100.0
-        job.result = exported_report_package.dict()
+        job.result = exported_report_package.model_dump()
         db.commit()
 
     except Exception as e:

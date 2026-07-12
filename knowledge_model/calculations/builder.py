@@ -153,7 +153,7 @@ class KnowledgeModelBuilder:
             access_data = self.access_engine.evaluate_room_accessibility(
                 r_name,
                 metrics["turning_clearance_inches"],
-                [d.dict() for d in connected_doors]
+            [d.model_dump() for d in connected_doors]
             )
 
             # Run fire safety analyses

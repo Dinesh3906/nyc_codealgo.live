@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     TARGET_RECALL: float = 0.95
     TARGET_IOU: float = 0.85
     MAX_LATENCY_MS: float = 2500.0
+    GOLDEN_DATASET_PATH: str = ""
+    LOAD_TEST_RESULTS_PATH: str = ""
+    CHAOS_DRILL_RESULTS_PATH: str = ""
 
     # MLOps active software versions
     ACTIVE_EMBEDDING_MODEL: str = "text-embedding-3-small-v1"
