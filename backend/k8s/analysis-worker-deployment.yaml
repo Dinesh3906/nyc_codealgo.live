@@ -1,0 +1,181 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permit-iq-analysis-worker
+  labels:
+    app: permit-iq-analysis-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: permit-iq-analysis-worker
+  template:
+    metadata:
+      labels:
+        app: permit-iq-analysis-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: analysis-worker
+          image: permit-iq-analysis-worker@sha256:REPLACE_WITH_IMAGE_DIGEST
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - python -m backend.workers.readiness && celery -A backend.workers.tasks worker --loglevel=INFO --concurrency=4
+          env:
+            - name: APP_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: database-url
+            - name: STORAGE_PROVIDER
+              value: s3
+            - name: S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: s3-bucket-name
+            - name: OCR_ENGINE
+              valueFrom:
+                configMapKeyRef:
+                  name: permit-iq-config
+                  key: ocr-engine
+            - name: AZURE_OCR_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: azure-ocr-endpoint
+                  optional: true
+            - name: AZURE_OCR_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: azure-ocr-key
+                  optional: true
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: google-api-key
+                  optional: true
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /app/secrets/google-application-credentials.json
+            - name: PINECONE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: pinecone-api-key
+            - name: PINECONE_INDEX_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: pinecone-index-host
+            - name: PINECONE_INDEX_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: permit-iq-config
+                  key: pinecone-index-name
+            - name: EMBEDDING_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: embedding-endpoint
+            - name: EMBEDDING_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: embedding-api-key
+                  optional: true
+            - name: CODE_CORPUS_PATH
+              value: /app/corpus/code-corpus.jsonl
+            - name: GOLDEN_DATASET_PATH
+              value: /app/evidence/golden_dataset.json
+            - name: LOAD_TEST_RESULTS_PATH
+              value: /app/evidence/load_test_results.json
+            - name: CHAOS_DRILL_RESULTS_PATH
+              value: /app/evidence/chaos_drill_results.json
+            - name: DRIFT_BASELINE_EMBEDDINGS_PATH
+              value: /app/evidence/drift_baseline_embeddings.json
+            - name: DRIFT_CURRENT_EMBEDDINGS_PATH
+              value: /app/evidence/drift_current_embeddings.json
+            - name: REGULATION_UPDATES_PATH
+              value: /app/evidence/regulation_updates.json
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: redis-url
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-user
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: permit-iq-secrets
+                  key: db-name
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: 1Gi
+            limits:
+              cpu: "4000m"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: uploads
+              mountPath: /app/uploads
+            - name: scratch
+              mountPath: /app/scratch
+            - name: corpus
+              mountPath: /app/corpus
+              readOnly: true
+            - name: evidence
+              mountPath: /app/evidence
+              readOnly: true
+            - name: google-application-credentials
+              mountPath: /app/secrets/google-application-credentials.json
+              subPath: google-application-credentials.json
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: uploads
+          emptyDir: {}
+        - name: scratch
+          emptyDir: {}
+        - name: corpus
+          configMap:
+            name: permit-iq-code-corpus
+        - name: evidence
+          configMap:
+            name: permit-iq-release-evidence
+        - name: google-application-credentials
+          secret:
+            secretName: permit-iq-google-application-credentials
+            optional: true

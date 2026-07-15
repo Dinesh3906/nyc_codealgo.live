@@ -25,7 +25,7 @@ class OccupancyEngine:
             return "residential"
         elif "storage" in name_clean or "warehouse" in name_clean or "closet" in name_clean:
             return "storage"
-        return "business" # Fallback default
+        return "unknown"
 
     def calculate_occupancy_load(
         self,
@@ -35,7 +35,14 @@ class OccupancyEngine:
         """
         Calculates occupant capacity and required door exit widths.
         """
-        factor = settings.OCCUPANT_LOAD_FACTORS.get(classification, settings.OCCUPANT_LOAD_FACTORS["default"])
+        factor = settings.OCCUPANT_LOAD_FACTORS.get(classification)
+        if factor is None:
+            return {
+                "occupancy_classification": classification,
+                "occupant_load_factor": None,
+                "occupant_load": None,
+                "required_exit_width_inches": None
+            }
         
         # Occupant Load is rounded up to the nearest whole integer (standard code requirement)
         occupant_load = math.ceil(area_sq_ft / factor) if factor > 0 else 1

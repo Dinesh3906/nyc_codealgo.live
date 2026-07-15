@@ -80,9 +80,9 @@ class NormalizationEngine:
                 ocr_objects = ocr_results
                 
                 extracted_texts.extend([o.text for o in ocr_objects])
-            except Exception:
-                # Logging error, continue processing without OCR results
-                pass
+            except Exception as exc:
+                if settings.APP_ENV.lower() == "production":
+                    raise RuntimeError(f"OCR extraction failed for page {page_idx}: {exc}") from exc
 
         # 2. Page Classification
         combined_text = " ".join(extracted_texts)
@@ -160,7 +160,8 @@ class NormalizationEngine:
                 try:
                     pages[idx] = future.result()
                 except Exception as e:
-                    # In case of total failure on a page, return a blank page skeleton to avoid crashing
+                    if settings.APP_ENV.lower() == "production":
+                        raise RuntimeError(f"Page {idx} extraction failed: {e}") from e
                     pages[idx] = Page(
                         index=idx,
                         width=pages_to_process[idx][2],

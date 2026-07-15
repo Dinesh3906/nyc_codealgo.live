@@ -39,17 +39,8 @@ class BuildingGraphBuilder:
         for link in grounding_links:
             txt_id, obj_id, confidence, details = link
             
-            # Synthesize text node if not exists (so graph stays self-contained)
             if txt_id not in nodes:
-                # We mock a small bounding box for the text node since it's just a label reference
-                from document_ingestion.models import BoundingBox
-                nodes[txt_id] = BuildingGraphNode(
-                    id=txt_id,
-                    object_class="ANNOTATION",
-                    page_idx=0,
-                    coordinates=BoundingBox(xmin=0, ymin=0, xmax=0, ymax=0),
-                    attributes={"text": details.get("text_val", "")}
-                )
+                continue
 
             edges.append(
                 BuildingGraphEdge(

@@ -3,6 +3,7 @@ from shared.cors import configure_cors
 from retrieval.schemas.models import CandidateEvidenceSet
 from ..schemas.models import EvidencePackage
 from ..backfill.engine import RerankingPipeline
+from ..config import settings
 
 app = FastAPI(
     title="PermitIQ Neural Reranking API",
@@ -37,7 +38,7 @@ async def rerank_candidates(req: CandidateEvidenceSet):
             metadata={
                 "input_candidate_count": len(req.candidates),
                 "output_evidence_count": len(final_chunks),
-                "colbert_model": "ColBERTv2-mocked-late-interaction"
+                "colbert_model": settings.COLBERT_MODEL_NAME or "deterministic-late-interaction"
             }
         )
     except Exception as e:

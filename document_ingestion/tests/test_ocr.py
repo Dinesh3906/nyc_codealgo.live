@@ -1,17 +1,31 @@
-from document_ingestion.ocr.client import MockOCRClient, get_ocr_client
+import pytest
+
+from document_ingestion.ocr.client import AzureOCRClient, GoogleOCRClient, get_ocr_client
 from document_ingestion.config import settings, OCREngineType
 
-def test_mock_ocr_client():
-    client = MockOCRClient()
-    results = client.run_ocr(b"dummy_image_data", 0, 800.0, 600.0)
-    
-    assert len(results) == 3
-    assert results[0].text == "PROPOSED FIRST FLOOR PLAN"
-    assert results[0].page_idx == 0
-    assert results[1].rotation_degrees == 90.0
-    assert results[2].coordinates.xmin == 800.0 * 0.45
-
 def test_get_ocr_client_factory():
-    settings.OCR_ENGINE = OCREngineType.MOCK
-    client = get_ocr_client()
-    assert isinstance(client, MockOCRClient)
+    previous_engine = settings.OCR_ENGINE
+
+    try:
+        settings.OCR_ENGINE = OCREngineType.AZURE
+        client = get_ocr_client()
+        assert isinstance(client, AzureOCRClient)
+
+        settings.OCR_ENGINE = OCREngineType.GOOGLE
+        client = get_ocr_client()
+        assert isinstance(client, GoogleOCRClient)
+    finally:
+        settings.OCR_ENGINE = previous_engine
+
+def test_azure_ocr_requires_credentials():
+    client = AzureOCRClient(endpoint="", key="")
+
+    with pytest.raises(ValueError, match="Azure OCR endpoint and key must be configured"):
+        client.run_ocr(b"image", 0, 800.0, 600.0)
+
+def test_google_ocr_requires_credentials(monkeypatch):
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    client = GoogleOCRClient(credentials_path="")
+
+    with pytest.raises(ValueError, match="Google Cloud Vision API Key or credentials path must be set"):
+        client.run_ocr(b"image", 0, 800.0, 600.0)

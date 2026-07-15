@@ -18,15 +18,66 @@ async function initEmbeddingModel() {
 // Cache for query embeddings to avoid duplicate local model evaluations
 const embeddingCache = new Map<string, number[]>();
 
-// Function to generate query embedding using local model
+function localEmbeddingsAllowed(): boolean {
+  return process.env.NODE_ENV !== "production" || process.env.ALLOW_LOCAL_EMBEDDINGS === "true";
+}
+
+async function generateEmbeddingViaEndpoint(text: string): Promise<number[] | null> {
+  const endpoint = process.env.EMBEDDING_API_URL || process.env.EMBEDDING_ENDPOINT;
+  if (!endpoint) {
+    return null;
+  }
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const apiKey = process.env.EMBEDDING_API_KEY;
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ input: text })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Embedding endpoint failed with status ${response.status}`);
+  }
+
+  const payload: any = await response.json();
+  const embedding = payload.embedding || payload.vector || payload.data?.[0]?.embedding;
+  if (!Array.isArray(embedding) || embedding.length === 0) {
+    throw new Error("Embedding endpoint did not return a non-empty embedding vector.");
+  }
+
+  return embedding.map((value: unknown) => Number(value));
+}
+
+async function generateEmbedding(text: string): Promise<number[]> {
+  const remoteEmbedding = await generateEmbeddingViaEndpoint(text);
+  if (remoteEmbedding) {
+    return remoteEmbedding;
+  }
+
+  if (!localEmbeddingsAllowed()) {
+    throw new Error(
+      "Local CPU embeddings are disabled in production. Configure EMBEDDING_API_URL "
+      + "or set ALLOW_LOCAL_EMBEDDINGS=true only after capacity testing."
+    );
+  }
+
+  const model = await initEmbeddingModel();
+  const output = await model(text, { pooling: "mean", normalize: true });
+  return Array.from(output.data) as number[];
+}
+
+// Function to generate query embeddings using the configured embedding backend.
 export async function generateQueryEmbedding(text: string): Promise<number[]> {
   const cached = embeddingCache.get(text);
   if (cached) {
     return cached;
   }
-  const model = await initEmbeddingModel();
-  const output = await model(text, { pooling: "mean", normalize: true });
-  const result = Array.from(output.data) as number[];
+  const result = await generateEmbedding(text);
   embeddingCache.set(text, result);
   return result;
 }
@@ -105,7 +156,7 @@ function extractTextFromCAD(filePath: string, ext: string): string {
     }
   } catch (err) {
     console.error(`[CAD EXTRACTOR] Error parsing CAD file:`, err);
-    return `CAD file analysis fallback (${ext})`;
+    throw new Error(`CAD file parsing failed for ${ext}: ${(err as any)?.message || err}`);
   }
 }
 
@@ -348,19 +399,17 @@ export async function getOrGeneratePlanChunks(planData: any): Promise<PlanChunk[
   const chunks = chunkPlanText(planData.housePlanText);
   console.log(`[RAG] Created ${chunks.length} plan chunks.`);
 
-  // Generate embeddings using local model in batches
+  // Generate embeddings in batches. Production should use an external embedding
+  // worker via EMBEDDING_API_URL so plan uploads do not compete with the API loop.
   const texts = chunks.map(c => c.text);
-  const model = await initEmbeddingModel();
 
   const embeddings: number[][] = [];
-  const batchSize = 50;
+  const defaultBatchSize = process.env.EMBEDDING_API_URL || process.env.EMBEDDING_ENDPOINT ? 50 : 8;
+  const batchSize = Number(process.env.EMBEDDING_BATCH_SIZE || defaultBatchSize);
   for (let i = 0; i < texts.length; i += batchSize) {
     const batchTexts = texts.slice(i, i + batchSize);
     console.log(`[RAG] Embedding plan chunks ${i + 1} to ${Math.min(i + batchSize, texts.length)} of ${texts.length}...`);
-    const promises = batchTexts.map(async (text) => {
-      const output = await model(text, { pooling: "mean", normalize: true });
-      return Array.from(output.data) as number[];
-    });
+    const promises = batchTexts.map((text) => generateQueryEmbedding(text));
     const batchEmbeddings = await Promise.all(promises);
     embeddings.push(...batchEmbeddings);
   }
@@ -772,6 +821,10 @@ export async function checkStepComplianceTS(
   // Use local semantic vector search to retrieve relevant plan chunks
   const filteredPlanText = await semanticSearchPlan(planData, stepId);
 
+  if (!process.env.PINECONE_API_KEY || !process.env.PINECONE_INDEX) {
+    throw new Error("PINECONE_API_KEY and PINECONE_INDEX must be configured for compliance retrieval.");
+  }
+
   const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY as string });
   const index = pc.Index(process.env.PINECONE_INDEX as string);
 
@@ -1160,24 +1213,9 @@ Return valid JSON in this exact format:
     occupancyText.includes("GROUP B") ||
     occupancyText.includes("GROUP F") ||
     occupancyText.includes("INDUSTRIAL") ||
-    projectText.includes("OMEGA") ||
-    textPlanUpper.includes("PROJECT OMEGA") ||
     textPlanUpper.includes("DATA CENTER") ||
     textPlanUpper.includes("SUBTERRANEAN") ||
     textPlanUpper.includes("F-1");
-
-  const isAsclepius =
-    projectText.includes("ASCLEPIUS") ||
-    textPlanUpper.includes("PROJECT ASCLEPIUS") ||
-    textPlanUpper.includes("ASCLEPIUS MEDICAL CENTER") ||
-    textPlanUpper.includes("ASCLEOPUS HOSPITAL") ||
-    textPlanUpper.includes("ASCLEPIUS HOSPITAL") ||
-    textPlanUpper.includes("ASCLEPIUS");
-
-  const isTartarus =
-    projectText.includes("TARTARUS") ||
-    textPlanUpper.includes("PROJECT TARTARUS") ||
-    textPlanUpper.includes("TARTARUS");
 
   const isResidential =
     occupancyText.includes("GROUP R") ||
@@ -1199,7 +1237,7 @@ Return valid JSON in this exact format:
       !textPlanUpper.includes("NON-RESIDENTIAL")
     );
 
-  const isNonResidential = !isResidential || isIndustrialOrCommercial || isAsclepius || isTartarus ||
+  const isNonResidential = !isResidential || isIndustrialOrCommercial ||
     occupancyText.includes("GROUP B") ||
     occupancyText.includes("GROUP F") ||
     occupancyText.includes("GROUP A") ||
@@ -1218,33 +1256,6 @@ Return valid JSON in this exact format:
 
   if (isNonResidential) {
     console.log(`[RAG][SAFEGUARD] Non-residential / commercial / hospital occupancy detected. Enforcing residential rule exclusions.`);
-
-    if (!resultJSON.building_info) resultJSON.building_info = {};
-    if (isAsclepius) {
-      if (!resultJSON.building_info.project_name) resultJSON.building_info.project_name = "Project Asclepius";
-      if (!resultJSON.building_info.occupancy_group) resultJSON.building_info.occupancy_group = "Group I-2 & Group H-3";
-      if (!resultJSON.building_info.construction_type) resultJSON.building_info.construction_type = "Type I-A";
-      if (!resultJSON.building_info.stories) resultJSON.building_info.stories = "8";
-    } else if (isTartarus) {
-      if (!resultJSON.building_info.project_name) resultJSON.building_info.project_name = "Project Tartarus";
-      if (!resultJSON.building_info.occupancy_group) resultJSON.building_info.occupancy_group = "Group A-1 / B / E / F-1";
-      if (!resultJSON.building_info.construction_type) resultJSON.building_info.construction_type = "Type I-A";
-      if (!resultJSON.building_info.stories) resultJSON.building_info.stories = "3";
-    } else if (projectText.includes("OMEGA") || textPlanUpper.includes("PROJECT OMEGA") || textPlanUpper.includes("DATA CENTER") || textPlanUpper.includes("SUBTERRANEAN")) {
-      if (!resultJSON.building_info.project_name) resultJSON.building_info.project_name = "Project Omega";
-      if (!resultJSON.building_info.occupancy_group) resultJSON.building_info.occupancy_group = "F-1";
-      if (!resultJSON.building_info.construction_type) resultJSON.building_info.construction_type = "Type I-A";
-    } else {
-      if (!resultJSON.building_info.project_name) {
-        resultJSON.building_info.project_name = resultJSON.building_info.project_name || "Commercial Facility";
-      }
-      if (!resultJSON.building_info.occupancy_group) {
-        resultJSON.building_info.occupancy_group = resultJSON.building_info.occupancy_group || "Group B / Commercial";
-      }
-      if (!resultJSON.building_info.construction_type) {
-        resultJSON.building_info.construction_type = resultJSON.building_info.construction_type || "Type I-B";
-      }
-    }
 
     if (!Array.isArray(resultJSON.checklist_evaluations)) {
       resultJSON.checklist_evaluations = [];
@@ -1270,138 +1281,14 @@ Return valid JSON in this exact format:
       }
     });
 
-    // 2. Project Asclepius specific traps injection
-    if (isAsclepius) {
-      console.log(`[RAG][SAFEGUARD] Applying programmatic traps for Project Asclepius on step: ${stepId}`);
-      if (stepId === 'building_code') {
-        // Trap 1: Sprinkler Density Misclassification (BC 903.2)
-        const hasTrap1 = resultJSON.issues.some((iss: any) =>
-          String(iss.code || iss.rule || "").includes("BC 903.2") ||
-          String(iss.title || "").toUpperCase().includes("SPRINKLER")
-        );
-        if (!hasTrap1) {
-          resultJSON.issues.push({
-            title: "Sprinkler Design Density Misclassification (BC 903.2)",
-            description: "The design density for the Group H-3 explosive chemical vault is specified as 0.10 GPM/sq. ft. (Light Hazard), which is severely inadequate for high-hazard storage. Standard NFPA 13 and NYC Building Code require a high-hazard design density (minimum 0.30 GPM/sq. ft. or Extra Hazard classification) to suppress flammable/combustible liquid fires.",
-            severity: "critical",
-            code: "BC 903.2",
-            recommendation: "Upgrade sprinkler system design to meet Extra Hazard Group 2 density requirements (minimum 0.30 GPM/sq. ft.) or specify an approved clean agent/foam suppression system suitable for flammable chemical storage.",
-            deduction_percentage: 25,
-            exact_pdf_citation: "Project_Asclepius_Master_Audit_150_Pages.pdf - Section 82.1 Fire Suppression Matrix (H-3 Vault), Line 1552",
-            loophole_details: "The design specifies a 0.10 GPM/sq. ft. Light Hazard sprinkler density for a Group H-3 high-hazard chemical vault.",
-            required_elements: "Upgrade sprinkler system design to meet Extra Hazard Group 2 density requirements (minimum 0.30 GPM/sq. ft.) or specify an approved clean agent/foam suppression system suitable for flammable chemical storage."
-          });
-        }
-
-        // Trap 3: Dead-End Corridor (BC 1009.3)
-        const hasTrap3 = resultJSON.issues.some((iss: any) =>
-          String(iss.code || iss.rule || "").includes("BC 1009.3") ||
-          String(iss.title || "").toUpperCase().includes("DEAD-END") ||
-          String(iss.title || "").toUpperCase().includes("CORRIDOR")
-        );
-        if (!hasTrap3) {
-          resultJSON.issues.push({
-            title: "ICU Corridor Dead-End Length Exceeds Limit (BC 1009.3)",
-            description: "The Intensive Care Unit (ICU) corridor dead-end length is specified as 65 feet. Under the NYC Building Code and Life Safety standards for Group I-2 (Hospital) occupancy, dead-end corridors are strictly limited to a maximum of 20 feet (unsprinklered) or 30 feet (sprinklered) to prevent patients and staff from being trapped during an emergency.",
-            severity: "critical",
-            code: "BC 1009.3",
-            recommendation: "Redesign the ICU corridor layout to eliminate the dead-end corridor or reduce its length to a maximum of 30 feet in compliance with NYC Building Code egress requirements.",
-            deduction_percentage: 20,
-            exact_pdf_citation: "Project_Asclepius_Master_Audit_150_Pages.pdf - Section 1, Line 23",
-            loophole_details: "The layout contains a 65-foot dead-end corridor in the Group I-2 ICU zone, which exceeds the maximum allowable limit of 30 feet.",
-            required_elements: "Reconfigure ICU egress paths to ensure no dead-end corridor exceeds 30 feet, or provide an additional exit access door to redirect egress flows."
-          });
-        }
-      } else if (stepId === 'fire_code') {
-        // Trap 1: Sprinkler Density Misclassification (FC 507.1)
-        const hasTrap1 = resultJSON.issues.some((iss: any) =>
-          String(iss.code || iss.rule || "").includes("FC 507.1") ||
-          String(iss.title || "").toUpperCase().includes("SPRINKLER")
-        );
-        if (!hasTrap1) {
-          resultJSON.issues.push({
-            title: "Sprinkler Design Density Misclassification (FC 507.1)",
-            description: "The design density for the Group H-3 explosive chemical vault is specified as 0.10 GPM/sq. ft. (Light Hazard), which is severely inadequate for high-hazard storage. Standard NFPA 13 and NYC Fire Code require a high-hazard design density (minimum 0.30 GPM/sq. ft. or Extra Hazard classification) to suppress flammable/combustible liquid fires.",
-            severity: "critical",
-            code: "FC 507.1",
-            recommendation: "Upgrade sprinkler system design to meet Extra Hazard Group 2 density requirements (minimum 0.30 GPM/sq. ft.) or specify an approved clean agent/foam suppression system suitable for flammable chemical storage.",
-            deduction_percentage: 25,
-            exact_pdf_citation: "Project_Asclepius_Master_Audit_150_Pages.pdf - Section 82.1 Fire Suppression Matrix (H-3 Vault), Line 1552",
-            loophole_details: "The design specifies a 0.10 GPM/sq. ft. Light Hazard sprinkler density for a Group H-3 high-hazard chemical vault.",
-            required_elements: "Upgrade sprinkler system design to meet Extra Hazard Group 2 density requirements (minimum 0.30 GPM/sq. ft.) or specify an approved clean agent/foam suppression system suitable for flammable chemical storage."
-          });
-        }
-
-        // Trap 2: Illegal Fire Alarm Activation Delay (FC 907.2)
-        const hasTrap2 = resultJSON.issues.some((iss: any) =>
-          String(iss.code || iss.rule || "").includes("FC 907.2") ||
-          String(iss.title || "").toUpperCase().includes("ALARM DELAY") ||
-          String(iss.title || "").toUpperCase().includes("SEQUENCE")
-        );
-        if (!hasTrap2) {
-          resultJSON.issues.push({
-            title: "Illegal Fire Alarm Activation Delay (FC 907.2)",
-            description: "The Group H-3 chemical vault is programmed with a Positive Alarm Sequence that waits 3 minutes before activating the building's general evacuation alarm or automatic suppression system. Under the NYC Fire Code, positive alarm sequence delays are strictly prohibited in high-hazard (Group H) occupancies where rapid fire spread or explosion is a risk.",
-            severity: "critical",
-            code: "FC 907.2",
-            recommendation: "Disable the Positive Alarm Sequence delay for the Group H-3 chemical vault. Detection must trigger immediate alarm notification and suppression activation without delay.",
-            deduction_percentage: 25,
-            exact_pdf_citation: "Project_Asclepius_Master_Audit_150_Pages.pdf - Section 82.1, Lines 1559-1561",
-            loophole_details: "The system is programmed to delay fire alarm or suppression activation by 3 minutes in a Group H-3 high-hazard vault.",
-            required_elements: "Disable the Positive Alarm Sequence delay for the Group H-3 chemical vault. Detection must trigger immediate alarm notification and suppression activation without delay."
-          });
-        }
-
-        // Trap 3: ICU Corridor Dead-End Length Exceeds Limit (FC 1027.1)
-        const hasTrap3 = resultJSON.issues.some((iss: any) =>
-          String(iss.title || "").toUpperCase().includes("DEAD-END") ||
-          (String(iss.code || "").includes("FC 1027.1") && String(iss.description || "").includes("dead-end"))
-        );
-        if (!hasTrap3) {
-          resultJSON.issues.push({
-            title: "ICU Corridor Dead-End Length Exceeds Limit (FC 1027.1)",
-            description: "The Intensive Care Unit (ICU) corridor dead-end length is specified as 65 feet. Under the NYC Fire Code and Life Safety standards for Group I-2 (Hospital) occupancy, dead-end corridors are strictly limited to a maximum of 20 feet (unsprinklered) or 30 feet (sprinklered) to prevent patients and staff from being trapped during an emergency.",
-            severity: "critical",
-            code: "FC 1027.1",
-            recommendation: "Redesign the ICU corridor layout to eliminate the dead-end corridor or reduce its length to a maximum of 30 feet in compliance with NYC Fire Code egress requirements.",
-            deduction_percentage: 20,
-            exact_pdf_citation: "Project_Asclepius_Master_Audit_150_Pages.pdf - Section 1, Line 23",
-            loophole_details: "The layout contains a 65-foot dead-end corridor in the Group I-2 ICU zone, which exceeds the maximum allowable limit of 30 feet.",
-            required_elements: "Reconfigure ICU egress paths to ensure no dead-end corridor exceeds 30 feet, or provide an additional exit access door to redirect egress flows."
-          });
-        }
-
-        // Trap 4: Life Support Disconnection / Vertical Evacuation (FC 1027.1)
-        const hasTrap4 = resultJSON.issues.some((iss: any) =>
-          String(iss.title || "").toUpperCase().includes("LIFE SUPPORT") ||
-          String(iss.title || "").toUpperCase().includes("EVACUATION PROTOCOL") ||
-          String(iss.description || "").includes("life support")
-        );
-        if (!hasTrap4) {
-          resultJSON.issues.push({
-            title: "Life Support Disconnection and Vertical Evacuation Protocol (FC 1027.1)",
-            description: "The operational protocol instructing nursing staff to disconnect ICU patients from life support ventilators and evacuate them vertically down stairwells during a fire alarm violates the fundamental Life Safety Code defend-in-place strategy. Group I-2 (Hospital) occupancies must utilize a horizontal evacuation strategy to move non-ambulatory patients to safe compartments on the same floor, rather than disconnecting life support and forcing vertical stairwell evacuation.",
-            severity: "critical",
-            code: "FC 1027.1",
-            recommendation: "Revise the Emergency Action Plan to enforce horizontal defend-in-place compartmentalization. Patients must be moved horizontally across fire-rated barriers into adjacent smoke compartments on the same floor, and must never be disconnected from life support unless an immediate local fire hazard threatens the patient room.",
-            deduction_percentage: 25,
-            exact_pdf_citation: "Project_Asclepius_Master_Audit_150_Pages.pdf - Section 1, Lines 22-26",
-            loophole_details: "The facility protocol instructs staff to disconnect patients from life support ventilators and evacuate them vertically down Stair A and Stair B.",
-            required_elements: "Revise the Emergency Action Plan to enforce horizontal defend-in-place compartmentalization. Patients must be moved horizontally across fire-rated barriers into adjacent smoke compartments on the same floor, and must never be disconnected from life support unless an immediate local fire hazard threatens the patient room."
-          });
-        }
-      }
-    }
-
-    // 3. Filter out any residential issues from the AI issues array, protecting critical traps
+    // 2. Filter out residential-only issues from the AI issues array.
     if (Array.isArray(resultJSON.issues)) {
       resultJSON.issues = resultJSON.issues.filter((iss: any) => {
         if (!iss) return false;
         const titleUpper = String(iss.title || "").toUpperCase();
         const descUpper = String(iss.description || "").toUpperCase();
 
-        // Critical Project Omega & Asclepius traps should NEVER be filtered out, even if they have residential codes mapped to them!
-        const isCriticalTrap =
+        const isCriticalSafetyIssue =
           titleUpper.includes("FIREWALL") || descUpper.includes("FIREWALL") ||
           titleUpper.includes("POLYURETHANE") || descUpper.includes("POLYURETHANE") ||
           titleUpper.includes("FOAM") || descUpper.includes("FOAM") ||
@@ -1416,14 +1303,12 @@ Return valid JSON in this exact format:
           titleUpper.includes("EGRESS") || descUpper.includes("EGRESS") ||
           titleUpper.includes("TRAVEL DISTANCE") || descUpper.includes("TRAVEL DISTANCE") ||
           titleUpper.includes("LOCK") || descUpper.includes("LOCK") ||
-          titleUpper.includes("ASCLEPIUS") || descUpper.includes("ASCLEPIUS") ||
           titleUpper.includes("CORRIDOR") || descUpper.includes("CORRIDOR") ||
           titleUpper.includes("POSITIVE ALARM") || descUpper.includes("POSITIVE ALARM") ||
           titleUpper.includes("LIFE SUPPORT") || descUpper.includes("LIFE SUPPORT") ||
           titleUpper.includes("EVACUATION") || descUpper.includes("EVACUATION");
 
-        if (isCriticalTrap) {
-          // If it is a critical trap but mapped to a residential code, correct the code to the universal code!
+        if (isCriticalSafetyIssue) {
           let codeRef = String(iss.code || iss.rule || "").toUpperCase();
           if (codeRef.includes("1208.2") || codeRef.includes("1208.3") || codeRef.includes("1208")) {
             iss.code = "BC 705.8";
@@ -1570,18 +1455,18 @@ Return valid JSON in this exact format:
     if (!matchedItem) return;
 
     if (ev.status === 'compliant') {
-      finalCompliantFeatures.push(`${ev.code} - ${matchedItem.title}: ${ev.details || 'Checked and verified compliant.'}`);
+      finalCompliantFeatures.push(`${ev.code} - ${matchedItem.title}: ${ev.details || 'No compliance detail returned by analysis provider.'}`);
     } else if (ev.status === 'violation') {
       finalIssues.push({
         title: `${ev.code} Violation`,
-        description: ev.details || "Code violation detected.",
+        description: ev.details || "No violation detail returned by analysis provider.",
         severity: 'critical',
         rule: ev.code,
-        recommendation: "Bring into compliance with NYC Building Code.",
+        recommendation: "Manual review required because remediation guidance was not returned.",
         deductionPercentage: 15,
-        exactPdfCitation: "Refer to project drawings and code schedules.",
-        loopholeDetails: ev.details || "N/A",
-        requiredElements: "Redesign to meet code minimums."
+        exactPdfCitation: undefined,
+        loopholeDetails: ev.details,
+        requiredElements: undefined
       });
     }
   });
@@ -1609,10 +1494,10 @@ Return valid JSON in this exact format:
     );
 
     const deduction = Number(iss.deduction_percentage !== undefined ? iss.deduction_percentage : (iss.deductionPercentage !== undefined ? iss.deductionPercentage : 15));
-    const citation = iss.exact_pdf_citation || iss.exactPdfCitation || "N/A";
-    const recommendation = iss.recommendation || iss.suggestion || "Review with a licensed professional";
-    const loophole = iss.loophole_details || iss.loopholeDetails || "N/A";
-    const required = iss.required_elements || iss.requiredElements || "N/A";
+    const citation = iss.exact_pdf_citation || iss.exactPdfCitation;
+    const recommendation = iss.recommendation || iss.suggestion || "Manual review required because recommendation was not returned.";
+    const loophole = iss.loophole_details || iss.loopholeDetails;
+    const required = iss.required_elements || iss.requiredElements;
 
     if (existingIdx !== -1) {
       finalIssues[existingIdx] = {
@@ -1629,7 +1514,7 @@ Return valid JSON in this exact format:
     } else {
       finalIssues.push({
         title: iss.title || `${stepConfig.name} Issue`,
-        description: iss.description || "Violation detail not provided",
+        description: iss.description || "No violation detail returned by analysis provider.",
         severity: iss.severity || 'minor',
         rule: ruleRef,
         recommendation: recommendation,
@@ -1674,12 +1559,18 @@ export async function checkComplianceTS(housePlanPath: string, selectedSteps?: s
           return {
             id: step.id,
             name: step.name,
-            checked: true,
-            score: 70,
-            status: 'warning' as const,
-            summary: `Audit partially completed for ${step.name} due to verification errors.`,
+            checked: false,
+            score: null,
+            status: 'failed' as const,
+            summary: `Verification failed for ${step.name}.`,
             compliant_features: [],
-            issues: []
+            issues: [{
+              title: `${step.name} verification failed`,
+              description: (e as any)?.message || String(e),
+              severity: 'critical',
+              rule: step.id,
+              recommendation: 'Resolve the failed dependency or parser error and rerun this compliance step.'
+            }]
           };
         }
       } else {
@@ -1698,40 +1589,39 @@ export async function checkComplianceTS(housePlanPath: string, selectedSteps?: s
   );
 
   const checkedSteps = stepResults.filter(r => r.checked);
-  const finalScore = checkedSteps.length > 0
-    ? Math.round(checkedSteps.reduce((acc, r) => acc + r.score!, 0) / checkedSteps.length)
-    : 100;
+  const scoredSteps = stepResults.filter((r: any) => r.checked && typeof r.score === 'number');
+  const finalScore = scoredSteps.length > 0
+    ? Math.round(scoredSteps.reduce((acc: number, r: any) => acc + r.score, 0) / scoredSteps.length)
+    : null;
 
-  const combinedIssues = checkedSteps.flatMap(r => r.issues);
+  const combinedIssues = stepResults.flatMap(r => r.issues || []);
   const combinedFeatures = checkedSteps.flatMap(r => r.compliant_features);
+  const mergedBuildingInfo: any = { rooms: [] };
+  let hasBuildingInfo = false;
+  stepResults.forEach((r: any) => {
+    if (r.building_info) {
+      hasBuildingInfo = true;
+      if (r.building_info.project_name) mergedBuildingInfo.project_name = r.building_info.project_name;
+      if (r.building_info.occupancy_group) mergedBuildingInfo.occupancy_group = r.building_info.occupancy_group;
+      if (r.building_info.construction_type) mergedBuildingInfo.construction_type = r.building_info.construction_type;
+      if (r.building_info.stories) mergedBuildingInfo.stories = r.building_info.stories;
+      if (Array.isArray(r.building_info.rooms)) mergedBuildingInfo.rooms.push(...r.building_info.rooms);
+    }
+  });
+  const documentType = path.extname(housePlanPath).replace(".", "").toUpperCase() || null;
 
   return {
     percentage: finalScore,
-    summary: checkedSteps.map(r => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
+    summary: scoredSteps.length > 0
+      ? checkedSteps.map(r => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n')
+      : 'No compliance steps completed successfully. Manual review required.',
     issues: combinedIssues,
-    is_valid_plan: true,
-    document_type: "Architectural Plan",
-    building_info: (() => {
-      const merged: any = { type: "Mixed Use / Residential", rooms: [] };
-      stepResults.forEach((r: any) => {
-        if (r.building_info) {
-          if (r.building_info.project_name) merged.project_name = r.building_info.project_name;
-          if (r.building_info.occupancy_group) merged.occupancy_group = r.building_info.occupancy_group;
-          if (r.building_info.construction_type) merged.construction_type = r.building_info.construction_type;
-          if (r.building_info.stories) {
-            merged.stories = r.building_info.stories;
-            merged.type = `${r.building_info.occupancy_group || 'Mixed Use'} / ${r.building_info.construction_type || 'Unknown'}`;
-          }
-        }
-      });
-      return merged;
-    })(),
+    is_valid_plan: scoredSteps.length > 0 ? combinedIssues.length === 0 : null,
+    document_type: documentType,
+    building_info: hasBuildingInfo ? mergedBuildingInfo : null,
     systems_detected: checkedSteps.map(r => `${r.name}: ${r.status.toUpperCase()}`),
-    betterments: checkedSteps.map(r => `Enhance detail validation for ${r.name} sub-assemblies.`),
-    appreciation: [
-      `Completed advisory code alignment search and reference check across ${checkedSteps.length} active categories.`,
-      ...combinedFeatures.slice(0, 4)
-    ],
+    betterments: combinedIssues.map((issue: any) => issue.recommendation).filter(Boolean),
+    appreciation: combinedFeatures.slice(0, 4),
     steps: stepResults
   };
 }

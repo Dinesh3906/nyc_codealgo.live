@@ -8,8 +8,9 @@ def test_scale_parsing():
     assert round(engine.parse_scale_factor("1/4\" = 1'-0\""), 3) == 0.667
     # 1/8" scale: 1 point = 1.333 inches
     assert round(engine.parse_scale_factor("1/8\" = 1'-0\""), 3) == 1.333
-    # Default fallback
-    assert engine.parse_scale_factor(None) == 1.0
+    # Nullable scale must raise ValueError (no silent default)
+    with pytest.raises(ValueError, match="Drawing scale is required"):
+        engine.parse_scale_factor(None)
 
 def test_space_metrics_calculations():
     engine = MeasurementEngine()

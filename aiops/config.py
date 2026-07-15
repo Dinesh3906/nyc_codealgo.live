@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     MODEL_REGISTRY_PATH: str = "./model_registry_state.json"
     PROMPT_REGISTRY_PATH: str = "./prompt_registry_state.json"
     FEEDBACK_STORE_PATH: str = "./feedback_registry_state.json"
+    DRIFT_BASELINE_EMBEDDINGS_PATH: str = ""
+    DRIFT_CURRENT_EMBEDDINGS_PATH: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

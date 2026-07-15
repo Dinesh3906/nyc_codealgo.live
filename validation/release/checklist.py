@@ -5,8 +5,9 @@ from ..schemas.models import (
 )
 from ..benchmark.suite import AIBenchmarkSuite
 from ..security.audit import SecurityAuditScanner
-from ..performance.load_chaos import LoadChaosSimulator
+from ..performance.load_chaos import LoadChaosEvidenceLoader
 from ..mlops.manager import MLOpsVersionRegistry
+from ..config import settings
 
 class ReleaseChecklistAuditor:
     """
@@ -17,7 +18,7 @@ class ReleaseChecklistAuditor:
     def __init__(self):
         self.benchmark_suite = AIBenchmarkSuite()
         self.security_scanner = SecurityAuditScanner()
-        self.performance_load = LoadChaosSimulator()
+        self.performance_load = LoadChaosEvidenceLoader()
         self.mlops_registry = MLOpsVersionRegistry()
 
     def generate_certification_report(
@@ -38,7 +39,7 @@ class ReleaseChecklistAuditor:
         sec_summary = self.security_scanner.scan_headers(custom_headers or {})
 
         # 3. Benchmark load & run chaos drills
-        perf = self.performance_load.simulate_concurrency_load(simulated_concurrency)
+        perf = self.performance_load.read_concurrency_load_evidence(simulated_concurrency)
         chaos = self.performance_load.run_chaos_drills()
 
         # 4. Extract active registry version information
@@ -54,6 +55,23 @@ class ReleaseChecklistAuditor:
             blocking_issues.append("Chaos drill evidence is not configured or has not been measured.")
         if not headers_provided:
             blocking_issues.append("Security headers were not supplied from a real deployment response.")
+        if bench.evaluated:
+            if bench.precision < settings.TARGET_PRECISION:
+                blocking_issues.append(f"AI benchmark precision {bench.precision:.3f} is below target {settings.TARGET_PRECISION:.3f}.")
+            if bench.recall < settings.TARGET_RECALL:
+                blocking_issues.append(f"AI benchmark recall {bench.recall:.3f} is below target {settings.TARGET_RECALL:.3f}.")
+            if bench.iou < settings.TARGET_IOU:
+                blocking_issues.append(f"Spatial IoU {bench.iou:.3f} is below target {settings.TARGET_IOU:.3f}.")
+        if perf.measured:
+            if perf.load_failure_rate > 0.01:
+                blocking_issues.append(f"Load failure rate {perf.load_failure_rate:.3f} exceeds 0.010.")
+            if perf.avg_api_latency_ms > settings.MAX_LATENCY_MS:
+                blocking_issues.append(f"Average API latency {perf.avg_api_latency_ms:.1f}ms exceeds target {settings.MAX_LATENCY_MS:.1f}ms.")
+        if chaos.measured:
+            if chaos.redis_recovery_status != "SUCCESS":
+                blocking_issues.append("Redis recovery drill did not report SUCCESS.")
+            if chaos.db_pool_health != "HEALTHY":
+                blocking_issues.append("Database pool health drill did not report HEALTHY.")
 
         sec_score = 100.0 if headers_provided and all([
             sec_summary.content_security_policy,
@@ -66,7 +84,11 @@ class ReleaseChecklistAuditor:
         
         # Latency performance score
         if perf.measured and perf.load_failure_rate <= 0.01:
-            perf_score = max(0.0, 100.0 - (perf.avg_api_latency_ms / 10.0))
+            if perf.avg_api_latency_ms <= settings.MAX_LATENCY_MS:
+                perf_score = 100.0
+            else:
+                overage_ratio = (perf.avg_api_latency_ms - settings.MAX_LATENCY_MS) / settings.MAX_LATENCY_MS
+                perf_score = max(0.0, 100.0 - (overage_ratio * 100.0))
         else:
             perf_score = 0.0
         

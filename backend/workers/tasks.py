@@ -1,14 +1,41 @@
 from celery import Celery
-import time
+import os
+import tempfile
+from urllib.parse import urlparse
+
 from ..config import settings
 from ..database.connection import SessionLocal, JobDB
 
 # Initialize Celery
 celery_app = Celery("tasks", broker=settings.REDIS_URL, backend=settings.REDIS_URL)
 celery_app.conf.update(
-    task_always_eager=True,
-    task_eager_propagates=True
+    task_always_eager=settings.CELERY_TASK_ALWAYS_EAGER or settings.APP_ENV.lower() == "test",
+    task_eager_propagates=settings.APP_ENV.lower() == "test"
 )
+
+
+def _materialize_input_file(filepath: str) -> str:
+    if not filepath.startswith("s3://"):
+        return filepath
+
+    local_filepath = filepath
+    delete_local_filepath = False
+    try:
+        import boto3
+    except ImportError as exc:
+        raise RuntimeError("boto3 is required to read S3-backed uploads.") from exc
+
+    parsed = urlparse(filepath)
+    bucket = parsed.netloc
+    key = parsed.path.lstrip("/")
+    if not bucket or not key:
+        raise RuntimeError(f"Invalid S3 upload URI: {filepath}")
+
+    suffix = os.path.splitext(key)[1] or ".pdf"
+    tmp = tempfile.NamedTemporaryFile(prefix="permitiq-upload-", suffix=suffix, delete=False)
+    tmp.close()
+    boto3.client("s3").download_file(bucket, key, tmp.name)
+    return tmp.name
 
 @celery_app.task(name="process_compliance_job")
 def process_compliance_job(job_id: str, filepath: str):
@@ -28,12 +55,15 @@ def process_compliance_job(job_id: str, filepath: str):
         job.progress = 10.0
         db.commit()
 
-        # Import AI pipeline engines from completed packages
-        from spatial_reasoning.models import BuildingGraph, BuildingGraphNode, BoundingBox
+        # Import pipeline engines from completed packages
+        import asyncio
+        from document_ingestion.normalization.engine import NormalizationEngine
+        from drawing_understanding.api.app import understand_document
+        from object_detection.api.app import detect_document_objects
+        from spatial_reasoning.api.app import build_building_graph
         from knowledge_model.calculations.builder import KnowledgeModelBuilder
         from query_understanding.retrieval_planner.planner import ComplianceRetrievalPlanner
         from retrieval.api.app import retrieve_evidence
-        from query_understanding.schemas.models import ComplianceRetrievalPlan
         from reranking.backfill.engine import RerankingPipeline
         from context_engine.api.app import build_context_package
         from context_engine.schemas.models import ContextRequest
@@ -41,34 +71,24 @@ def process_compliance_job(job_id: str, filepath: str):
         from reporting.api.app import generate_compliance_report_package
         from reporting.schemas.models import ReportRequest
 
-        time.sleep(0.1) # Simulate ingestion overhead
+        normalization_engine = NormalizationEngine()
+        local_filepath = _materialize_input_file(filepath)
+        delete_local_filepath = local_filepath != filepath and filepath.startswith("s3://")
+        ingestion_doc = normalization_engine.process_document(local_filepath, job.filename)
+
         job.progress = 30.0
         db.commit()
 
-        # 1. Simulate Building Graph from Phase 5 (Mock Office room)
-        r1 = BuildingGraphNode(
-            id="room_1", object_class="ROOM", page_idx=0,
-            coordinates=BoundingBox(xmin=100.0, ymin=100.0, xmax=300.0, ymax=300.0),
-            attributes={
-                "room_name": "Accessible Restroom",
-                "polygon": [[100, 100], [300, 100], [300, 300], [100, 300], [100, 100]]
-            }
-        )
-        d1 = BuildingGraphNode(
-            id="door_1", object_class="DOOR", page_idx=0,
-            coordinates=BoundingBox(xmin=140.0, ymin=95.0, xmax=194.0, ymax=105.0),
-            attributes={"width_inches": 36.0} # Access width
-        )
-        mock_graph = BuildingGraph(
-            id="job-graph",
-            nodes={"room_1": r1, "door_1": d1},
-            edges=[],
-            metadata={"scale": "1/4\" = 1'-0\""}
-        )
+        semantic_doc = asyncio.run(understand_document(ingestion_doc))
+        detected_doc = asyncio.run(detect_document_objects(semantic_doc))
+        graph = asyncio.run(build_building_graph(detected_doc))
+
+        if not graph.nodes:
+            raise RuntimeError("No building graph nodes were detected from the uploaded document.")
 
         # 2. Build Knowledge Model (Phase 6)
         kb_builder = KnowledgeModelBuilder()
-        kb_model = kb_builder.build_knowledge_model(mock_graph)
+        kb_model = kb_builder.build_knowledge_model(graph)
 
         job.progress = 50.0
         db.commit()
@@ -80,7 +100,6 @@ def process_compliance_job(job_id: str, filepath: str):
 
         # 4. Hybrid Retrieve Evidence chunks (Phase 8)
         # We invoke the retrieve_evidence async function synchronously for Celery
-        import asyncio
         evidence_set = asyncio.run(retrieve_evidence(retrieval_plan))
 
         job.progress = 75.0
@@ -116,8 +135,8 @@ def process_compliance_job(job_id: str, filepath: str):
         report_req = ReportRequest(
             compliance_report=compliance_report.model_dump(),
             project_metadata={
-                "project_name": "Audited Permit Office Complex",
-                "address": "450 Broadway, New York, NY",
+                "project_name": kb_model.project.metadata.get("project_name", job.filename),
+                "address": kb_model.project.metadata.get("project_address", ""),
                 "report_title": "PermitIQ Accessibility Audit"
             }
         )
@@ -135,4 +154,9 @@ def process_compliance_job(job_id: str, filepath: str):
         job.result = {"error": f"Pipeline execution failed: {str(e)}"}
         db.commit()
     finally:
+        if delete_local_filepath:
+            try:
+                os.remove(local_filepath)
+            except OSError:
+                pass
         db.close()

@@ -4,7 +4,10 @@ from ..schemas.models import GovernanceReport, FeedbackEntry
 from ..registry.manager import RegistryManager
 from ..learning.pipeline import ActiveLearningPipeline
 from ..drift.detector import DriftDetector
+from ..config import settings
 from typing import Dict, Any
+import json
+from pathlib import Path
 
 app = FastAPI(
     title="PermitIQ AIOps Governance API",
@@ -22,6 +25,22 @@ drift_service = DriftDetector()
 class FeedbackPayload(FeedbackEntry):
     pass
 
+def _load_embeddings(path_value: str, label: str):
+    if not path_value:
+        raise RuntimeError(f"{label} drift embeddings path is not configured.")
+
+    path = Path(path_value)
+    if not path.exists():
+        raise RuntimeError(f"{label} drift embeddings file does not exist: {path}")
+
+    with path.open("r", encoding="utf-8") as fh:
+        payload = json.load(fh)
+
+    embeddings = payload.get("embeddings") if isinstance(payload, dict) else payload
+    if not isinstance(embeddings, list) or not embeddings:
+        raise RuntimeError(f"{label} drift embeddings are empty or malformed.")
+    return embeddings
+
 @app.get("/governance", response_model=GovernanceReport, summary="Retrieve AI Governance Dashboard Report")
 def get_governance_report():
     """
@@ -30,11 +49,15 @@ def get_governance_report():
     models = registry.list_models()
     prompts = registry.list_prompts()
     
-    # Run mock drift calculation between two similar centroids
-    drifted = drift_service.check_for_semantic_drift(
-        baseline_embeddings=[[0.1, 0.2, 0.3]],
-        current_embeddings=[[0.1, 0.2, 0.3]]
-    )
+    try:
+        baseline_embeddings = _load_embeddings(settings.DRIFT_BASELINE_EMBEDDINGS_PATH, "Baseline")
+        current_embeddings = _load_embeddings(settings.DRIFT_CURRENT_EMBEDDINGS_PATH, "Current")
+        drifted = drift_service.check_for_semantic_drift(
+            baseline_embeddings=baseline_embeddings,
+            current_embeddings=current_embeddings
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Drift evidence unavailable: {str(e)}")
 
     hard_cases = len(learning.get_hard_examples())
 

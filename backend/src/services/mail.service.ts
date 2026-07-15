@@ -26,6 +26,12 @@ function safeHeaderText(text: string): string {
   return String(text || '').replace(/[\r\n]/g, ' ').slice(0, 200);
 }
 
+function requireSmtpConfig(): void {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
+    throw new Error('SMTP_USER and SMTP_PASS must be configured before sending email.');
+  }
+}
+
 export const sendFeedbackEmail = async (data: {
   type: string;
   subject: string;
@@ -40,12 +46,7 @@ export const sendFeedbackEmail = async (data: {
   }
 
   logger.info('New support message received');
-
-  // Fallback if SMTP not configured
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    logger.warn('SMTP credentials not configured. Feedback email was not sent.');
-    return { messageId: 'mock-id-dev-mode' };
-  }
+  requireSmtpConfig();
 
   const mailOptions = {
     from: `"PermitIQ Feedback" <${process.env.SMTP_USER}>`,
@@ -83,11 +84,7 @@ export const sendFeedbackEmail = async (data: {
 };
 
 export const sendOtpEmail = async (email: string, otp: string) => {
-  // Fallback if SMTP not configured
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    logger.warn('SMTP not configured. OTP email was not sent.');
-    return { messageId: 'mock-id-dev-mode' };
-  }
+  requireSmtpConfig();
 
   const mailOptions = {
     from: `"PermitIQ Support" <${process.env.SMTP_USER}>`,
@@ -121,11 +118,7 @@ export const sendOtpEmail = async (email: string, otp: string) => {
 };
 
 export const sendAdminOtpEmail = async (email: string, otp: string) => {
-  // Fallback if SMTP not configured
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    logger.warn('SMTP not configured. Admin OTP email was not sent.');
-    return { messageId: 'mock-id-dev-mode' };
-  }
+  requireSmtpConfig();
 
   const mailOptions = {
     from: `"PermitIQ by Aureon Admin Portal" <${process.env.SMTP_USER}>`,
@@ -159,11 +152,7 @@ export const sendAdminOtpEmail = async (email: string, otp: string) => {
 };
 
 export const sendGiftPagesEmail = async (email: string, pages: number) => {
-  // Fallback if SMTP not configured
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || process.env.SMTP_USER === 'your-email@gmail.com') {
-    logger.warn('SMTP not configured. Gift pages email was not sent.');
-    return { messageId: 'mock-id-dev-mode' };
-  }
+  requireSmtpConfig();
 
   const mailOptions = {
     from: `"PermitIQ by Aureon Pages" <${process.env.SMTP_USER}>`,

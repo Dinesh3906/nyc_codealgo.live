@@ -1,4 +1,5 @@
-from typing import List, Dict, Any
+import re
+from typing import List, Dict, Any, Optional
 from spatial_reasoning.models import BuildingGraph
 from ..schemas.models import (
     UnifiedBuildingKnowledgeModel, IfcProject, IfcBuildingStorey, IfcSpace,
@@ -23,6 +24,49 @@ class KnowledgeModelBuilder:
         self.fire_engine = FireProtectionEngine()
         self.egress_analyzer = EgressPathAnalyzer()
 
+    def _dimension_to_inches(self, value: Any) -> Optional[float]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return round(float(value), 2)
+
+        text = str(value).strip().lower()
+        if not text:
+            return None
+
+        feet_inches = re.search(r"(\d+(?:\.\d+)?)\s*(?:'|ft|feet|-)\s*(\d+(?:\.\d+)?)?\s*(?:\"|in|inch|inches)?", text)
+        if feet_inches:
+            feet = float(feet_inches.group(1))
+            inches = float(feet_inches.group(2) or 0.0)
+            return round((feet * 12.0) + inches, 2)
+
+        inches = re.search(r"(\d+(?:\.\d+)?)\s*(?:\"|in|inch|inches)\b", text)
+        if inches:
+            return round(float(inches.group(1)), 2)
+
+        plain_number = re.fullmatch(r"\d+(?:\.\d+)?", text)
+        if plain_number:
+            return round(float(text), 2)
+
+        return None
+
+    def _attribute_dimension(self, attributes: Dict[str, Any], keys: List[str]) -> Optional[float]:
+        normalized = {str(k).lower(): v for k, v in attributes.items()}
+        for key in keys:
+            if key in normalized:
+                parsed = self._dimension_to_inches(normalized[key])
+                if parsed is not None:
+                    return parsed
+        return None
+
+    def _measured_linear_dimension(self, node: Any, scale_factor: float, keys: List[str]) -> Optional[float]:
+        scheduled = self._attribute_dimension(node.attributes, keys)
+        if scheduled is not None:
+            return scheduled
+        if node.attributes.get("geometry_source") == "label_extent":
+            return None
+        return self.measure_engine.calculate_linear_dim(node.coordinates, scale_factor)
+
     def build_knowledge_model(self, graph: BuildingGraph) -> UnifiedBuildingKnowledgeModel:
         """
         Processes building graph nodes and edges to build the hierarchical UBKM output.
@@ -30,7 +74,7 @@ class KnowledgeModelBuilder:
         warnings = []
         
         # 1. Parse Scale Factor
-        scale_str = graph.metadata.get("scale", "1/4\" = 1'-0\"")
+        scale_str = graph.metadata.get("scale")
         scale_factor = self.measure_engine.parse_scale_factor(scale_str)
 
         # 2. Extract entities from graph
@@ -66,6 +110,8 @@ class KnowledgeModelBuilder:
             # Run occupancy calculations
             classification = self.occupancy_engine.determine_classification(r_name)
             occ_data = self.occupancy_engine.calculate_occupancy_load(metrics["area_sq_ft"], classification)
+            if classification == "unknown":
+                warnings.append(f"Room {r_name} occupancy classification could not be inferred from drawing evidence.")
 
             # Find connected physical entities by traversing adjacency edges
             connected_doors: List[IfcDoor] = []
@@ -84,9 +130,14 @@ class KnowledgeModelBuilder:
                     continue
 
                 if other_node.object_class == "DOOR":
-                    # Calculate door width
-                    w_inch = self.measure_engine.calculate_linear_dim(other_node.coordinates, scale_factor)
-                    h_inch = other_node.attributes.get("height_inches", 84.0)
+                    w_inch = self._measured_linear_dimension(
+                        other_node,
+                        scale_factor,
+                        ["width_inches", "clear_width_inches", "clear_width", "door_width", "width", "size"]
+                    )
+                    h_inch = self._attribute_dimension(other_node.attributes, ["height_inches", "height", "door_height"])
+                    if w_inch is None:
+                        warnings.append(f"Door {other_id} width could not be measured from geometry or schedule evidence.")
                     
                     # Centroid of door
                     box = other_node.coordinates
@@ -99,35 +150,42 @@ class KnowledgeModelBuilder:
                             height_inches=h_inch,
                             fire_rating_minutes=other_node.attributes.get("fire_rating_minutes"),
                             swing_direction=other_node.attributes.get("swing_direction"),
-                            accessible=w_inch >= 32.0,
+                            accessible=w_inch >= 32.0 if w_inch is not None else None,
                             schedule_ref=other_node.attributes.get("schedule_ref")
                         )
                     )
                 elif other_node.object_class == "WALL":
                     w_poly = other_node.attributes.get("polygon", [])
-                    length_ft = metrics["perimeter_ft"] / 4.0 # Fallback approximation
                     if w_poly:
-                        # Wall length in feet
                         from shapely.geometry import LineString
                         length_ft = (LineString(w_poly).length * scale_factor) / 12.0
+                    else:
+                        length_ft = self.measure_engine.calculate_linear_dim(other_node.coordinates, scale_factor) / 12.0
 
                     connected_walls.append(
                         IfcWall(
                             id=other_id,
                             length_feet=round(length_ft, 2),
-                            thickness_inches=other_node.attributes.get("thickness_inches", 6.0),
+                            thickness_inches=self._attribute_dimension(other_node.attributes, ["thickness_inches", "thickness", "wall_thickness"]),
                             fire_rating_hours=other_node.attributes.get("fire_rating_hours")
                         )
                     )
                 elif other_node.object_class == "WINDOW":
-                    w_inch = self.measure_engine.calculate_linear_dim(other_node.coordinates, scale_factor)
-                    h_inch = other_node.attributes.get("height_inches", 48.0)
+                    w_inch = self._measured_linear_dimension(
+                        other_node,
+                        scale_factor,
+                        ["width_inches", "window_width", "width", "size"]
+                    )
+                    h_inch = self._attribute_dimension(other_node.attributes, ["height_inches", "window_height", "height"])
+                    if w_inch is None:
+                        warnings.append(f"Window {other_id} width could not be measured from geometry or schedule evidence.")
+                    area_sq_feet = round((w_inch * h_inch) / 144.0, 2) if w_inch is not None and h_inch is not None else None
                     connected_windows.append(
                         IfcWindow(
                             id=other_id,
                             width_inches=w_inch,
                             height_inches=h_inch,
-                            area_sq_feet=round((w_inch * h_inch) / 144.0, 2)
+                            area_sq_feet=area_sq_feet
                         )
                     )
                 elif other_node.object_class == "SMOKE_DETECTOR":
@@ -176,7 +234,11 @@ class KnowledgeModelBuilder:
                     warnings.append(f"Room {r_name} exit door separation is insufficient (required {sep_data['required_separation_inches']} in, got {sep_data['exit_distance_inches']} in)")
 
             # Total actual exit width is sum of connected door widths
-            actual_exit_width = sum(d.width_inches for d in connected_doors)
+            known_door_widths = [d.width_inches for d in connected_doors if d.width_inches is not None]
+            if len(known_door_widths) == len(connected_doors):
+                actual_exit_width = round(sum(known_door_widths), 2)
+            else:
+                actual_exit_width = None
 
             space_obj = IfcSpace(
                 id=r_id,
@@ -185,7 +247,7 @@ class KnowledgeModelBuilder:
                 number=r_node.attributes.get("room_number"),
                 area_sq_feet=metrics["area_sq_ft"],
                 perimeter_feet=metrics["perimeter_ft"],
-                ceiling_height_feet=r_node.attributes.get("ceiling_height_feet", 9.0),
+                ceiling_height_feet=r_node.attributes.get("ceiling_height_feet"),
                 occupancy_classification=classification,
                 occupant_load=occ_data["occupant_load"],
                 required_exit_width_inches=occ_data["required_exit_width_inches"],
@@ -221,24 +283,20 @@ class KnowledgeModelBuilder:
             doors_list = [d for s in spaces.values() for d in s.doors]
             
             if rooms_list and doors_list:
-                # Mock travel calculations
                 for r in rooms_list:
-                    # Find a door
-                    if r.doors:
-                        d = r.doors[0]
-                        # Let's run travel path details
-                        # Convert points distance to feet
-                        total_dist_ft = 35.0 # Mock default travel distance inside room
-                        
+                    for d in r.doors:
+                        path_info = self.egress_analyzer.compute_egress_path(graph, r.id, d.id)
+                        if not path_info:
+                            continue
+
+                        total_dist_ft = (path_info["total_travel_distance_points"] * scale_factor) / 12.0
                         egress_paths[r.id] = EgressPathInfo(
-                            path_nodes=[r.id, d.id],
-                            total_distance_feet=total_dist_ft,
+                            path_nodes=path_info["path"],
+                            total_distance_feet=round(total_dist_ft, 2),
                             accessible=d.accessible,
-                            transitions=[
-                                {"id": r.id, "class": r.space_type, "name": r.name},
-                                {"id": d.id, "class": "DOOR", "name": "Exit Door"}
-                            ]
+                            transitions=path_info["transitions"]
                         )
+                        break
 
         project = IfcProject(
             id=graph.id,

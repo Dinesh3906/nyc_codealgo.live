@@ -174,7 +174,7 @@ class GeometryBuildingDetector:
                         page_idx=page_idx,
                         attributes={
                             "tag": obj.text.strip(),
-                            "width_inches": 36.0 if is_door else 48.0 # Standard assumptions
+                            "geometry_source": "label_extent"
                         },
                         source_refs=[obj.id]
                     )

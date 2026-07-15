@@ -286,31 +286,9 @@ async function ingestPdf(filePath: string) {
   }
 
   if (totalUploaded === 0) {
-    console.log(`No text extracted from ${filename}. Creating a placeholder chunk to register ingestion...`);
-    const metadata: RichChunkMetadata = {
-      text: `This document (${filename}) does not contain extractable text content (it may be empty, reserved, or scanned without OCR).`,
-      source: filename,
-      code_family: family,
-      code_edition: edition,
-      chapter: chapter || undefined,
-      section: undefined,
-      page_number: 1,
-      keywords: "empty, reserved, placeholder, no-text",
-      discipline,
-      effective_date: edition === "2025" ? "2025-12-21" : "2022-11-07",
-      revision: "Original",
-      source_hash: sourceHash,
-      chunk_index: 0
-    };
-
-    const vector = await getEmbedding(metadata.text);
-    await index.upsert([{
-      id: `${safeIdPrefix}_placeholder_${Date.now()}`,
-      values: vector,
-      metadata: metadata as any
-    }]);
-    totalUploaded = 1;
-    console.log(`Uploaded placeholder chunk for ${filename}.`);
+    throw new Error(
+      `No extractable text was found in ${filename}. Run OCR and provide a real text-bearing corpus artifact before indexing.`
+    );
   }
 
   console.log(`Ingestion completed successfully. Uploaded ${totalUploaded} chunks from ${filename}.`);
@@ -323,5 +301,8 @@ if (require.main === module) {
     console.log("Usage: npx tsx scripts/ingest_code.ts <path_to_pdf>");
     process.exit(1);
   }
-  ingestPdf(fileArg).catch(console.error);
+  ingestPdf(fileArg).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

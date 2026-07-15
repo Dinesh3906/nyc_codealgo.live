@@ -151,33 +151,33 @@ export class CompliancePipeline {
       const tracking = pipelineRun.tracking || { successfulCalls: 0, failedCalls: 0, providersUsed: [], aiExecuted: false };
       const aiAnalysesExecuted = tracking.successfulCalls;
 
-      let finalScore: number = checkedSteps.length > 0
+      let finalScore: number | null = checkedSteps.length > 0
         ? Math.round(checkedSteps.reduce((acc: number, r: any) => acc + r.score!, 0) / checkedSteps.length)
-        : 100;
+        : null;
 
       let severity = { critical: 0, major: 0, minor: 0 };
 
       const combinedIssues: AnalysisIssue[] = checkedSteps.flatMap((r: any) =>
         r.issues.map((iss: any) => ({
-          title: iss.title || `${r.name} Compliance Issue`,
-          description: iss.description || "Violation detail not provided",
+          title: iss.title || `${r.name} issue requiring review`,
+          description: iss.description || iss.details || "No violation detail was returned by the analysis provider.",
           severity: String(iss.severity || 'minor').toLowerCase() as 'critical' | 'major' | 'minor',
-          rule: iss.rule || iss.code || "NYC Building Code 2022",
-          suggestion: iss.suggestion || iss.recommendation || "Review with a licensed professional",
+          rule: iss.rule || iss.code || "Unspecified rule",
+          suggestion: iss.suggestion || iss.recommendation || "Manual review required because remediation guidance was not returned.",
           stepId: r.id,
           deductionPercentage: typeof iss.deductionPercentage === 'number' 
             ? iss.deductionPercentage 
             : (typeof iss.deduction_percentage === 'number' ? iss.deduction_percentage : 0),
-          exactPdfCitation: iss.exactPdfCitation || iss.exact_pdf_citation || "N/A",
-          loopholeDetails: iss.loopholeDetails || iss.loophole_details || "N/A",
-          requiredElements: iss.requiredElements || iss.required_elements || "N/A"
+          exactPdfCitation: iss.exactPdfCitation || iss.exact_pdf_citation,
+          loopholeDetails: iss.loopholeDetails || iss.loophole_details,
+          requiredElements: iss.requiredElements || iss.required_elements
         }))
       );
 
       // Integrate property violations from Apify into combinedIssues and apply deductions to finalScore
       if (pipelineRun.propertyRecords && pipelineRun.propertyRecords.violations) {
         pipelineRun.propertyRecords.violations.forEach((v: any) => {
-          if (v.status === 'open') {
+          if (v.status === 'open' && finalScore !== null) {
             const deduction = v.severity === 'critical' ? 15 : (v.severity === 'major' ? 10 : 5);
             finalScore = Math.max(0, finalScore - deduction);
             combinedIssues.push({
@@ -203,42 +203,35 @@ export class CompliancePipeline {
       });
 
       const isManualReview = aiAnalysesExecuted === 0;
+      const missingMeasuredChecks = finalScore === null;
+
+      const mergedBuildingInfo: any = { rooms: [] };
+      let hasBuildingInfo = false;
+      checkedSteps.forEach((r: any) => {
+        if (r.building_info) {
+          hasBuildingInfo = true;
+          if (r.building_info.project_name) mergedBuildingInfo.project_name = r.building_info.project_name;
+          if (r.building_info.occupancy_group) mergedBuildingInfo.occupancy_group = r.building_info.occupancy_group;
+          if (r.building_info.construction_type) mergedBuildingInfo.construction_type = r.building_info.construction_type;
+          if (r.building_info.stories) mergedBuildingInfo.stories = r.building_info.stories;
+          if (Array.isArray(r.building_info.rooms)) mergedBuildingInfo.rooms.push(...r.building_info.rooms);
+        }
+      });
 
       const finalResult: ComplianceResult = {
-        compliant: isManualReview ? null : (finalScore >= 70),
-        score: isManualReview ? null : finalScore,
-        summary: isManualReview 
+        compliant: isManualReview || missingMeasuredChecks ? null : (finalScore >= 70),
+        score: isManualReview || missingMeasuredChecks ? null : finalScore,
+        summary: isManualReview || missingMeasuredChecks
           ? 'Automated AI Verification Unavailable. Manual Review Required.' 
           : checkedSteps.map((r: any) => `### ${r.name} (Score: ${r.score}%)\n${r.summary}`).join('\n\n'),
-        status: isManualReview ? 'manual_review' : (isDegraded ? 'partial' : 'complete'),
+        status: isManualReview || missingMeasuredChecks ? 'manual_review' : (isDegraded ? 'partial' : 'complete'),
         issuesCount: combinedIssues.length,
         severity: severity,
         issues: combinedIssues,
-        building_info: (() => {
-          const merged: any = { type: "Mixed Use / Residential", rooms: [] };
-          checkedSteps.forEach((r: any) => {
-            if (r.building_info) {
-              if (r.building_info.project_name) merged.project_name = r.building_info.project_name;
-              if (r.building_info.occupancy_group) merged.occupancy_group = r.building_info.occupancy_group;
-              if (r.building_info.construction_type) merged.construction_type = r.building_info.construction_type;
-              if (r.building_info.stories) {
-                merged.stories = r.building_info.stories;
-                merged.type = `${r.building_info.occupancy_group || 'Mixed Use'} / ${r.building_info.construction_type || 'Unknown'}`;
-              }
-            }
-          });
-          return merged;
-        })(),
+        building_info: hasBuildingInfo ? mergedBuildingInfo : undefined,
         systems_detected: checkedSteps.map((r: any) => `${r.name}: ${r.status.toUpperCase()}`),
-        appreciation: isManualReview ? [
-          'Automated AI Verification: Unavailable',
-          'Deterministic Analysis: Completed',
-          'Manual Review: Recommended'
-        ] : [
-          `Completed advisory code alignment search and reference check across ${checkedSteps.length} active categories.`,
-          ...checkedSteps.flatMap((r: any) => r.compliant_features.map((f: string) => `Compliant feature detected in ${r.name}: ${f}`)).slice(0, 4)
-        ],
-        betterments: checkedSteps.map((r: any) => `Enhance detail validation for ${r.name} sub-assemblies.`),
+        appreciation: checkedSteps.flatMap((r: any) => r.compliant_features || []).slice(0, 4),
+        betterments: checkedSteps.flatMap((r: any) => r.betterments || r.recommendations || []),
         steps: stepResults,
         metrics: pipelineMetrics,
         profile: isManualReview ? null : pipelineRun.profile,
@@ -246,7 +239,7 @@ export class CompliancePipeline {
         aiVerification: isManualReview ? 'Unavailable' : 'Available',
         deterministicChecks: 'Completed',
         ragRetrieval: 'Completed',
-        reason: isManualReview ? 'AI quota unavailable during audit.' : undefined,
+        reason: isManualReview ? 'AI quota unavailable during audit.' : (missingMeasuredChecks ? 'No completed measured checks were available.' : undefined),
         property_records: pipelineRun.propertyRecords || null,
         auditMetadata: {
           completedSteps: checkedSteps.length,
@@ -269,7 +262,7 @@ export class CompliancePipeline {
         try {
           await pool.query(
             'UPDATE `plan` SET status = ?, analysisResult = ? WHERE id = ?',
-            [isManualReview ? 'manual_review' : (isDegraded ? 'partial' : 'analyzed'), JSON.stringify(finalResult), planId]
+            [isManualReview || missingMeasuredChecks ? 'manual_review' : (isDegraded ? 'partial' : 'analyzed'), JSON.stringify(finalResult), planId]
           );
           saved = true;
         } catch (saveErr) {
@@ -288,7 +281,7 @@ export class CompliancePipeline {
       });
 
       pipelineLogger.info(`Pipeline finished. Score: ${finalResult.score}`, {
-        confidence: finalScore / 100,
+        confidence: finalScore !== null ? finalScore / 100 : null,
         deterministicRuleCount: checkedSteps.length,
         aiRuleCount: failedSteps.length
       });

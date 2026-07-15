@@ -18,7 +18,7 @@ class MeasurementEngine:
           which means 1 point = 12 / 9 = 1.333 inches.
         """
         if not scale_str:
-            return 1.0 # Default fallback: 1 point = 1 inch
+            raise ValueError("Drawing scale is required for physical measurement calculations.")
 
         scale_str_clean = scale_str.lower().replace(" ", "")
         
@@ -37,7 +37,7 @@ class MeasurementEngine:
             # Assuming standard PDF rendering space scale
             return 1.0
 
-        return 1.0
+        raise ValueError(f"Unsupported drawing scale format: {scale_str}")
 
     def calculate_space_metrics(
         self,

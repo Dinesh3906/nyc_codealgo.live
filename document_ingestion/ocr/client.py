@@ -21,81 +21,6 @@ class OCRClient(ABC):
         """
         pass
 
-class MockOCRClient(OCRClient):
-    """
-    A mock OCR client for testing and local development without cloud credentials.
-    Generates structured test text objects based on coordinates.
-    """
-    def __init__(self):
-        super().__init__(source_name="mock_ocr_engine")
-
-    def run_ocr(self, image_bytes: bytes, page_idx: int, page_width: float, page_height: float) -> List[OCRObject]:
-        # Return a few default mock elements simulating typical blueprints
-        coord_sys = CoordinateSystem(
-            system_type=CoordinateSystemType.PDF,
-            width=page_width,
-            height=page_height,
-            dpi=settings.DPI
-        )
-
-        objects = [
-            OCRObject(
-                id=f"ocr-{uuid.uuid4()}",
-                page_idx=page_idx,
-                coordinates=BoundingBox(
-                    xmin=page_width * 0.1,
-                    ymin=page_height * 0.1,
-                    xmax=page_width * 0.3,
-                    ymax=page_height * 0.15
-                ),
-                coordinate_system=coord_sys,
-                confidence=0.98,
-                source=self.source_name,
-                processing_method="ocr_simulation",
-                text="PROPOSED FIRST FLOOR PLAN",
-                word_confidences=[0.99, 0.98, 0.98, 0.99],
-                language="en",
-                rotation_degrees=0.0
-            ),
-            OCRObject(
-                id=f"ocr-{uuid.uuid4()}",
-                page_idx=page_idx,
-                coordinates=BoundingBox(
-                    xmin=page_width * 0.8,
-                    ymin=page_height * 0.05,
-                    xmax=page_width * 0.95,
-                    ymax=page_height * 0.25
-                ),
-                coordinate_system=coord_sys,
-                confidence=0.95,
-                source=self.source_name,
-                processing_method="ocr_simulation",
-                text="A-101\nSHEET INDEX",
-                word_confidences=[0.96, 0.94],
-                language="en",
-                rotation_degrees=90.0  # Rotated title block text
-            ),
-            OCRObject(
-                id=f"ocr-{uuid.uuid4()}",
-                page_idx=page_idx,
-                coordinates=BoundingBox(
-                    xmin=page_width * 0.45,
-                    ymin=page_height * 0.5,
-                    xmax=page_width * 0.55,
-                    ymax=page_height * 0.52
-                ),
-                coordinate_system=coord_sys,
-                confidence=0.91,
-                source=self.source_name,
-                processing_method="ocr_simulation",
-                text="3'-0\" CLEAR DOOR WIDTH",
-                word_confidences=[0.92, 0.90, 0.93],
-                language="en",
-                rotation_degrees=0.0
-            )
-        ]
-        return objects
-
 class AzureOCRClient(OCRClient):
     """
     Production client for Azure AI Document Intelligence (formerly Form Recognizer).
@@ -177,6 +102,7 @@ class AzureOCRClient(OCRClient):
 
         # Extract lines
         lines = azure_page.get("lines", [])
+        words = azure_page.get("words", [])
         for i, line in enumerate(lines):
             text = line.get("content", "")
             polygon = line.get("polygon", []) # [x1, y1, x2, y2, x3, y3, x4, y4]
@@ -201,9 +127,13 @@ class AzureOCRClient(OCRClient):
             dy = polygon[3] - polygon[1]
             rotation = math.degrees(math.atan2(dy, dx))
 
-            # Retrieve word confidences
-            line.get("spans", [])
-            word_confidences = [0.95] # Default fallback
+            word_confidences = self._line_word_confidences(line.get("spans", []), words)
+            line_confidence = line.get("confidence")
+            confidence = (
+                sum(word_confidences) / len(word_confidences)
+                if word_confidences
+                else float(line_confidence) if line_confidence is not None else 0.0
+            )
 
             objects.append(
                 OCRObject(
@@ -211,7 +141,7 @@ class AzureOCRClient(OCRClient):
                     page_idx=page_idx,
                     coordinates=BoundingBox(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax),
                     coordinate_system=coord_sys,
-                    confidence=sum(word_confidences)/len(word_confidences),
+                    confidence=confidence,
                     source=self.source_name,
                     processing_method="azure_layout_api",
                     text=text,
@@ -222,6 +152,35 @@ class AzureOCRClient(OCRClient):
             )
 
         return objects
+
+    def _line_word_confidences(self, line_spans: List[Dict[str, Any]], words: List[Dict[str, Any]]) -> List[float]:
+        if not line_spans:
+            return [
+                float(word["confidence"])
+                for word in words
+                if "confidence" in word
+            ]
+
+        confidences: List[float] = []
+        for word in words:
+            if "confidence" not in word:
+                continue
+            for word_span in word.get("span", {}).get("spans", []) or [word.get("span", {})]:
+                word_offset = word_span.get("offset")
+                word_length = word_span.get("length")
+                if word_offset is None or word_length is None:
+                    continue
+                word_end = word_offset + word_length
+                for line_span in line_spans:
+                    line_offset = line_span.get("offset")
+                    line_length = line_span.get("length")
+                    if line_offset is None or line_length is None:
+                        continue
+                    line_end = line_offset + line_length
+                    if word_offset < line_end and word_end > line_offset:
+                        confidences.append(float(word["confidence"]))
+                        break
+        return confidences
 
 class GoogleOCRClient(OCRClient):
     """
@@ -241,7 +200,6 @@ class GoogleOCRClient(OCRClient):
         import base64
         image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        # Fallback to Mock if credentials are missing
         if not os.environ.get("GOOGLE_API_KEY") and not self.credentials_path:
             raise ValueError("Google Cloud Vision API Key or credentials path must be set.")
 
@@ -298,7 +256,8 @@ class GoogleOCRClient(OCRClient):
                 for word in paragraph.get("words", []):
                     word_text = "".join([symbol.get("text", "") for symbol in word.get("symbols", [])])
                     text_parts.append(word_text)
-                    word_confidences.append(word.get("confidence", 0.95))
+                    if "confidence" in word:
+                        word_confidences.append(float(word["confidence"]))
 
                 combined_text = " ".join(text_parts)
                 if not combined_text:
@@ -323,7 +282,7 @@ class GoogleOCRClient(OCRClient):
                         page_idx=page_idx,
                         coordinates=BoundingBox(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax),
                         coordinate_system=coord_sys,
-                        confidence=sum(word_confidences) / len(word_confidences) if word_confidences else 0.95,
+                        confidence=sum(word_confidences) / len(word_confidences) if word_confidences else 0.0,
                         source=self.source_name,
                         processing_method="google_cloud_vision_api",
                         text=combined_text,
@@ -344,4 +303,5 @@ def get_ocr_client() -> OCRClient:
         return AzureOCRClient()
     elif engine == OCREngineType.GOOGLE:
         return GoogleOCRClient()
-    return MockOCRClient()
+
+    raise RuntimeError(f"Unsupported OCR engine configured: {engine}")

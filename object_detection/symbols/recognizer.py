@@ -67,19 +67,6 @@ class SymbolRecognizerEngine:
                         matched_description = leg_val
                         break
             
-            if not matched_description:
-                # Fallback: Check for standard default drawing tags
-                default_classes = {
-                    "fe": "fire extinguisher",
-                    "sd": "smoke detector",
-                    "ext": "exit sign",
-                    "sprink": "sprinkler"
-                }
-                for code, desc in default_classes.items():
-                    if code in txt_clean:
-                        matched_description = desc
-                        break
-
             if matched_description:
                 # Map description to class
                 mapped_class = "UNKNOWN_SYMBOL"

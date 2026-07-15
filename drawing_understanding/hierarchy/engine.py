@@ -45,8 +45,7 @@ class HierarchyRelationshipEngine:
         for obj in all_text_objs:
             is_label = any(re.search(pat, obj.text) for pat in label_patterns)
             if is_label:
-                # Construct mock viewport quadrant box around label (typically extending upwards)
-                # Bounding box coordinates
+                # Estimate the viewport region adjacent to the detected label.
                 lbl_box = obj.coordinates
                 xmin = max(0.0, lbl_box.xmin - 100)
                 xmax = min(width, lbl_box.xmax + 100)

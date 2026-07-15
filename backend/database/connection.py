@@ -3,12 +3,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 import datetime
 from ..config import settings
 
-# SQLite fallback for easy local testing & compilation
 db_url = settings.DATABASE_URL
-if db_url.startswith("postgresql"):
-    # Attempt to load sqlite fallback if requested or postgres unavailable
-    # For robust verification tests, we can default to local SQLite file
-    db_url = "sqlite:///./permit_iq.db"
+if settings.APP_ENV.lower() == "production" and db_url.startswith("sqlite"):
+    raise RuntimeError("SQLite DATABASE_URL is not allowed when APP_ENV=production.")
 
 engine = create_engine(
     db_url,

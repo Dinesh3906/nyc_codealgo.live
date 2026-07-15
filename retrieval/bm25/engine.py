@@ -1,7 +1,7 @@
 from rank_bm25 import BM25Okapi
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from ..schemas.models import RetrievalCandidate
-from ..pinecone.client import MOCK_CORPUS
+from ..corpus import CorpusRecord, load_code_corpus
 
 class BM25Retriever:
     """
@@ -9,16 +9,23 @@ class BM25Retriever:
     Tokenizes and indexes building code chunks for keyword and section lookups.
     """
 
-    def __init__(self):
-        # Build local BM25 index on MOCK_CORPUS
-        self.corpus = MOCK_CORPUS
-        self.tokenized_corpus = [self._tokenize(item["chunk_text"]) for item in self.corpus]
-        self.bm25 = BM25Okapi(self.tokenized_corpus)
+    def __init__(self, corpus: Optional[List[CorpusRecord]] = None):
+        self.corpus = corpus
+        self.tokenized_corpus: List[List[str]] = []
+        self.bm25: Optional[BM25Okapi] = None
 
     def _tokenize(self, text: str) -> List[str]:
         # Simple lowercase alphanumeric tokenization
         import re
         return re.findall(r"\b\w+\b", text.lower())
+
+    def _ensure_index(self) -> None:
+        if self.bm25 is not None and self.corpus is not None:
+            return
+
+        self.corpus = self.corpus or load_code_corpus()
+        self.tokenized_corpus = [self._tokenize(item["chunk_text"]) for item in self.corpus]
+        self.bm25 = BM25Okapi(self.tokenized_corpus)
 
     async def query_lexical_index(
         self,
@@ -30,16 +37,14 @@ class BM25Retriever:
         Executes a lexical BM25 search.
         Applies hard filters first, then ranks matched elements by BM25 score.
         """
-        import asyncio
-        # Simulate small network latency (as requested: target BM25 <80ms)
-        await asyncio.sleep(0.01)
+        self._ensure_index()
 
         query_tokens = self._tokenize(query)
         
         # 1. Apply hard metadata filters
         filtered_corpus_indices = []
         
-        for idx, item in enumerate(self.corpus):
+        for idx, item in enumerate(self.corpus or []):
             matches_filter = True
             for f_key, f_val in filters.items():
                 item_val = item.get(f_key)
@@ -59,13 +64,18 @@ class BM25Retriever:
             return []
 
         # 2. Score using BM25
+        if self.bm25 is None:
+            return []
+
         scores = self.bm25.get_scores(query_tokens)
 
         # Zip scores with filtered corpus indices
         scored_items = []
         for original_idx in filtered_corpus_indices:
             score = float(scores[original_idx])
-            if score <= 0.0:
+            tokenized_doc = self.tokenized_corpus[original_idx]
+            has_term_match = any(token in tokenized_doc for token in query_tokens)
+            if score < 0.0 or (score == 0.0 and not has_term_match):
                 continue
             scored_items.append((score, self.corpus[original_idx]))
 

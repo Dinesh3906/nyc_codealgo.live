@@ -3,6 +3,8 @@ import os
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-value-at-least-32-characters-long")
+os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./permit_iq_test.db")
 
 from backend.api.app import app
 from backend.database.connection import get_db, Base, engine, SessionLocal

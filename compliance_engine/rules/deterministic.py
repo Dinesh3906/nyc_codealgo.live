@@ -71,8 +71,31 @@ class DeterministicRuleEngine:
                 doors = space.get("doors", [])
                 for d in doors:
                     d_id = d.get("id", "door")
-                    w = d.get("width_inches", 0)
                     required = settings.MIN_DOOR_WIDTH_INCHES
+
+                    w = d.get("width_inches")
+                    if w is None:
+                        findings.append(
+                            ComplianceFinding(
+                                finding_id=f"FIND-{finding_counter:03d}",
+                                category="accessibility",
+                                component="door",
+                                decision="REQUIRES_HUMAN_REVIEW",
+                                severity="HIGH",
+                                measurement="door clear opening width",
+                                required_value=f"{required} inches",
+                                actual_value="not measured",
+                                difference="unknown",
+                                applicable_code_book="Building Code",
+                                applicable_section="1105.1",
+                                evidence=f"Door {d_id} in space {name} has no measured width in the drawing model.",
+                                confidence=0.0,
+                                explanation="Door accessibility cannot be verified without a measured clear opening width.",
+                                recommendation="Extract the door clear width from a dimension string, door schedule, or verified geometry."
+                            )
+                        )
+                        finding_counter += 1
+                        continue
                     
                     diff = w - required
                     decision = "PASS" if diff >= 0 else "FAIL"
@@ -100,15 +123,38 @@ class DeterministicRuleEngine:
 
                 # 3. Evaluate Stair exit widths (Egress rules)
                 if is_stair_query and (space_type == "STAIR" or "stair" in name.lower()):
-                    width = space.get("actual_exit_width_inches", 44.0) # Fallback to standard
                     occ_load = space.get("occupant_load", 0)
+                    width = space.get("actual_exit_width_inches")
                     
                     # Exception adjustment: if occupant load < 50, required width is 36 inches, otherwise 44
                     required = settings.MIN_STAIR_WIDTH_INCHES
                     exception_applied = False
-                    if occ_load < settings.MIN_STAIR_WIDTH_EXCEPTION_LOAD:
+                    if occ_load is not None and occ_load < settings.MIN_STAIR_WIDTH_EXCEPTION_LOAD:
                         required = settings.MIN_STAIR_WIDTH_EXCEPTION_INCHES
                         exception_applied = True
+
+                    if width is None:
+                        findings.append(
+                            ComplianceFinding(
+                                finding_id=f"FIND-{finding_counter:03d}",
+                                category="egress",
+                                component="stair",
+                                decision="REQUIRES_HUMAN_REVIEW",
+                                severity="HIGH",
+                                measurement="stair width",
+                                required_value=f"{required} inches" + (" (Exception for load < 50)" if exception_applied else ""),
+                                actual_value="not measured",
+                                difference="unknown",
+                                applicable_code_book="Building Code",
+                                applicable_section="1011.2",
+                                evidence=f"Stair {name} has no measured aggregate exit width in the drawing model.",
+                                confidence=0.0,
+                                explanation="Stair egress width cannot be verified without measured exit width evidence.",
+                                recommendation="Extract stair or exit width from dimension strings, schedules, or verified plan geometry."
+                            )
+                        )
+                        finding_counter += 1
+                        continue
 
                     diff = width - required
                     decision = "PASS" if diff >= 0 else "FAIL"

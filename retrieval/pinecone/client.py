@@ -1,106 +1,18 @@
 import asyncio
-from typing import List, Dict, Any
-from ..schemas.models import RetrievalCandidate
-from ..config import settings
+from typing import Any, Dict, List
 
-# Mock Database of Chunks representing building code regulations
-MOCK_CORPUS = [
-    {
-        "chunk_id": "chunk_egress_1",
-        "chunk_text": "IBC Section 1011.2 - Stairways shall have a minimum width of 44 inches. Exception: Stairways serving an occupant load of less than 50 shall have a minimum width of 36 inches.",
-        "document_id": "doc_bc_2022",
-        "filename": "nyc_building_code_2022.pdf",
-        "page_number": 242,
-        "code_book": "Building Code",
-        "chapter": "Chapter 10",
-        "section": "1011.2",
-        "subsection": None,
-        "discipline": "Architectural",
-        "occupancy_type": None,
-        "jurisdiction": "NYC",
-        "revision_year": "2022"
-    },
-    {
-        "chunk_id": "chunk_egress_2",
-        "chunk_text": "IBC Section 1020.2 - Corridors shall be fire-resistance rated in accordance with Table 1020.2. Corridors shall have a minimum width of 44 inches, or 36 inches in residential occupant load units.",
-        "document_id": "doc_bc_2022",
-        "filename": "nyc_building_code_2022.pdf",
-        "page_number": 248,
-        "code_book": "Building Code",
-        "chapter": "Chapter 10",
-        "section": "1020.2",
-        "subsection": None,
-        "discipline": "Architectural",
-        "occupancy_type": "residential",
-        "jurisdiction": "NYC",
-        "revision_year": "2022"
-    },
-    {
-        "chunk_id": "chunk_toilet_1",
-        "chunk_text": "NYC Plumbing Code Section 405.3.1 - Water closets, urinals, lavatories and bidets. A water closet shall not be set closer than 15 inches from its center to any side wall or partition, and there shall be not less than 30 inches clearance in front of the water closet.",
-        "document_id": "doc_pc_2022",
-        "filename": "nyc_plumbing_code_2022.pdf",
-        "page_number": 45,
-        "code_book": "Plumbing Code",
-        "chapter": "Chapter 4",
-        "section": "405.3.1",
-        "subsection": None,
-        "discipline": "Plumbing",
-        "occupancy_type": None,
-        "jurisdiction": "NYC",
-        "revision_year": "2022"
-    },
-    {
-        "chunk_id": "chunk_sprink_1",
-        "chunk_text": "NYC Fire Code Section 903.2.1 - An automatic sprinkler system shall be provided throughout all buildings containing a Group A occupancy where occupant load exceeds 300.",
-        "document_id": "doc_fc_2022",
-        "filename": "nyc_fire_code_2022.pdf",
-        "page_number": 98,
-        "code_book": "Fire Code",
-        "chapter": "Chapter 9",
-        "section": "903.2.1",
-        "subsection": None,
-        "discipline": "Fire Protection",
-        "occupancy_type": "assembly_unconcentrated",
-        "jurisdiction": "NYC",
-        "revision_year": "2022"
-    },
-    {
-        "chunk_id": "chunk_ada_1",
-        "chunk_text": "ICC A117.1 Section 304.3.1 - Wheelchair turning space. The turning space shall be a circular space with a minimum 60 inches diameter. Wheelchair turning space shall be permitted to include knee and toe clearance.",
-        "document_id": "doc_ada_2022",
-        "filename": "nyc_building_code_2022.pdf",
-        "page_number": 412,
-        "code_book": "Building Code",
-        "chapter": "Chapter 11",
-        "section": "304.3.1",
-        "subsection": None,
-        "discipline": "Accessibility",
-        "occupancy_type": None,
-        "jurisdiction": "NYC",
-        "revision_year": "2022"
-    },
-    {
-        "chunk_id": "chunk_ada_2",
-        "chunk_text": "ICC A117.1 Section 404.2.2 - Accessible doors shall have a clear opening width of 32 inches minimum. Clear openings of doorways with swinging doors shall be measured between the face of the door and the stop.",
-        "document_id": "doc_ada_2022",
-        "filename": "nyc_building_code_2022.pdf",
-        "page_number": 415,
-        "code_book": "Building Code",
-        "chapter": "Chapter 11",
-        "section": "404.2.2",
-        "subsection": None,
-        "discipline": "Accessibility",
-        "occupancy_type": None,
-        "jurisdiction": "NYC",
-        "revision_year": "2022"
-    }
-]
+import requests
+
+from ..config import settings
+from ..corpus import CorpusRecord
+from ..schemas.models import RetrievalCandidate
+
 
 class PineconeRetriever:
     """
-    Retriever class encapsulating semantic query operations over Pinecone vector indexes.
-    Implements filter mapping, retry loops, and async queries.
+    Retriever class encapsulating semantic query operations over Pinecone.
+
+    Requires a real embedding endpoint plus Pinecone data-plane host.
     """
 
     async def query_semantic_index(
@@ -110,82 +22,143 @@ class PineconeRetriever:
         top_k: int = 5
     ) -> List[RetrievalCandidate]:
         """
-        Executes an async semantic search over the index.
-        Filters candidate chunks by hard metadata parameters and scores them.
+        Executes an async semantic search over the configured Pinecone index.
+        Filters candidate chunks by hard metadata parameters and returns ranked
+        evidence candidates.
         """
-        if not settings.ALLOW_MOCK_RETRIEVAL:
+        self._validate_production_config()
+        vector = await asyncio.to_thread(self._embed_query, query)
+        response = await asyncio.to_thread(self._query_pinecone, vector, filters, top_k)
+        return self._parse_pinecone_matches(response.get("matches", []))
+
+    def _validate_production_config(self) -> None:
+        missing = []
+        if not settings.PINECONE_API_KEY:
+            missing.append("PINECONE_API_KEY")
+        if not settings.PINECONE_INDEX_HOST:
+            missing.append("PINECONE_INDEX_HOST")
+        if not settings.EMBEDDING_ENDPOINT:
+            missing.append("EMBEDDING_ENDPOINT")
+        if missing:
             raise RuntimeError(
-                "Semantic retrieval is not configured. Set PINECONE_API_KEY and integrate the "
-                "Pinecone SDK, or enable ALLOW_MOCK_RETRIEVAL only for local tests."
+                "Semantic retrieval requires production configuration: "
+                + ", ".join(missing)
             )
 
-        # Simulate small network latency (as requested: target Pinecone <100ms)
-        await asyncio.sleep(0.02)
-        
+    def _embed_query(self, query: str) -> List[float]:
+        headers = {"Content-Type": "application/json"}
+        if settings.EMBEDDING_API_KEY:
+            headers["Authorization"] = f"Bearer {settings.EMBEDDING_API_KEY}"
+
+        response = requests.post(
+            settings.EMBEDDING_ENDPOINT,
+            json={"input": query},
+            headers=headers,
+            timeout=settings.RETRIEVER_TIMEOUT_MS / 1000,
+        )
+        response.raise_for_status()
+        payload = response.json()
+
+        embedding = payload.get("embedding") or payload.get("vector")
+        if embedding is None and isinstance(payload.get("data"), list) and payload["data"]:
+            embedding = payload["data"][0].get("embedding")
+
+        if not isinstance(embedding, list) or not embedding:
+            raise RuntimeError("Embedding endpoint did not return a non-empty embedding vector.")
+
+        return [float(value) for value in embedding]
+
+    def _query_pinecone(
+        self,
+        vector: List[float],
+        filters: Dict[str, Any],
+        top_k: int,
+    ) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {
+            "vector": vector,
+            "topK": top_k,
+            "includeMetadata": True,
+        }
+        if settings.PINECONE_NAMESPACE:
+            payload["namespace"] = settings.PINECONE_NAMESPACE
+        if filters:
+            payload["filter"] = {
+                key: {"$eq": value}
+                for key, value in filters.items()
+                if value is not None
+            }
+
+        response = requests.post(
+            f"{settings.PINECONE_INDEX_HOST.rstrip('/')}/query",
+            json=payload,
+            headers={
+                "Api-Key": settings.PINECONE_API_KEY,
+                "Content-Type": "application/json",
+            },
+            timeout=settings.RETRIEVER_TIMEOUT_MS / 1000,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def _parse_pinecone_matches(self, matches: List[Dict[str, Any]]) -> List[RetrievalCandidate]:
         candidates: List[RetrievalCandidate] = []
+        for idx, match in enumerate(matches):
+            metadata = match.get("metadata") or {}
+            chunk_text = (
+                metadata.get("chunk_text")
+                or metadata.get("text")
+                or metadata.get("page_content")
+                or metadata.get("content")
+            )
+            if not chunk_text:
+                continue
 
-        # 1. Apply hard metadata filtering (jurisdiction, code_book, revision_year)
-        filtered_corpus = []
-        for item in MOCK_CORPUS:
-            matches_filter = True
-            
-            # Check hard matches in filters dict
-            for f_key, f_val in filters.items():
-                # We filter by exact value if present
-                item_val = item.get(f_key)
-                if item_val and f_val and item_val != f_val:
-                    # Ignore case for string check
-                    if isinstance(item_val, str) and isinstance(f_val, str):
-                        if item_val.lower() != f_val.lower():
-                            matches_filter = False
-                            break
-                    else:
-                        matches_filter = False
-                        break
-            
-            if matches_filter:
-                filtered_corpus.append(item)
-
-        if not filtered_corpus:
-            return []
-
-        # 2. Simple simulated Cosine Similarity using word overlap
-        query_words = set(query.lower().split())
-        scored_items = []
-        for item in filtered_corpus:
-            chunk_words = set(item["chunk_text"].lower().split())
-            intersection = query_words.intersection(chunk_words)
-            # Similarity score = size of intersection / size of query
-            score = len(intersection) / max(len(query_words), 1)
-            # Add small random noise to simulate float vector scores
-            score = min(1.0, score + 0.05)
-            scored_items.append((score, item))
-
-        # Sort by similarity score descending
-        scored_items.sort(key=lambda x: x[0], reverse=True)
-
-        # 3. Build candidates list with rank details
-        for idx, (score, item) in enumerate(scored_items[:top_k]):
+            record: CorpusRecord = {
+                "chunk_id": str(metadata.get("chunk_id") or match.get("id") or f"pinecone-{idx + 1}"),
+                "chunk_text": str(chunk_text),
+                "document_id": str(metadata.get("document_id") or metadata.get("source_id") or metadata.get("source") or "unknown"),
+                "filename": str(metadata.get("filename") or metadata.get("source") or "unknown"),
+                "page_number": int(metadata.get("page_number") or metadata.get("page") or 1),
+                "code_book": str(metadata.get("code_book") or metadata.get("code") or "unknown"),
+                "chapter": str(metadata.get("chapter") or "unknown"),
+                "section": str(metadata.get("section") or metadata.get("section_number") or "unknown"),
+                "subsection": metadata.get("subsection"),
+                "discipline": metadata.get("discipline"),
+                "occupancy_type": metadata.get("occupancy_type"),
+                "jurisdiction": str(metadata.get("jurisdiction") or "NYC"),
+                "revision_year": str(metadata.get("revision_year") or metadata.get("year") or "unknown"),
+            }
             candidates.append(
-                RetrievalCandidate(
-                    chunk_id=item["chunk_id"],
-                    chunk_text=item["chunk_text"],
-                    document_id=item["document_id"],
-                    filename=item["filename"],
-                    page_number=item["page_number"],
-                    code_book=item["code_book"],
-                    chapter=item["chapter"],
-                    section=item["section"],
-                    subsection=item["subsection"],
-                    discipline=item["discipline"],
-                    occupancy_type=item["occupancy_type"],
-                    jurisdiction=item["jurisdiction"],
-                    revision_year=item["revision_year"],
-                    pinecone_rank=idx + 1,
-                    fusion_score=0.0,
-                    confidence=round(score, 3),
-                    retrieval_sources=["pinecone"]
+                self._candidate_from_record(
+                    record,
+                    idx + 1,
+                    round(float(match.get("score", 0.0)), 3),
                 )
             )
-
         return candidates
+
+    def _candidate_from_record(
+        self,
+        item: CorpusRecord,
+        rank: int,
+        confidence: float,
+    ) -> RetrievalCandidate:
+        return RetrievalCandidate(
+            chunk_id=item["chunk_id"],
+            chunk_text=item["chunk_text"],
+            document_id=item["document_id"],
+            filename=item["filename"],
+            page_number=item["page_number"],
+            code_book=item["code_book"],
+            chapter=item["chapter"],
+            section=item["section"],
+            subsection=item["subsection"],
+            discipline=item["discipline"],
+            occupancy_type=item["occupancy_type"],
+            jurisdiction=item["jurisdiction"],
+            revision_year=item["revision_year"],
+            pinecone_rank=rank,
+            fusion_score=0.0,
+            confidence=confidence,
+            retrieval_sources=["pinecone"],
+        )

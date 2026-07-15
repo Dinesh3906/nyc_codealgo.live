@@ -3,11 +3,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from enum import Enum
 
 class OCREngineType(str, Enum):
-    MOCK = "mock"
     AZURE = "azure"
     GOOGLE = "google"
 
 class Settings(BaseSettings):
+    # Runtime Environment
+    APP_ENV: str = "production"
+
     # API Settings
     API_PORT: int = 8000
     API_HOST: str = "0.0.0.0"
@@ -20,7 +22,7 @@ class Settings(BaseSettings):
     TIMEOUT_SECONDS: int = 180
 
     # OCR Settings
-    OCR_ENGINE: OCREngineType = OCREngineType.MOCK
+    OCR_ENGINE: OCREngineType = OCREngineType.AZURE
     AZURE_OCR_ENDPOINT: str = ""
     AZURE_OCR_KEY: str = ""
     GOOGLE_APPLICATION_CREDENTIALS: str = ""

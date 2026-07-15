@@ -3,25 +3,25 @@ from typing import List, Dict, Any, Optional
 
 class IfcDoor(BaseModel):
     id: str
-    width_inches: float
-    height_inches: float
+    width_inches: Optional[float] = None
+    height_inches: Optional[float] = None
     fire_rating_minutes: Optional[float] = None
     swing_direction: Optional[str] = None
-    accessible: bool = True
+    accessible: Optional[bool] = None
     schedule_ref: Optional[str] = None
     confidence: float = 1.0
 
 class IfcWindow(BaseModel):
     id: str
-    width_inches: float
-    height_inches: float
-    area_sq_feet: float
+    width_inches: Optional[float] = None
+    height_inches: Optional[float] = None
+    area_sq_feet: Optional[float] = None
     confidence: float = 1.0
 
 class IfcWall(BaseModel):
     id: str
-    length_feet: float
-    thickness_inches: float
+    length_feet: Optional[float] = None
+    thickness_inches: Optional[float] = None
     fire_rating_hours: Optional[float] = None
     confidence: float = 1.0
 
@@ -45,13 +45,13 @@ class IfcSpace(BaseModel):
     area_sq_feet: float
     perimeter_feet: float
     volume_cubic_feet: Optional[float] = None
-    ceiling_height_feet: float = 9.0
-    occupancy_classification: str = "business"
-    occupant_load: int = 1
-    required_exit_width_inches: float = 0.0
-    actual_exit_width_inches: float = 0.0
+    ceiling_height_feet: Optional[float] = None
+    occupancy_classification: Optional[str] = None
+    occupant_load: Optional[int] = None
+    required_exit_width_inches: Optional[float] = None
+    actual_exit_width_inches: Optional[float] = None
     wheelchair_turning_clearance_inches: float = 0.0
-    accessible: bool = True
+    accessible: Optional[bool] = None
     doors: List[IfcDoor] = Field(default_factory=list)
     windows: List[IfcWindow] = Field(default_factory=list)
     walls: List[IfcWall] = Field(default_factory=list)

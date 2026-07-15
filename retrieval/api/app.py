@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from shared.cors import configure_cors
 from query_understanding.schemas.models import ComplianceRetrievalPlan
 from ..schemas.models import CandidateEvidenceSet
@@ -8,6 +8,7 @@ from ..bm25.engine import BM25Retriever
 from ..rrf.fusion import RRFFusion
 from ..dedup.deduplicator import Deduplicator
 from ..confidence.evaluator import RetrievalConfidenceEvaluator
+from ..config import settings
 
 app = FastAPI(
     title="PermitIQ Hybrid Retrieval API",
@@ -38,31 +39,34 @@ async def retrieve_evidence(plan: ComplianceRetrievalPlan):
 
     top_k = plan.top_k or 5
 
-    # 2. Run Parallel Retrieval with graceful degradation fallbacks
+    # 2. Run parallel retrieval. Production requires semantic retrieval to be
+    # configured and healthy; local/test can degrade to BM25 for fixtures.
     pinecone_results = []
     bm25_results = []
+    pinecone_error = None
+    bm25_error = None
     
     tasks = [
         pinecone_client.query_semantic_index(plan.query, filters, top_k),
         bm25_client.query_lexical_index(plan.query, filters, top_k)
     ]
 
-    try:
-        # Execute concurrently with a timeout limit (e.g. 1.5 seconds)
-        results = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    if isinstance(results[0], Exception):
+        pinecone_error = results[0]
+    else:
         pinecone_results = results[0]
+
+    if isinstance(results[1], Exception):
+        bm25_error = results[1]
+    else:
         bm25_results = results[1]
-    except Exception:
-        # Fallback degradation: if one fails, continue with whatever succeeded
-        # We try to run them individually to catch which one failed
-        try:
-            pinecone_results = await pinecone_client.query_semantic_index(plan.query, filters, top_k)
-        except Exception:
-            pass
-        try:
-            bm25_results = await bm25_client.query_lexical_index(plan.query, filters, top_k)
-        except Exception:
-            pass
+
+    if pinecone_error and settings.APP_ENV.lower() == "production":
+        raise HTTPException(
+            status_code=503,
+            detail=f"Semantic retrieval unavailable in production: {pinecone_error}"
+        )
 
     # If both failed or returned nothing, raise error or return empty set
     if not pinecone_results and not bm25_results:
@@ -70,7 +74,11 @@ async def retrieve_evidence(plan: ComplianceRetrievalPlan):
             query=plan.query,
             candidates=[],
             retrieval_confidence=0.0,
-            metadata={"status": "empty_results_warning"}
+            metadata={
+                "status": "empty_results_warning",
+                "pinecone_error": str(pinecone_error) if pinecone_error else None,
+                "bm25_error": str(bm25_error) if bm25_error else None
+            }
         )
 
     # 3. Apply Reciprocal Rank Fusion (RRF)
@@ -95,7 +103,9 @@ async def retrieve_evidence(plan: ComplianceRetrievalPlan):
         metadata={
             "fused_count": len(fused_candidates),
             "deduped_count": len(deduped_candidates),
-            "returned_count": len(final_candidates)
+            "returned_count": len(final_candidates),
+            "semantic_degraded": pinecone_error is not None,
+            "lexical_degraded": bm25_error is not None
         }
     )
 

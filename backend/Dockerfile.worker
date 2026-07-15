@@ -1,0 +1,38 @@
+# syntax=docker/dockerfile:1.7
+
+FROM python:3.11-slim-bookworm AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV APP_ENV=production
+WORKDIR /app
+
+RUN groupadd --system permitiq && useradd --system --gid permitiq --home-dir /app permitiq
+
+COPY backend/requirements-worker.txt ./backend/requirements-worker.txt
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r backend/requirements-worker.txt
+
+COPY aiops ./aiops
+COPY autonomous_gov ./autonomous_gov
+COPY backend ./backend
+COPY compliance_engine ./compliance_engine
+COPY context_engine ./context_engine
+COPY document_ingestion ./document_ingestion
+COPY drawing_understanding ./drawing_understanding
+COPY knowledge_model ./knowledge_model
+COPY object_detection ./object_detection
+COPY query_understanding ./query_understanding
+COPY reporting ./reporting
+COPY reranking ./reranking
+COPY retrieval ./retrieval
+COPY shared ./shared
+COPY spatial_reasoning ./spatial_reasoning
+COPY validation ./validation
+
+RUN mkdir -p /app/uploads /app/scratch /app/corpus /app/evidence \
+    && chown -R permitiq:permitiq /app
+
+USER permitiq
+
+CMD ["sh", "-c", "python -m backend.workers.readiness && celery -A backend.workers.tasks worker --loglevel=INFO --concurrency=4"]

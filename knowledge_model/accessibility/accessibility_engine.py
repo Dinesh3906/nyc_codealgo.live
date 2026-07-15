@@ -26,13 +26,20 @@ class AccessibilityEngine:
 
         # Verify all door clearances
         doors_accessible = True
+        unknown_door_width = False
         for door in doors:
-            width = door.get("width_inches", 0.0) if isinstance(door, dict) else getattr(door, "width_inches", 0.0)
+            width = door.get("width_inches") if isinstance(door, dict) else getattr(door, "width_inches", None)
+            if width is None:
+                unknown_door_width = True
+                continue
             if width < settings.ACCESSIBILITY_DOOR_CLEARANCE_INCHES:
                 doors_accessible = False
                 break
 
-        overall_accessible = is_turning_accessible and doors_accessible
+        if unknown_door_width and doors_accessible:
+            doors_accessible = None
+
+        overall_accessible = None if doors_accessible is None else is_turning_accessible and doors_accessible
 
         return {
             "needs_turning_space": needs_turning_space,

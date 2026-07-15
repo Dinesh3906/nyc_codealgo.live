@@ -1,30 +1,32 @@
+import json
+from pathlib import Path
 from typing import List, Dict, Any
 from ..config import settings
 
 class RegulationMonitor:
     """
-    Simulates crawlers monitoring official DOB and ICC safe pages to flag PDF modifications.
+    Reads discovered regulatory source changes from a crawler output artifact.
     """
 
     def __init__(self):
-        self.state_db = {
-            "https://codes.iccsafe.org/nyc_building_code_2022.pdf": "hash-v1.0"
-        }
+        self.state_db = {}
 
     def check_for_source_updates(self) -> List[Dict[str, Any]]:
         """
-        Polls registered sources and returns list of changed files requiring ingestion.
+        Returns changed files requiring ingestion from REGULATION_UPDATES_PATH.
         """
-        updates = []
-        
-        # Simulating finding a new PDF amendment release on NYC DOB
-        new_pdf_url = "https://www.nyc.gov/dob/bulletins/stairwell_amendment_2026.pdf"
-        updates.append({
-            "source_name": "NYC DOB",
-            "url": new_pdf_url,
-            "hash": "hash-v2.0",
-            "action": "MODIFIED",
-            "section_affected": "1109.2"
-        })
+        if not settings.REGULATION_UPDATES_PATH:
+            return []
+
+        path = Path(settings.REGULATION_UPDATES_PATH)
+        if not path.exists():
+            raise RuntimeError(f"Configured REGULATION_UPDATES_PATH does not exist: {path}")
+
+        with path.open("r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+
+        updates = payload.get("updates") if isinstance(payload, dict) else payload
+        if not isinstance(updates, list):
+            raise RuntimeError("Regulation update artifact must be a list or an object with an updates list.")
 
         return updates

@@ -10,7 +10,7 @@ def test_health_check_endpoint():
     assert response.status_code == 200
     json_data = response.json()
     assert json_data["status"] == "healthy"
-    assert json_data["ocr_engine"] == "mock"
+    assert json_data["ocr_engine"] == "azure"
 
 @patch("document_ingestion.api.app.normalization_engine")
 def test_ingest_endpoint(mock_engine):

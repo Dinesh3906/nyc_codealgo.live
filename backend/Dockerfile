@@ -24,6 +24,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/certs ./certs
 COPY src/config ./src/config
 COPY src/data ./src/data
+RUN if [ ! -f certs/ca-bundle.pem ] && [ -f certs/global-bundle.pem ]; then cp certs/global-bundle.pem certs/ca-bundle.pem; fi
 
 RUN mkdir -p uploads scratch && chown -R permitiq:permitiq /app
 USER permitiq

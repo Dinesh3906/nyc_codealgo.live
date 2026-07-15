@@ -54,6 +54,16 @@ spec:
                 secretKeyRef:
                   name: permit-iq-secrets
                   key: db-name
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_CONNECTION_LIMIT
+              value: "50"
+            - name: DB_QUERY_TIMEOUT_MS
+              value: "5000"
+            - name: DB_CONNECT_TIMEOUT_MS
+              value: "5000"
+            - name: DB_SSL_CA_PATH
+              value: "../certs/ca-bundle.pem"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -114,7 +124,7 @@ spec:
               cpu: "500m"
               memory: 512Mi
             limits:
-              cpu: "1500m"
+              cpu: "1000m"
               memory: 1536Mi
           securityContext:
             allowPrivilegeEscalation: false
@@ -128,6 +138,10 @@ spec:
               mountPath: /app/uploads
             - name: scratch
               mountPath: /app/scratch
+            - name: db-ca-bundle
+              mountPath: /app/certs/ca-bundle.pem
+              subPath: ca-bundle.pem
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health
@@ -158,3 +172,6 @@ spec:
           emptyDir: {}
         - name: scratch
           emptyDir: {}
+        - name: db-ca-bundle
+          secret:
+            secretName: permit-iq-db-ca-bundle

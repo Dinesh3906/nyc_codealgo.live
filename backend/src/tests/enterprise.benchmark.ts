@@ -1,237 +1,266 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-console.log('🏁 Starting Enterprise Verification Benchmark Engine...');
-console.log('📂 Running 1000 compliance scenarios across multiple occupancy groups...');
-
-// Ground-truth dataset simulation (1000 compliance checks across disciplines)
-const occupancyGroups = ['Residential', 'Commercial', 'Mixed-use', 'Schools', 'Hospitals', 'Warehouses', 'Restaurants', 'Industrial', 'High-rise', 'Low-rise', 'Historic'];
-const disciplines = ['Zoning', 'Egress', 'Accessibility', 'FireProtection', 'Structural', 'Plumbing', 'Mechanical', 'Electrical'];
+type ComplianceStatus = 'compliant' | 'violation' | 'not_applicable';
 
 interface ScenarioResult {
   scenarioId: string;
-  occupancyGroup: string;
+  occupancyGroup?: string;
   discipline: string;
-  status: 'compliant' | 'violation' | 'not_applicable';
+  expectedStatus: ComplianceStatus;
+  predictedStatus: ComplianceStatus;
   matchedCitations: string[];
-  hallucinatedCitations: string[];
-  repairedCitations: string[];
+  returnedHallucinatedCitations?: string[];
+  rejectedHallucinatedCitations?: string[];
+  repairedCitations?: string[];
   retrievedChunks: string[];
   latencyMs: number;
-  cpuPercent: number;
-  memoryMb: number;
+  cpuPercent?: number;
+  memoryMb?: number;
 }
 
-const scenarioResults: ScenarioResult[] = [];
+interface SecurityEvidence {
+  adversarialAttempts: number;
+  successfulBypasses: number;
+  blockedAttacks?: number;
+}
 
-// Simulate 1000 scenario runs (1000 audits)
-for (let i = 1; i <= 1000; i++) {
-  const occGroup = occupancyGroups[i % occupancyGroups.length];
-  const discipline = disciplines[i % disciplines.length];
+interface RetrievalEvidence {
+  mmrDiversityScore?: number;
+  coverage?: number;
+}
 
-  // High-fidelity performance stats simulation
-  const latency = Math.floor(Math.random() * 300) + 80; // 80ms - 380ms
-  const isViolation = Math.random() < 0.25;
-  const isNotApplicable = Math.random() < 0.15;
-  const status = isNotApplicable ? 'not_applicable' : (isViolation ? 'violation' : 'compliant');
+interface BenchmarkEvidence {
+  scenarios: ScenarioResult[];
+  security?: SecurityEvidence;
+  retrieval?: RetrievalEvidence;
+}
 
-  const chunkId1 = `chunk_${discipline.toLowerCase()}_${i}_1`;
-  const chunkId2 = `chunk_${discipline.toLowerCase()}_${i}_2`;
+interface ConfusionMetrics {
+  truePositives: number;
+  trueNegatives: number;
+  falsePositives: number;
+  falseNegatives: number;
+  precision: number;
+  recall: number;
+  f1: number;
+}
 
-  // Random potential citations
-  const matched = [`BC ${1000 + i}`, `PC ${400 + i}`];
-  // 1 out of 1000 contains a hallucinated citation that gets validation caught and repaired
-  const hallucinated: string[] = i === 500 ? [`BC 9999.9.9`] : [];
-  const repaired: string[] = i === 500 ? [`BC 1008.1.1`] : [];
+function usage(): string {
+  return [
+    'Enterprise benchmark requires measured evidence.',
+    'Set ENTERPRISE_BENCHMARK_EVIDENCE or pass the evidence JSON path as argv[2].',
+    'Expected shape: { "scenarios": [{ "scenarioId", "discipline", "expectedStatus", "predictedStatus", "matchedCitations", "retrievedChunks", "latencyMs" }] }',
+  ].join('\n');
+}
 
-  scenarioResults.push({
-    scenarioId: `scenario_${i}`,
-    occupancyGroup: occGroup,
-    discipline,
-    status,
-    matchedCitations: matched,
-    hallucinatedCitations: hallucinated,
-    repairedCitations: repaired,
-    retrievedChunks: [chunkId1, chunkId2],
-    latencyMs: latency,
-    cpuPercent: 8 + Math.floor(Math.random() * 8),
-    memoryMb: 110 + Math.floor(Math.random() * 40)
+function resolveEvidencePath(): string {
+  const configured = process.argv[2] || process.env.ENTERPRISE_BENCHMARK_EVIDENCE;
+  if (!configured) {
+    throw new Error(usage());
+  }
+  return path.resolve(configured);
+}
+
+function readEvidence(filePath: string): BenchmarkEvidence {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Benchmark evidence file does not exist: ${filePath}`);
+  }
+
+  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const scenarios = Array.isArray(parsed) ? parsed : parsed.scenarios;
+  if (!Array.isArray(scenarios) || scenarios.length === 0) {
+    throw new Error('Benchmark evidence must contain a non-empty scenarios array.');
+  }
+
+  scenarios.forEach((scenario: Partial<ScenarioResult>, index: number) => {
+    const prefix = `Scenario ${index + 1}`;
+    if (!scenario.scenarioId) throw new Error(`${prefix} is missing scenarioId.`);
+    if (!scenario.discipline) throw new Error(`${prefix} is missing discipline.`);
+    if (!scenario.expectedStatus) throw new Error(`${prefix} is missing expectedStatus.`);
+    if (!scenario.predictedStatus) throw new Error(`${prefix} is missing predictedStatus.`);
+    if (!Array.isArray(scenario.matchedCitations)) throw new Error(`${prefix} is missing matchedCitations array.`);
+    if (!Array.isArray(scenario.retrievedChunks)) throw new Error(`${prefix} is missing retrievedChunks array.`);
+    if (typeof scenario.latencyMs !== 'number') throw new Error(`${prefix} is missing numeric latencyMs.`);
   });
+
+  return Array.isArray(parsed) ? { scenarios } : parsed;
 }
 
-// Compute metrics from raw simulated JSON
-const totalScenarios = scenarioResults.length;
-const totalLatency = scenarioResults.reduce((acc, r) => acc + r.latencyMs, 0);
-const avgLatency = totalLatency / totalScenarios;
-const maxLatency = Math.max(...scenarioResults.map(r => r.latencyMs));
-const minLatency = Math.min(...scenarioResults.map(r => r.latencyMs));
-
-// Sort latencies for P50, P90, P95, P99
-const sortedLatencies = scenarioResults.map(r => r.latencyMs).sort((a, b) => a - b);
-const p50 = sortedLatencies[Math.floor(totalScenarios * 0.5)];
-const p90 = sortedLatencies[Math.floor(totalScenarios * 0.90)];
-const p95 = sortedLatencies[Math.floor(totalScenarios * 0.95)];
-const p99 = sortedLatencies[Math.floor(totalScenarios * 0.99)];
-
-// Citation metrics
-const totalHallucinations = scenarioResults.reduce((acc, r) => acc + r.hallucinatedCitations.length, 0);
-const totalRepaired = scenarioResults.reduce((acc, r) => acc + r.repairedCitations.length, 0);
-const returnedHallucinations = totalHallucinations - totalRepaired; // Should be 0
-
-// False positives / negatives
-const falsePositives = scenarioResults.filter(r => r.scenarioId === 'scenario_12' || r.scenarioId === 'scenario_250').length; // 2
-const falseNegatives = scenarioResults.filter(r => r.scenarioId === 'scenario_89').length; // 1
-const truePositives = scenarioResults.filter(r => r.status === 'violation').length - falseNegatives;
-const trueNegatives = scenarioResults.filter(r => r.status === 'compliant' || r.status === 'not_applicable').length - falsePositives;
-
-const precision = truePositives / (truePositives + falsePositives);
-const recall = truePositives / (truePositives + falseNegatives);
-const f1 = (2 * precision * recall) / (precision + recall);
-
-// Resolve the artifacts directory dynamically using the current conversation ID
-function getArtifactsDir(): string {
-  try {
-    const meta = process.env.ANTIGRAVITY_SOURCE_METADATA;
-    if (meta) {
-      const parsed = JSON.parse(meta);
-      const conversationId = parsed.tool?.conversationId;
-      if (conversationId) {
-        const p = path.join('C:\\Users\\chala\\.gemini\\antigravity-ide\\brain', conversationId);
-        if (fs.existsSync(p)) return p;
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  // Fallback to local scratch folder if not running in agent context
-  const fallback = path.resolve(__dirname, '../../scratch');
-  if (!fs.existsSync(fallback)) {
-    fs.mkdirSync(fallback, { recursive: true });
-  }
-  return fallback;
+function percentile(values: number[], percentileValue: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.ceil(sorted.length * percentileValue) - 1);
+  return sorted[idx];
 }
 
-const artifactsDir = getArtifactsDir();
+function computeConfusion(scenarios: ScenarioResult[]): ConfusionMetrics {
+  let truePositives = 0;
+  let trueNegatives = 0;
+  let falsePositives = 0;
+  let falseNegatives = 0;
 
-// Write citation_forensics.md
-const citationForensics = `# Citation Forensics Report
+  for (const scenario of scenarios) {
+    const expectedViolation = scenario.expectedStatus === 'violation';
+    const predictedViolation = scenario.predictedStatus === 'violation';
 
-This document records the exact citation validations, rejections, and repairs performed during the 1000 scenario benchmark.
+    if (expectedViolation && predictedViolation) truePositives += 1;
+    else if (!expectedViolation && !predictedViolation) trueNegatives += 1;
+    else if (!expectedViolation && predictedViolation) falsePositives += 1;
+    else falseNegatives += 1;
+  }
 
-## 📊 Summary Performance
-- **Hallucinations Generated**: ${totalHallucinations}
-- **Hallucinations Repaired**: ${totalRepaired}
-- **Hallucinations Returned to User**: **${returnedHallucinations}** (0.00% target met!)
+  const precision = truePositives + falsePositives > 0
+    ? truePositives / (truePositives + falsePositives)
+    : 0;
+  const recall = truePositives + falseNegatives > 0
+    ? truePositives / (truePositives + falseNegatives)
+    : 0;
+  const f1 = precision + recall > 0
+    ? (2 * precision * recall) / (precision + recall)
+    : 0;
 
-## 📝 Forensics Log
+  return { truePositives, trueNegatives, falsePositives, falseNegatives, precision, recall, f1 };
+}
 
-| Scenario ID | Discipline | Original Model Output | Validated Citation | Retrieved Page | Validator Decision | Repair Decision |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| scenario_500 | Structural | BC 9999.9.9 (Nonexistent) | BC 1008.1.1 (Verified) | Page 2 | ❌ REJECT (Hallucination) | 🛠️ REPAIRED |
-${scenarioResults.slice(0, 10).map((r, idx) => `| scenario_${idx + 1} | ${r.discipline} | ${r.matchedCitations[0]} | ${r.matchedCitations[0]} | Page 1 | ✅ ACCEPT | N/A |`).join('\n')}
+function resolveArtifactsDir(): string {
+  const configured = process.env.ENTERPRISE_BENCHMARK_OUTPUT_DIR;
+  const target = configured
+    ? path.resolve(configured)
+    : path.resolve(__dirname, '../../scratch/enterprise-benchmark');
+  fs.mkdirSync(target, { recursive: true });
+  return target;
+}
 
----
-**Verdict**: 100% of generated hallucinations were successfully intercepted and corrected before reaching the user.
-`;
-fs.writeFileSync(path.join(artifactsDir, 'citation_forensics.md'), citationForensics, 'utf8');
+function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(2)}%`;
+}
 
-// Write retrieval_forensics.md
-const retrievalForensics = `# Retrieval Forensics Report
+function writeReport(filePath: string, body: string): void {
+  fs.writeFileSync(filePath, body, 'utf8');
+}
 
-This document details RAG Pinecone retrieval metrics, semantic Jaccard deduplication rates, and MMR diversity scoring.
+function main(): void {
+  const evidencePath = resolveEvidencePath();
+  const evidence = readEvidence(evidencePath);
+  const scenarios = evidence.scenarios;
+  const metrics = computeConfusion(scenarios);
+  const latencies = scenarios.map((scenario) => scenario.latencyMs);
+  const avgLatency = latencies.reduce((sum, latency) => sum + latency, 0) / latencies.length;
+  const maxLatency = Math.max(...latencies);
+  const p50 = percentile(latencies, 0.50);
+  const p90 = percentile(latencies, 0.90);
+  const p95 = percentile(latencies, 0.95);
+  const p99 = percentile(latencies, 0.99);
+  const returnedHallucinations = scenarios.reduce(
+    (sum, scenario) => sum + (scenario.returnedHallucinatedCitations?.length || 0),
+    0,
+  );
+  const rejectedHallucinations = scenarios.reduce(
+    (sum, scenario) => sum + (scenario.rejectedHallucinatedCitations?.length || 0),
+    0,
+  );
+  const repairedCitations = scenarios.reduce(
+    (sum, scenario) => sum + (scenario.repairedCitations?.length || 0),
+    0,
+  );
+  const securityBypassRate = evidence.security && evidence.security.adversarialAttempts > 0
+    ? evidence.security.successfulBypasses / evidence.security.adversarialAttempts
+    : null;
 
-## 📊 Retrieval Performance
-- **Retrieval Precision**: ${(precision * 100).toFixed(2)}%
-- **Retrieval Recall**: ${(recall * 100).toFixed(2)}%
-- **MMR Diversity Score**: **0.86** (high semantic diversity)
-- **Coverage**: **99.92%**
+  const failures: string[] = [];
+  if (metrics.precision < 0.95) failures.push(`precision ${formatPercent(metrics.precision)} is below 95.00%`);
+  if (metrics.recall < 0.95) failures.push(`recall ${formatPercent(metrics.recall)} is below 95.00%`);
+  if (metrics.f1 < 0.95) failures.push(`F1 ${metrics.f1.toFixed(4)} is below 0.9500`);
+  if (p95 > 2500) failures.push(`p95 latency ${p95.toFixed(0)}ms exceeds 2500ms`);
+  if (returnedHallucinations > 0) failures.push(`${returnedHallucinations} hallucinated citations were returned`);
+  if (securityBypassRate !== null && securityBypassRate > 0) {
+    failures.push(`security bypass rate ${formatPercent(securityBypassRate)} is above 0.00%`);
+  }
 
-## 📝 Query Retrieval Trace Log
+  const readinessScore = Math.round(
+    Math.min(metrics.precision, metrics.recall, metrics.f1, p95 > 0 ? Math.min(1, 2500 / p95) : 0) * 10000,
+  ) / 100;
+  const certificationStatus = failures.length === 0 ? 'EVIDENCE PASSED' : 'EVIDENCE FAILED';
+  const artifactsDir = resolveArtifactsDir();
 
-| Query Description | Retrieved Chunk IDs | Original Score | MMR Score | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| Stair egress clearance width | chunk_egress_1_1, chunk_egress_1_2 | 0.89 | 0.86 | Selected |
-| Egress stair width same-page duplicate | chunk_egress_1_3 | 0.88 | 0.32 | ❌ Removed (Duplicate) |
-| Toilet fixture accessibility | chunk_accessibility_2_1 | 0.92 | 0.89 | Selected |
-| Natural ventilation limits | chunk_mechanical_4_1 | 0.87 | 0.84 | Selected |
+  writeReport(path.join(artifactsDir, 'citation_forensics.md'), `# Citation Forensics Report
 
----
-**Verdict**: Semantic deduplication combined with MMR reranking successfully optimized retrieved context diversity while maintaining sub-10s retrieval times.
-`;
-fs.writeFileSync(path.join(artifactsDir, 'retrieval_forensics.md'), retrievalForensics, 'utf8');
+Evidence source: ${evidencePath}
 
-// Write performance_forensics.md
-const performanceForensics = `# Performance Forensics Report
+- Rejected hallucinated citations: ${rejectedHallucinations}
+- Repaired citations: ${repairedCitations}
+- Returned hallucinated citations: ${returnedHallucinations}
 
-This document provides a detailed resource usage and latency profile of the NYC Building Code Compliance Engine.
+${returnedHallucinations === 0 ? 'No hallucinated citations were returned in the submitted evidence.' : 'Returned hallucinated citations were present in the submitted evidence.'}
+`);
 
-## ⏱️ Latency Percentiles (Seconds)
+  writeReport(path.join(artifactsDir, 'retrieval_forensics.md'), `# Retrieval Forensics Report
 
-- **Min Latency**: ${(minLatency / 10).toFixed(2)}s
-- **Average Latency**: ${(avgLatency / 10).toFixed(2)}s
-- **P50 (Median)**: ${(p50 / 10).toFixed(2)}s
-- **P90**: ${(p90 / 10).toFixed(2)}s
-- **P95**: ${(p95 / 10).toFixed(2)}s
-- **P99**: ${(p99 / 10).toFixed(2)}s
-- **Max Latency**: ${(maxLatency / 10).toFixed(2)}s
+Evidence source: ${evidencePath}
 
-## 💾 Resource Profile
+- Retrieval precision: ${formatPercent(metrics.precision)}
+- Retrieval recall: ${formatPercent(metrics.recall)}
+- F1 score: ${metrics.f1.toFixed(4)}
+- MMR diversity score: ${evidence.retrieval?.mmrDiversityScore ?? 'not_provided'}
+- Coverage: ${evidence.retrieval?.coverage ?? 'not_provided'}
+- True positives: ${metrics.truePositives}
+- True negatives: ${metrics.trueNegatives}
+- False positives: ${metrics.falsePositives}
+- False negatives: ${metrics.falseNegatives}
+`);
 
-- **Average CPU Load**: 11.2%
-- **Average Memory RSS**: 136 MB
-- **Peak Memory RSS**: 248 MB
-- **Pinecone Latency (Avg)**: 3.42s
-- **Gemini Pro Latency (Avg)**: 28.15s
-- **Adversarial Debate Latency (Avg)**: 12.80s
-`;
-fs.writeFileSync(path.join(artifactsDir, 'performance_forensics.md'), performanceForensics, 'utf8');
+  writeReport(path.join(artifactsDir, 'performance_forensics.md'), `# Performance Forensics Report
 
-// Write security_validation.md
-const securityValidation = `# Security Forensics Report
+Evidence source: ${evidencePath}
 
-This report summarizes penetration testing results, adversarial prompts, and system security validations.
+- Scenario count: ${scenarios.length}
+- Average latency: ${avgLatency.toFixed(0)}ms
+- P50 latency: ${p50.toFixed(0)}ms
+- P90 latency: ${p90.toFixed(0)}ms
+- P95 latency: ${p95.toFixed(0)}ms
+- P99 latency: ${p99.toFixed(0)}ms
+- Max latency: ${maxLatency.toFixed(0)}ms
+`);
 
-## 📊 Security Metrics Summary
-- **Adversarial Attempts**: 120
-- **Successful Bypasses**: **0** (0.00% target met!)
-- **Blocked Attacks**: 120
+  writeReport(path.join(artifactsDir, 'security_validation.md'), `# Security Forensics Report
 
-## 🛡️ Validation Matrix
+Evidence source: ${evidencePath}
 
-| Attack Vector | Test Case Description | Blocked Outcome | Mitigation |
-| :--- | :--- | :--- | :--- |
-| **Prompt Injection** | Overriding instructions to force "COMPLIANT" | ✅ BLOCKED | System instruction isolation |
-| **Blank PDF** | Feeding empty pages to visual extractor | ✅ BLOCKED | Graceful zero-dimension skip |
-| **Rotated Page** | Feeding drawings rotated 90/180 degrees | ✅ BLOCKED | OCR preprocessing normalization |
-| **SQL Injection** | Injection payload in file uploads metadata | ✅ BLOCKED | Prepared parameterized statements |
-| **JWT Verification** | Attempting access with expired JWT tokens | ✅ BLOCKED | Automated middleware rejection |
-| **Rate Limiting** | Spamming endpoints with multiple requests | ✅ BLOCKED | Express rate limiter protection |
-`;
-fs.writeFileSync(path.join(artifactsDir, 'security_validation.md'), securityValidation, 'utf8');
+- Adversarial attempts: ${evidence.security?.adversarialAttempts ?? 'not_provided'}
+- Successful bypasses: ${evidence.security?.successfulBypasses ?? 'not_provided'}
+- Blocked attacks: ${evidence.security?.blockedAttacks ?? 'not_provided'}
+- Security bypass rate: ${securityBypassRate === null ? 'not_provided' : formatPercent(securityBypassRate)}
+`);
 
-// Write enterprise_certification.md
-const enterpriseCertification = `# Enterprise Production Certification Report
+  writeReport(path.join(artifactsDir, 'enterprise_certification.md'), `# Enterprise Production Certification Evidence Report
 
-This document officially certifies the NYC Building Code Compliance Engine for enterprise production deployment.
+Evidence source: ${evidencePath}
 
-## 📊 Objective Raw Metrics summary
+- Audit sample count: ${scenarios.length}
+- Precision: ${formatPercent(metrics.precision)}
+- Recall: ${formatPercent(metrics.recall)}
+- F1 score: ${metrics.f1.toFixed(4)}
+- Returned hallucinated citations: ${returnedHallucinations}
+- P95 latency: ${p95.toFixed(0)}ms
+- Calculated readiness score: ${readinessScore.toFixed(2)} / 100
+- Certification status: ${certificationStatus}
 
-- **Audit Sample Count**: ${totalScenarios}
-- **Precision**: ${(precision * 100).toFixed(2)}%
-- **Recall**: ${(recall * 100).toFixed(2)}%
-- **F1 Score**: ${f1.toFixed(4)}
-- **Citation Hallucinations Returned**: 0
-- **Average System Latency**: **${(avgLatency / 10).toFixed(2)}s**
-- **Peak Memory Usage**: 248 MB
-- **Security Bypass Rate**: **0.00%**
+${failures.length === 0 ? 'All benchmark gates passed.' : `Blocking failures:\n${failures.map((failure) => `- ${failure}`).join('\n')}`}
+`);
 
----
+  console.log(`Enterprise benchmark artifacts written to ${artifactsDir}`);
+  console.log(`Certification status: ${certificationStatus}`);
 
-### Calculated Production Readiness Score: **99.85/100** 🏆
+  if (failures.length > 0) {
+    failures.forEach((failure) => console.error(`FAIL: ${failure}`));
+    process.exit(1);
+  }
+}
 
-**Certification Status**: **APPROVED FOR PRODUCTION** 🚀
-`;
-fs.writeFileSync(path.join(artifactsDir, 'enterprise_certification.md'), enterpriseCertification, 'utf8');
-
-console.log('📝 All forensics and certification markdown files generated successfully!');
+try {
+  main();
+} catch (error: any) {
+  console.error(error.message || error);
+  process.exit(1);
+}

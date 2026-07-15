@@ -41,6 +41,11 @@ const ENV_RULES: EnvRule[] = [
   { name: 'DB_USER', required: true, type: 'string' },
   { name: 'DB_PASS', required: true, type: 'string', sensitive: true },
   { name: 'DB_NAME', required: true, type: 'string' },
+  { name: 'DB_PORT', required: false, type: 'port', default: '3306' },
+  { name: 'DB_CONNECTION_LIMIT', required: false, type: 'number', default: '50' },
+  { name: 'DB_QUERY_TIMEOUT_MS', required: false, type: 'number', default: '5000' },
+  { name: 'DB_CONNECT_TIMEOUT_MS', required: false, type: 'number', default: '5000' },
+  { name: 'DB_SSL_CA_PATH', required: false, type: 'string', default: '../certs/ca-bundle.pem' },
 
   // Optional but validated
   { name: 'PORT', required: false, type: 'port', default: '5000' },

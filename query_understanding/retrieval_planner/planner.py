@@ -1,3 +1,4 @@
+import re
 from typing import List, Any, Optional
 from ..schemas.models import ComplianceRetrievalPlan, MetadataFilter, QueryIntent
 from ..parser.query_parser import QueryParser
@@ -35,10 +36,6 @@ class ComplianceRetrievalPlanner:
         applicable_codes = list(scope["codes"])
         applicable_chapters = list(scope["chapters"])
 
-        # Fallback to Building Code if no specific book was identified
-        if not applicable_codes:
-            applicable_codes.append("Building Code")
-
         # 3. Generate Hard Filters (Exact Matches)
         filters: List[MetadataFilter] = [
             MetadataFilter(key="jurisdiction", value=parsed_query.jurisdiction, filter_type="hard", confidence=1.0),
@@ -63,11 +60,17 @@ class ComplianceRetrievalPlanner:
             else:
                 metrics = {}
             
-            # If the model has spaces, boost by occupancy classification of the project
-            # (We default to business occupancy if available)
-            if metrics.get("total_occupant_load", 0) > 0:
-                # We boost standard business occupancy
-                occ_val = "business"
+            project = knowledge_model.get("project", {}) if isinstance(knowledge_model, dict) else {}
+            storeys = project.get("storeys", {}) if isinstance(project, dict) else {}
+            classifications = set()
+            for storey in storeys.values():
+                spaces = storey.get("spaces", {}) if isinstance(storey, dict) else {}
+                for space in spaces.values():
+                    classification = space.get("occupancy_classification") if isinstance(space, dict) else None
+                    if classification and classification != "unknown":
+                        classifications.add(classification)
+            if len(classifications) == 1:
+                occ_val = next(iter(classifications))
 
         if occ_val:
             filters.append(
@@ -111,6 +114,8 @@ class ComplianceRetrievalPlanner:
         warnings = []
         if len(applicable_codes) > 1:
             warnings.append("Multi-discipline query detected. Search scope spans multiple code books.")
+        if not applicable_codes:
+            warnings.append("No specific code book was identified. Retrieval will search the configured corpus without a code-book filter.")
         if not parsed_query.building_components and not parsed_query.regulatory_concepts:
             warnings.append("Query does not contain recognized building components or regulatory concepts. Search confidence may be reduced.")
 

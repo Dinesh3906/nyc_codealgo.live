@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     # Monitor check intervals
     CHECK_INTERVAL_SECONDS: int = 86400
+    REGULATION_UPDATES_PATH: str = ""
     
     # Official Source targets
     SOURCES_REGISTRY: List[Dict[str, str]] = [

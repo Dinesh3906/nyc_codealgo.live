@@ -36,6 +36,11 @@ class AIComplianceReasoner:
                     f" Verified against {citation_phrase}. "
                     f"Design facts satisfy code minimum values."
                 )
+            elif finding.decision == "REQUIRES_HUMAN_REVIEW":
+                finding.explanation += (
+                    f" Manual review required because measured evidence is incomplete. "
+                    f"Referenced {citation_phrase}."
+                )
             else:
                 finding.explanation += (
                     f" Non-compliant layout flagged. "

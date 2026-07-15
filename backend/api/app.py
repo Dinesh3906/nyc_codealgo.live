@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status
 from shared.cors import configure_cors
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import uuid
 import datetime
 from ..config import settings
@@ -115,16 +116,24 @@ def health_check():
     }
 
 @app.get("/metrics", summary="Prometheus Metrics Instrumentation")
-def get_prometheus_metrics():
-    # Simple Prometheus formatted output string representation
+def get_prometheus_metrics(db: Session = Depends(get_db)):
+    job_counts = dict(
+        db.query(JobDB.status, func.count(JobDB.id))
+        .group_by(JobDB.status)
+        .all()
+    )
+    user_count = db.query(func.count(UserDB.id)).scalar() or 0
+
     metrics = (
-        "# HELP http_requests_total Total number of HTTP requests\n"
-        "# TYPE http_requests_total counter\n"
-        "http_requests_total{method=\"POST\",handler=\"/jobs/upload\"} 142.0\n"
-        "# HELP celery_jobs_processed_total Total compliance jobs executed\n"
-        "# TYPE celery_jobs_processed_total counter\n"
-        "celery_jobs_processed_total{status=\"completed\"} 128.0\n"
-        "celery_jobs_processed_total{status=\"failed\"} 3.0\n"
+        "# HELP permitiq_users_total Total registered users\n"
+        "# TYPE permitiq_users_total gauge\n"
+        f"permitiq_users_total {user_count}\n"
+        "# HELP permitiq_jobs_total Total compliance jobs by status\n"
+        "# TYPE permitiq_jobs_total gauge\n"
+        + "".join(
+            f'permitiq_jobs_total{{status="{status}"}} {count}\n'
+            for status, count in sorted(job_counts.items())
+        )
     )
     from fastapi.responses import PlainTextResponse
     return PlainTextResponse(content=metrics)

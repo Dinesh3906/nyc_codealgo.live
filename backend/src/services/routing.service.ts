@@ -137,33 +137,21 @@ Example format:
         logger.debug('Parallelizing page classification', { planId, chunkSize, totalPages });
         for (let start = 1; start <= totalPages; start += chunkSize) {
           const end = Math.min(start + chunkSize - 1, totalPages);
-          chunkPromises.push(classifyRange(start, end).catch(err => {
-            logger.warn('Page classification chunk failed', { planId, start, end });
-            return [];
-          }));
+          chunkPromises.push(classifyRange(start, end));
         }
 
         const chunkResults = await Promise.all(chunkPromises);
         pageClassifications = chunkResults.flat();
-
-        // If chunked classification returned empty result, fall back to single document classification.
-        if (pageClassifications.length === 0) {
-          logger.warn('Chunked page classification returned empty result; falling back', { planId });
-          pageClassifications = await classifyRange();
-        }
       } else {
         pageClassifications = await classifyRange();
       }
     } catch (err) {
       logger.error('Page classification failed', err, { planId });
-      // Fallback: assume 1 page and route to Flash
-      return [{
-        page_number: 1,
-        type: 'Mixed content',
-        confidence: 0.5,
-        complexity: 'medium',
-        route: 'flash'
-      }];
+      throw new Error(`Page classification failed: ${(err as any)?.message || err}`);
+    }
+
+    if (pageClassifications.length === 0) {
+      throw new Error('Page classification returned no rows.');
     }
 
     logger.debug('Classified pages', { planId, count: pageClassifications.length });
@@ -173,10 +161,23 @@ Example format:
     const flashRoutes: PageRouteResult[] = [];
 
     for (const item of pageClassifications) {
-      const pageNum = parseInt(item.page_number, 10) || 1;
-      const type = String(item.type || 'Mixed content');
-      const confidence = parseFloat(item.confidence) || 0.5;
-      const complexity = (item.complexity || 'medium') as 'low' | 'medium' | 'high';
+      const pageNum = Number.parseInt(item.page_number, 10);
+      const type = String(item.type || '').trim();
+      const confidence = Number.parseFloat(item.confidence);
+      const complexity = String(item.complexity || '').trim().toLowerCase() as 'low' | 'medium' | 'high';
+
+      if (!Number.isInteger(pageNum) || pageNum < 1) {
+        throw new Error(`Page classification row is missing a valid page_number: ${JSON.stringify(item)}`);
+      }
+      if (!type) {
+        throw new Error(`Page classification row is missing type for page ${pageNum}.`);
+      }
+      if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+        throw new Error(`Page classification row has invalid confidence for page ${pageNum}.`);
+      }
+      if (!['low', 'medium', 'high'].includes(complexity)) {
+        throw new Error(`Page classification row has invalid complexity for page ${pageNum}.`);
+      }
       
       const normalizedType = type.toLowerCase().replace(/[\s_-]+/g, '_');
       

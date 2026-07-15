@@ -28,9 +28,12 @@ def run_discovery_poll():
         updates = monitor.check_for_source_updates()
         deltas = []
         for upd in updates:
-            # Mock original text and new text for diffing
-            old_txt = "WC turning clearance must be at least 60 inches in restroom."
-            new_txt = "WC turning clearance must be at least 72 inches in restroom."
+            old_txt = upd.get("old_text")
+            new_txt = upd.get("new_text")
+            if not old_txt or not new_txt:
+                raise ValueError(
+                    f"Update for section {upd.get('section_affected')} is missing old_text or new_text."
+                )
             
             delta = diff_engine.compute_semantic_diff(
                 section_id=upd["section_affected"],

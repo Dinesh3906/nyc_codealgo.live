@@ -10,6 +10,8 @@ WEAK_JWT_SECRETS = {
 }
 
 class Settings(BaseSettings):
+    APP_ENV: str = "production"
+
     # API Gateway
     API_PORT: int = 8000
     API_HOST: str = "0.0.0.0"
@@ -25,8 +27,9 @@ class Settings(BaseSettings):
 
     # Storage Settings (local / s3)
     STORAGE_PROVIDER: str = "local"
-    S3_BUCKET_NAME: str = "permit-iq-documents"
+    S3_BUCKET_NAME: str = ""
     LOCAL_STORAGE_DIR: str = "./storage_uploads"
+    CELERY_TASK_ALWAYS_EAGER: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

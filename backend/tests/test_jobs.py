@@ -9,7 +9,8 @@ def test_health_check(client):
 def test_prometheus_metrics(client):
     response = client.get("/metrics")
     assert response.status_code == 200
-    assert "http_requests_total" in response.text
+    assert "permitiq_users_total" in response.text
+    assert "permitiq_jobs_total" in response.text
 
 def test_unauthenticated_upload_denied(client):
     file_data = {"file": ("test_sheet.pdf", io.BytesIO(b"dummy pdf contents"), "application/pdf")}

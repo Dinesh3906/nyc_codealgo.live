@@ -10,5 +10,16 @@ def mock_knowledge_model_dict():
             "accessible_spaces_count": 8,
             "spaces_count": 10
         },
+        "project": {
+            "storeys": {
+                "floor_1": {
+                    "spaces": {
+                        "office_101": {
+                            "occupancy_classification": "business"
+                        }
+                    }
+                }
+            }
+        },
         "warnings": []
     }

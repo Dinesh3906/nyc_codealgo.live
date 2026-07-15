@@ -218,33 +218,7 @@ export class SchedulerService {
       globalFacts = extractionResult.globalFacts;
       visionConfidence = extractionResult.visionConfidence;
     } catch (err: any) {
-      console.error(`[SchedulerService] Failed to extract plan facts, using empty fallback facts:`, err);
-      globalFacts = {
-        project_name: { value: "Unknown", confidence: 1.0, source_page: null },
-        document_type: { value: "Construction Documents", confidence: 1.0 }
-      };
-      planFacts = {
-        occupant_load: { value: null, confidence: 1.0, source_page: null },
-        exit_stairs_count: { value: null, confidence: 1.0, source_page: null },
-        stair_width_inches: { value: null, confidence: 1.0, source_page: null },
-        door_clear_width_inches: { value: null, confidence: 1.0, source_page: null },
-        corridor_width_inches: { value: null, confidence: 1.0, source_page: null },
-        ceiling_height_inches: { value: null, confidence: 1.0, source_page: null },
-        room_dimensions_feet: { value: null, confidence: 1.0, source_page: null },
-        water_closet_spacing_inches: { value: null, confidence: 1.0, source_page: null },
-        transformer_kva: { value: null, confidence: 1.0, source_page: null },
-        planned_electrical_load_kva: { value: null, confidence: 1.0, source_page: null },
-        panel_clearance_inches: { value: null, confidence: 1.0, source_page: null },
-        receptacle_spacing_feet: { value: null, confidence: 1.0, source_page: null },
-        gross_floor_area_sqft: { value: null, confidence: 1.0, source_page: null },
-        lot_area_sqft: { value: null, confidence: 1.0, source_page: null },
-        allowable_far: { value: null, confidence: 1.0, source_page: null },
-        parking_spaces_provided: { value: null, confidence: 1.0, source_page: null },
-        dwelling_units_count: { value: null, confidence: 1.0, source_page: null },
-        allowable_dwelling_units_limit: { value: null, confidence: 1.0, source_page: null },
-        travel_distance_feet: { value: null, confidence: 1.0, source_page: null },
-        dead_end_corridor_feet: { value: null, confidence: 1.0, source_page: null }
-      };
+      throw new Error(`Plan fact extraction failed: ${err.message || err}`);
     }
 
     // Fetch property violations & records via Apify based on extracted address
@@ -346,33 +320,7 @@ export class SchedulerService {
         } catch (err: any) {
           console.error(`[SchedulerService] Audit step ${step.id} failed:`, err);
           completedCount++;
-
-          // Generate checklist fallback on error
-          const fallbackFeatures = (STEP_CODES_CHECKLIST[step.id] || []).map(
-            item => `${item.code} - ${item.title}: Verification pending: Automated verification temporarily unavailable.`
-          );
-
-          return {
-            id: step.id,
-            name: step.name,
-            checked: true,
-            score: 70,
-            status: 'warning' as const,
-            summary: `Automated verification temporarily unavailable. Manual review recommended.`,
-            compliant_features: fallbackFeatures,
-            issues: [
-              {
-                title: "Manual Review Required",
-                description: "Automated verification temporarily unavailable.",
-                severity: "major" as const,
-                citation_chunk_id: null,
-                recommendation: "Please review drawings manually to verify compliance.",
-                deduction_percentage: 0,
-                loophole_details: "Automated verification temporarily unavailable.",
-                required_elements: "Manual drawing inspection"
-              }
-            ]
-          };
+          throw new Error(`Audit step ${step.id} failed: ${err.message || err}`);
         }
       };
     });
@@ -1596,13 +1544,14 @@ Return a JSON object in this exact format:
     }
 
     // Process output and formatting
+    const hasMeasuredScore = typeof resultJSON.score === 'number' && Number.isFinite(resultJSON.score);
     const finalResult = {
       id: stepId,
       name: stepConfig.name,
-      checked: true,
-      score: resultJSON.score !== undefined ? resultJSON.score : 100,
-      status: (resultJSON.issues && resultJSON.issues.length > 0) ? 'warning' as const : 'compliant' as const,
-      summary: resultJSON.summary || `Audit completed for ${stepConfig.name}.`,
+      checked: hasMeasuredScore,
+      score: hasMeasuredScore ? resultJSON.score : null,
+      status: !hasMeasuredScore ? 'failed' as const : (resultJSON.issues && resultJSON.issues.length > 0) ? 'warning' as const : 'compliant' as const,
+      summary: resultJSON.summary || (hasMeasuredScore ? `Analysis completed for ${stepConfig.name}.` : `No measured score returned for ${stepConfig.name}.`),
       compliant_features: resultJSON.compliant_features || resultJSON.checklist_evaluations
         ?.filter((e: any) => e.status === 'compliant')
         ?.map((e: any) => `${e.code}: ${e.details}`) || [],
@@ -1621,12 +1570,12 @@ Return a JSON object in this exact format:
           title: "System Escalation Warning",
           description: warningMsg,
           severity: "minor",
-          code: "System Fallback",
+          code: "Provider Escalation",
           recommendation: "Re-run audit when Gemini Pro quota resets.",
           deduction_percentage: 0,
-          exact_pdf_citation: "N/A",
+          exact_pdf_citation: undefined,
           loophole_details: "Gemini Pro was unavailable, results evaluated using Flash.",
-          required_elements: "None",
+          required_elements: undefined,
           stepId
         });
       }
@@ -1712,8 +1661,8 @@ Return a JSON object in this exact format:
     const debateStart = performance.now();
     const issues = resultJSON.issues;
     // Adaptive Judge Routing: default to Flash, only escalate to Pro if borderline score (65-75)
-    const score = resultJSON.score !== undefined ? resultJSON.score : 100;
-    const isBorderline = score >= 65 && score <= 75;
+    const score = typeof resultJSON.score === 'number' && Number.isFinite(resultJSON.score) ? resultJSON.score : null;
+    const isBorderline = score !== null && score >= 65 && score <= 75;
     const modelForJudge = (isBorderline && !isCachedFallback) ? PIPELINE_CONFIG.models.pro : PIPELINE_CONFIG.models.flash;
 
     // --- STEP 1: Challenger Argument (Gemini 2.5 Flash) ---

@@ -21,16 +21,16 @@ def test_graph_endpoint(mock_building_object_model):
     
     assert data["id"] == mock_building_object_model.id
     
-    # Check graph properties
+    # Check graph properties — nodes are created from SemanticBuildingObjects only
     nodes = data["nodes"]
     assert "room_f1" in nodes
     assert "wall_f1" in nodes
     assert "door_f1" in nodes
-    assert "t_dim_1" in nodes  # Grounded annotation text node
+    # Raw text annotations (t_dim_1) are NOT nodes — they are grounding sources
+    assert "t_dim_1" not in nodes
     
     edges = data["edges"]
     rel_types = [e["rel_type"] for e in edges]
     assert "connected_to" in rel_types
     assert "bounds" in rel_types
-    assert "measures" in rel_types       # Dimension link
     assert "connects_floors" in rel_types # Vertical alignment link

@@ -11,7 +11,23 @@ def test_health_check_endpoint():
     assert json_data["status"] == "healthy"
     assert json_data["monitor"] == "RegulationMonitor"
 
-def test_discovery_check_endpoint():
+def test_discovery_check_endpoint(monkeypatch):
+    import autonomous_gov.api.app as gov_app
+
+    monkeypatch.setattr(
+        gov_app.monitor,
+        "check_for_source_updates",
+        lambda: [{
+            "source_name": "NYC DOB",
+            "url": "https://www.nyc.gov/dob/bulletins/stairwell_amendment_2026.pdf",
+            "hash": "hash-v2.0",
+            "action": "MODIFIED",
+            "section_affected": "1109.2",
+            "old_text": "WC turning clearance must be at least 60 inches in restroom.",
+            "new_text": "WC turning clearance must be at least 72 inches in restroom.",
+        }]
+    )
+
     response = client.post("/discovery/check")
     assert response.status_code == 200
     data = response.json()
@@ -21,7 +37,23 @@ def test_discovery_check_endpoint():
     assert delta["section_id"] == "1109.2"
     assert "shifted from 60.0 to 72.0" in delta["diff_summary"]
 
-def test_promotion_workflow_endpoints():
+def test_promotion_workflow_endpoints(monkeypatch):
+    import autonomous_gov.api.app as gov_app
+
+    monkeypatch.setattr(
+        gov_app.monitor,
+        "check_for_source_updates",
+        lambda: [{
+            "source_name": "NYC DOB",
+            "url": "https://www.nyc.gov/dob/bulletins/stairwell_amendment_2026.pdf",
+            "hash": "hash-v2.0",
+            "action": "MODIFIED",
+            "section_affected": "1109.2",
+            "old_text": "WC turning clearance must be at least 60 inches in restroom.",
+            "new_text": "WC turning clearance must be at least 72 inches in restroom.",
+        }]
+    )
+
     # 1. Trigger discovery check to register workflow
     disc_res = client.post("/discovery/check")
     assert disc_res.status_code == 200
