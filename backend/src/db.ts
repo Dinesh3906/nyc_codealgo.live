@@ -33,7 +33,7 @@ function boundedQueryTimeout(value: unknown): number {
 
 const sslConfig = process.env.NODE_ENV === 'production' 
   ? { 
-      ca: fs.readFileSync(path.resolve(__dirname, process.env.DB_SSL_CA_PATH || '../certs/ca-bundle.pem')),
+      ca: fs.readFileSync(path.resolve(__dirname, process.env.DB_SSL_CA_PATH || '../certs/global-bundle.pem')),
       rejectUnauthorized: true 
     } 
   : undefined;
