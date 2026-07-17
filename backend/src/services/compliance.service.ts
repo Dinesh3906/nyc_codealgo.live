@@ -219,7 +219,7 @@ export class CompliancePipeline {
       });
 
       const finalResult: ComplianceResult = {
-        compliant: isManualReview || missingMeasuredChecks ? null : (finalScore >= 70),
+        compliant: isManualReview || missingMeasuredChecks || finalScore === null ? null : (finalScore >= 70),
         score: isManualReview || missingMeasuredChecks ? null : finalScore,
         summary: isManualReview || missingMeasuredChecks
           ? 'Automated AI Verification Unavailable. Manual Review Required.' 
@@ -281,7 +281,7 @@ export class CompliancePipeline {
       });
 
       pipelineLogger.info(`Pipeline finished. Score: ${finalResult.score}`, {
-        confidence: finalScore !== null ? finalScore / 100 : null,
+        confidence: finalScore !== null ? finalScore / 100 : undefined,
         deterministicRuleCount: checkedSteps.length,
         aiRuleCount: failedSteps.length
       });
