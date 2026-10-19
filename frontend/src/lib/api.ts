@@ -1,16 +1,28 @@
 import axios from 'axios';
 
-// Default to the production URL from upstream, but allow override via env variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-permitiq.codealgo.live/api';
+// Dynamically determine the API base URL based on the current window hostname
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    if (window.location.hostname.includes('codealgo.live')) {
+      return 'https://api-permitiq.codealgo.live/api';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'https://api-permitiq.codealgo.live/api';
+};
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   timeout: 300000, // 5 minutes for AI processing
   withCredentials: true, // Crucial for sending and receiving HttpOnly auth cookies
 });
-// Request interceptor to attach CSRF token from cookie
+
+// Request interceptor to attach dynamic baseURL and CSRF token from cookie
 api.interceptors.request.use(
   (config) => {
+    config.baseURL = getApiBaseUrl();
     if (typeof document !== 'undefined') {
       const match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]*)'));
       if (match && match[2]) {
@@ -21,6 +33,7 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 // Auto-logout on 401 responses — purge stale/rotated tokens immediately
 api.interceptors.response.use(
   (response) => response,

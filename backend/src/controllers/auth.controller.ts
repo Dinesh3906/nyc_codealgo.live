@@ -13,7 +13,7 @@ const logger = new Logger({ stage: 'auth-controller' });
 
 const sanitizeCookieDomain = (raw?: string, req?: Request): string | undefined => {
   let d = (raw || process.env.COOKIE_DOMAIN || '')?.trim().replace(/^["']|["']$/g, '');
-  if (!d && req?.headers.host?.includes('codealgo.live')) {
+  if (!d && (req?.headers.host?.includes('codealgo.live') || IS_PRODUCTION)) {
     d = '.codealgo.live';
   }
   if (!d) return undefined;
@@ -81,19 +81,19 @@ const baseCookieOptions = (path: string, req?: Request): CookieOptions => {
   };
 };
 
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string) {
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string, req?: Request) {
   res.cookie('access_token', accessToken, {
-    ...baseCookieOptions('/'),
+    ...baseCookieOptions('/', req),
     httpOnly: true,
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
   res.cookie('refresh_token', refreshToken, {
-    ...baseCookieOptions('/api/auth'),
+    ...baseCookieOptions('/api/auth', req),
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
   res.cookie('csrf_token', csrfToken, {
-    ...baseCookieOptions('/'),
+    ...baseCookieOptions('/', req),
     httpOnly: false, // Must be readable by client JS to send in header
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
@@ -124,11 +124,11 @@ const storeRefreshTokenHash = async (id: string, refreshToken: string) => {
   );
 };
 
-const issueAuthSession = async (res: Response, user: { id: string; email: string; tokenVersion?: number }) => {
+const issueAuthSession = async (res: Response, user: { id: string; email: string; tokenVersion?: number }, req?: Request) => {
   const { accessToken, refreshToken } = signTokenPair(user.id, user.email, user.tokenVersion || 1);
   await storeRefreshTokenHash(user.id, refreshToken);
   const csrfToken = crypto.randomBytes(32).toString('hex');
-  setAuthCookies(res, accessToken, refreshToken, csrfToken);
+  setAuthCookies(res, accessToken, refreshToken, csrfToken, req);
 };
 
 // ─── Registration OTP ───
@@ -270,7 +270,7 @@ export const login = async (req: Request, res: Response) => {
     const user = users[0];
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      await issueAuthSession(res, { id: user.id, email: user.email, tokenVersion: user.tokenVersion });
+      await issueAuthSession(res, { id: user.id, email: user.email, tokenVersion: user.tokenVersion }, req);
 
       res.json({
         id: user.id,
@@ -590,7 +590,7 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     }
 
     // 4. Set JWT in HttpOnly cookies — NEVER in URL
-    await issueAuthSession(res, { id: user.id, email: user.email, tokenVersion: user.tokenVersion });
+    await issueAuthSession(res, { id: user.id, email: user.email, tokenVersion: user.tokenVersion }, req);
 
     // Redirect to dashboard with minimal, non-sensitive user info
     res.redirect(`${frontendUrl}/dashboard?oauth=success`);
