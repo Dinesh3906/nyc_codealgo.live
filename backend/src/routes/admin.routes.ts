@@ -9,7 +9,16 @@ import { sendAdminOtpEmail, sendGiftPagesEmail } from '../services/mail.service'
 import { Logger } from '../services/logger';
 
 const logger = new Logger({ stage: 'admin-routes' });
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+const getAdminCookieDomain = (): string | undefined => {
+  let d = process.env.COOKIE_DOMAIN?.trim().replace(/^[\"']|[\"']$/g, '');
+  if (!d) return undefined;
+  if (d.includes('://')) {
+    try { d = new URL(d).hostname; } catch {}
+  }
+  d = d.split('/')[0].split(':')[0].trim();
+  if (d.endsWith('codealgo.live')) return '.codealgo.live';
+  return d;
+};
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const OTP_PATTERN = /^\d{6}$/;
@@ -148,7 +157,7 @@ router.post('/verify-otp', protect, requireAdmin, async (req: any, res: Response
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      domain: COOKIE_DOMAIN,
+      domain: getAdminCookieDomain(),
       maxAge: 2 * 60 * 60 * 1000, // 2 hours
       path: '/',
     });
