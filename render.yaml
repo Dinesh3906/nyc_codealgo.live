@@ -1,26 +1,22 @@
 # ==============================================================================
-# PermitIQ by Aureon — Render Blueprint (Infrastructure as Code)
+# PermitIQ by Aureon — Render Blueprint (100% Free Tier Configuration)
 # Docs: https://render.com/docs/blueprint-spec
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
-  # 1. Backend API Service (Node.js 20 / Express / Socket.IO)
+  # 1. Backend API Service (Node.js 20 / Express / Socket.IO) - FREE TIER ($0/mo)
   # ----------------------------------------------------------------------------
   - type: web
     name: permitiq-api
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
     autoDeploy: true
-    disk:
-      name: permitiq-uploads
-      mountPath: /app/uploads
-      sizeGB: 10
     envVars:
       - key: NODE_ENV
         value: production
@@ -48,7 +44,7 @@ services:
         sync: false
       - key: METRICS_API_KEY
         generateValue: true
-      # Database connection: provide either DATABASE_URL or DB_* credentials
+      # Database connection: TiDB Serverless (Free Forever: 5GB, 50M RU/mo) or Aiven Free MySQL
       - key: DATABASE_URL
         sync: false
       - key: DB_HOST
@@ -60,7 +56,7 @@ services:
       - key: DB_NAME
         sync: false
       - key: DB_PORT
-        value: 3306
+        value: 4000
       - key: CORS_ORIGIN
         value: https://permitiq.codealgo.live,https://permitiq-web.onrender.com
       - key: FRONTEND_URL
@@ -69,12 +65,12 @@ services:
         value: https://permitiq.codealgo.live,https://permitiq-web.onrender.com
 
   # ----------------------------------------------------------------------------
-  # 2. Frontend Web Service (Next.js 15)
+  # 2. Frontend Web Service (Next.js 15) - FREE TIER ($0/mo)
   # ----------------------------------------------------------------------------
   - type: web
     name: permitiq-web
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
