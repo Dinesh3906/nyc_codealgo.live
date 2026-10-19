@@ -36,9 +36,15 @@ const validatePassword = (password: unknown): password is string => (
 
 const getOAuthUrls = (req: Request) => {
   const isLocal = !IS_PRODUCTION && (req.headers.host?.includes('localhost') || req.headers.host?.includes('127.0.0.1'));
-  const apiBaseUrl = isLocal
-    ? 'http://localhost:5000'
-    : (process.env.API_PUBLIC_URL || 'https://api-permitiq.codealgo.live');
+  let apiBaseUrl: string;
+  if (isLocal) {
+    apiBaseUrl = 'http://localhost:5000';
+  } else if (req.headers.host?.includes('onrender.com')) {
+    apiBaseUrl = `https://${req.headers.host}`;
+  } else {
+    apiBaseUrl = process.env.API_PUBLIC_URL || 'https://api-permitiq.codealgo.live';
+  }
+
   const frontendUrl = isLocal
     ? 'http://localhost:3000'
     : (process.env.FRONTEND_URL || 'https://permitiq.codealgo.live');
@@ -49,12 +55,18 @@ const getOAuthUrls = (req: Request) => {
   };
 };
 
-const baseCookieOptions = (path: string): CookieOptions => ({
-  secure: IS_PRODUCTION,
-  sameSite: 'lax',
-  domain: COOKIE_DOMAIN,
-  path,
-});
+const baseCookieOptions = (path: string, req?: Request): CookieOptions => {
+  let domain = COOKIE_DOMAIN;
+  if (!domain && req?.headers.host?.includes('codealgo.live')) {
+    domain = '.codealgo.live';
+  }
+  return {
+    secure: IS_PRODUCTION,
+    sameSite: 'lax',
+    domain: domain || undefined,
+    path,
+  };
+};
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string) {
   res.cookie('access_token', accessToken, {
@@ -565,7 +577,11 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     res.redirect(`${frontendUrl}/dashboard?oauth=success`);
 
   } catch (error: any) {
-    logger.error('Google OAuth Error', error);
+    logger.error('Google OAuth Error', {
+      message: error?.message,
+      data: error?.response?.data,
+      redirectUri,
+    });
     res.redirect(`${frontendUrl}/login?error=Google+login+failed`);
   }
 };
