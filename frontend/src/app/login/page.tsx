@@ -41,7 +41,7 @@ export default function LoginPage() {
     const backendUrl = typeof window !== 'undefined' && 
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5000'
-      : 'https://api-permitiq.codealgo.live';
+      : (process.env.NEXT_PUBLIC_SOCKET_URL || 'https://nyc-codealgo-live.onrender.com');
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 
