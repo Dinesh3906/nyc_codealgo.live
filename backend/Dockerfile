@@ -3,7 +3,7 @@
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 FROM deps AS build
 COPY tsconfig.json ./
@@ -19,7 +19,7 @@ WORKDIR /app
 RUN groupadd --system permitiq && useradd --system --gid permitiq --home-dir /app permitiq
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm ci --omit=dev && npm install --platform=linux --arch=x64 sharp && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/certs ./certs
 COPY src/config ./src/config
