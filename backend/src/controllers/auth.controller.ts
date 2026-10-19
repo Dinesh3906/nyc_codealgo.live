@@ -125,7 +125,8 @@ const storeRefreshTokenHash = async (id: string, refreshToken: string) => {
 };
 
 const issueAuthSession = async (res: Response, user: { id: string; email: string; tokenVersion?: number }, req?: Request) => {
-  const { accessToken, refreshToken } = signTokenPair(user.id, user.email, user.tokenVersion || 1);
+  const tokenVersion = typeof user.tokenVersion === 'number' ? user.tokenVersion : 0;
+  const { accessToken, refreshToken } = signTokenPair(user.id, user.email, tokenVersion);
   await storeRefreshTokenHash(user.id, refreshToken);
   const csrfToken = crypto.randomBytes(32).toString('hex');
   setAuthCookies(res, accessToken, refreshToken, csrfToken, req);
@@ -369,7 +370,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     }
 
     const csrfToken = crypto.randomBytes(32).toString('hex');
-    setAuthCookies(res, accessToken, refreshToken, csrfToken);
+    setAuthCookies(res, accessToken, refreshToken, csrfToken, req);
 
     res.json({ message: 'Token refreshed.' });
   } catch (error: any) {
