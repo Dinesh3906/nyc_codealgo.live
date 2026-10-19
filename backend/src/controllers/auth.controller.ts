@@ -39,7 +39,7 @@ const getOAuthUrls = (req: Request) => {
   let apiBaseUrl: string;
   if (isLocal) {
     apiBaseUrl = 'http://localhost:5000';
-  } else if (req.headers.host?.includes('onrender.com')) {
+  } else if (req.headers.host) {
     apiBaseUrl = `https://${req.headers.host}`;
   } else {
     apiBaseUrl = process.env.API_PUBLIC_URL || 'https://api-permitiq.codealgo.live';
@@ -577,11 +577,56 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     res.redirect(`${frontendUrl}/dashboard?oauth=success`);
 
   } catch (error: any) {
+    const errorDetail = error?.response?.data?.error_description || error?.response?.data?.error || error?.message || 'Google login failed';
     logger.error('Google OAuth Error', {
       message: error?.message,
+      detail: errorDetail,
       data: error?.response?.data,
       redirectUri,
     });
-    res.redirect(`${frontendUrl}/login?error=Google+login+failed`);
+    res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(errorDetail)}`);
+  }
+};
+
+export const debugGoogleConfig = async (req: Request, res: Response) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const { redirectUri, frontendUrl } = getOAuthUrls(req);
+
+  if (!clientId || !clientSecret) {
+    return res.json({
+      configured: false,
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      redirectUri,
+    });
+  }
+
+  try {
+    const axios = require('axios');
+    await axios.post('https://oauth2.googleapis.com/token', {
+      code: 'probe_check_dummy',
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    });
+    return res.json({ status: 'unexpected_success' });
+  } catch (err: any) {
+    const status = err.response?.status;
+    const error = err.response?.data?.error;
+    const errorDescription = err.response?.data?.error_description;
+    return res.json({
+      configured: true,
+      clientIdPrefix: clientId.substring(0, 15) + '...',
+      clientSecretPrefix: clientSecret.substring(0, 8) + '...',
+      googleStatus: status,
+      googleError: error,
+      googleDescription: errorDescription,
+      isSecretValid: error !== 'invalid_client',
+      redirectUri,
+      frontendUrl,
+      host: req.headers.host,
+    });
   }
 };

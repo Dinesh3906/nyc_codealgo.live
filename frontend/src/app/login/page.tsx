@@ -38,10 +38,18 @@ export default function LoginPage() {
   }, []);
 
   const handleGoogleLogin = () => {
-    const backendUrl = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:5000'
-      : (process.env.NEXT_PUBLIC_SOCKET_URL || 'https://nyc-codealgo-live.onrender.com');
+    let backendUrl = 'https://api-permitiq.codealgo.live';
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        backendUrl = 'http://localhost:5000';
+      } else if (window.location.hostname.includes('codealgo.live')) {
+        backendUrl = 'https://api-permitiq.codealgo.live';
+      } else {
+        backendUrl = process.env.NEXT_PUBLIC_API_URL 
+          ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '') 
+          : (process.env.NEXT_PUBLIC_SOCKET_URL || 'https://nyc-codealgo-live.onrender.com');
+      }
+    }
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 

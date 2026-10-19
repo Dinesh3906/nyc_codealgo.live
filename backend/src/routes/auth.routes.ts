@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, register, registerSendOtp, getMe, forgotPassword, resetPassword, googleAuthRedirect, googleAuthCallback, logout, refreshAccessToken } from '../controllers/auth.controller';
+import { login, register, registerSendOtp, getMe, forgotPassword, resetPassword, googleAuthRedirect, googleAuthCallback, logout, refreshAccessToken, debugGoogleConfig } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 import { authLimiter } from '../middleware/rateLimit.middleware';
 
@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/google', googleAuthRedirect);
 router.get('/google/callback', googleAuthCallback);
+router.get('/debug-google-config', debugGoogleConfig);
 router.post('/register-send-otp', authLimiter, registerSendOtp);
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
