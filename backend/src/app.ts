@@ -36,7 +36,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com", "https://cdn.razorpay.com", "https://*.razorpay.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", ...(IS_PRODUCTION ? [] : ["'unsafe-eval'"]), "https://checkout.razorpay.com", "https://cdn.razorpay.com", "https://*.razorpay.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],

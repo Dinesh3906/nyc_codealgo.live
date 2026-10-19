@@ -37,15 +37,16 @@ const ENV_RULES: EnvRule[] = [
   { name: 'RAZORPAY_KEY_SECRET', required: true, type: 'string', minLength: 5, sensitive: true },
 
   // Database
-  { name: 'DB_HOST', required: true, type: 'string' },
-  { name: 'DB_USER', required: true, type: 'string' },
-  { name: 'DB_PASS', required: true, type: 'string', sensitive: true },
-  { name: 'DB_NAME', required: true, type: 'string' },
+  { name: 'DB_HOST', required: false, type: 'string' },
+  { name: 'DATABASE_URL', required: false, type: 'string', sensitive: true },
+  { name: 'DB_USER', required: false, type: 'string' },
+  { name: 'DB_PASS', required: false, type: 'string', sensitive: true },
+  { name: 'DB_NAME', required: false, type: 'string' },
   { name: 'DB_PORT', required: false, type: 'port', default: '3306' },
   { name: 'DB_CONNECTION_LIMIT', required: false, type: 'number', default: '50' },
   { name: 'DB_QUERY_TIMEOUT_MS', required: false, type: 'number', default: '5000' },
   { name: 'DB_CONNECT_TIMEOUT_MS', required: false, type: 'number', default: '5000' },
-  { name: 'DB_SSL_CA_PATH', required: false, type: 'string', default: '../certs/global-bundle.pem' },
+  { name: 'DB_SSL_CA_PATH', required: false, type: 'string' },
 
   // Optional but validated
   { name: 'PORT', required: false, type: 'port', default: '5000' },
@@ -131,6 +132,17 @@ export function validateEnvironment(): string[] {
     // Min length
     if (rule.minLength && value.length < rule.minLength) {
       errors.push(`${rule.name} must be at least ${rule.minLength} characters`);
+    }
+  }
+
+  // Database validation: either DATABASE_URL or individual DB_* variables must be provided
+  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+  if (!hasDatabaseUrl) {
+    const missingDbVars = ['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME'].filter(
+      k => !process.env[k] || process.env[k]!.trim() === ''
+    );
+    if (missingDbVars.length > 0) {
+      errors.push(`Missing database configuration: provide either DATABASE_URL or (${missingDbVars.join(', ')})`);
     }
   }
 

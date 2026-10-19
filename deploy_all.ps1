@@ -1,5 +1,5 @@
 param (
-    [string]$KeyPath = "C:\Users\chala\.ssh\reel_it_up.pem",
+    [string]$KeyPath = "C:\Users\chala\.ssh\cospace-teams-key.pem",
     [string]$User = "ubuntu",
     [string]$HostName = "api-permitiq.codealgo.live"
 )

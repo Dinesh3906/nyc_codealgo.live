@@ -1,0 +1,91 @@
+# ==============================================================================
+# PermitIQ by Aureon — Render Blueprint (Infrastructure as Code)
+# Docs: https://render.com/docs/blueprint-spec
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Backend API Service (Node.js 20 / Express / Socket.IO)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: permitiq-api
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: permitiq-uploads
+      mountPath: /app/uploads
+      sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: GOOGLE_AI_STUDIO_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_ENVIRONMENT
+        value: us-east-1
+      - key: PINECONE_INDEX
+        value: permitiq
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: METRICS_API_KEY
+        generateValue: true
+      # Database connection: provide either DATABASE_URL or DB_* credentials
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: CORS_ORIGIN
+        value: https://permitiq.codealgo.live,https://permitiq-web.onrender.com
+      - key: FRONTEND_URL
+        value: https://permitiq.codealgo.live
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://permitiq.codealgo.live,https://permitiq-web.onrender.com
+
+  # ----------------------------------------------------------------------------
+  # 2. Frontend Web Service (Next.js 15)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: permitiq-web
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://permitiq-api.onrender.com/api
+      - key: NEXT_PUBLIC_SOCKET_URL
+        value: https://permitiq-api.onrender.com
+      - key: NEXT_PUBLIC_RAZORPAY_KEY_ID
+        value: rzp_live_T3nKfhlTGJh6TO

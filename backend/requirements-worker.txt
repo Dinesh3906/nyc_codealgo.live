@@ -13,11 +13,13 @@ pdfplumber
 Pillow
 pydantic
 pydantic-settings
+psycopg2-binary
 pypdf
 pypdfium2
 pyjwt
 python-multipart
 rank-bm25
+redis
 requests
 shapely
 sqlalchemy

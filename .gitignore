@@ -17,6 +17,7 @@ backend/scratch/
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest-tmp/
 permit_iq.db
 storage_uploads/
 temp_uploads/

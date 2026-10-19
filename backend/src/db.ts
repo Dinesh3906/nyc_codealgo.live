@@ -2,8 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import mysql from 'mysql2/promise';
 
-const MIN_DB_CONNECTION_LIMIT = 50;
-const MAX_QUERY_TIMEOUT_MS = 5000;
+const MIN_DB_CONNECTION_LIMIT = 10;
+const DEFAULT_QUERY_TIMEOUT_MS = 15000;
+const MAX_QUERY_TIMEOUT_MS = 30000;
+const DEFAULT_CONNECT_TIMEOUT_MS = 30000;
+const MAX_CONNECT_TIMEOUT_MS = 60000;
 
 function readPositiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
@@ -15,12 +18,12 @@ const dbConnectionLimit = Math.max(
   MIN_DB_CONNECTION_LIMIT
 );
 const dbQueryTimeoutMs = Math.min(
-  readPositiveInt(process.env.DB_QUERY_TIMEOUT_MS, MAX_QUERY_TIMEOUT_MS),
+  readPositiveInt(process.env.DB_QUERY_TIMEOUT_MS, DEFAULT_QUERY_TIMEOUT_MS),
   MAX_QUERY_TIMEOUT_MS
 );
 const dbConnectTimeoutMs = Math.min(
-  readPositiveInt(process.env.DB_CONNECT_TIMEOUT_MS, MAX_QUERY_TIMEOUT_MS),
-  MAX_QUERY_TIMEOUT_MS
+  readPositiveInt(process.env.DB_CONNECT_TIMEOUT_MS, DEFAULT_CONNECT_TIMEOUT_MS),
+  MAX_CONNECT_TIMEOUT_MS
 );
 
 function boundedQueryTimeout(value: unknown): number {
@@ -31,12 +34,28 @@ function boundedQueryTimeout(value: unknown): number {
   return Math.min(Math.floor(parsed), dbQueryTimeoutMs);
 }
 
-const sslConfig = process.env.NODE_ENV === 'production' 
-  ? { 
-      ca: fs.readFileSync(path.resolve(__dirname, process.env.DB_SSL_CA_PATH || '../certs/global-bundle.pem')),
-      rejectUnauthorized: true 
-    } 
-  : undefined;
+function getSslConfig(): mysql.SslOptions | undefined {
+  if (process.env.DB_SSL === 'false') {
+    return undefined;
+  }
+  if (process.env.DB_SSL_CA_PATH) {
+    const caPath = path.resolve(__dirname, process.env.DB_SSL_CA_PATH);
+    if (fs.existsSync(caPath)) {
+      return { ca: fs.readFileSync(caPath), rejectUnauthorized: true };
+    }
+  }
+  const isRemote = process.env.NODE_ENV === 'production' || 
+                   process.env.DB_SSL === 'true' || 
+                   (process.env.DB_HOST && !process.env.DB_HOST.includes('localhost') && !process.env.DB_HOST.includes('127.0.0.1')) ||
+                   (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1'));
+  
+  if (isRemote) {
+    return { minVersion: 'TLSv1.2', rejectUnauthorized: true };
+  }
+  return undefined;
+}
+
+const sslConfig = getSslConfig();
 
 const commonPoolConfig: mysql.PoolOptions = {
   waitForConnections: true,

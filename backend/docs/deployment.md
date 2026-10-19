@@ -73,6 +73,23 @@ docker build -t nyc-compliance-engine .
 docker run -p 5000:5000 --env-file .env nyc-compliance-engine
 ```
 
+## Analysis Worker Deployment
+
+Build the Python analysis worker from the repository root:
+
+```bash
+docker build -f backend/Dockerfile.worker -t permitiq-analysis-worker .
+```
+
+In production, the worker runs `python -m backend.workers.readiness` before
+Celery starts. The gate requires shared S3 storage, non-local database and Redis
+endpoints, OCR and retrieval configuration, the regulatory corpus, and six
+mounted release evidence files.
+
+Follow `docs/production_readiness.md` for the complete evidence file contract,
+Kubernetes ConfigMap packaging commands, rollout verification, and failure
+recovery procedure.
+
 ## Health Checks
 
 | Endpoint | Purpose |

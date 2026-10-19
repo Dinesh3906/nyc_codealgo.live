@@ -33,6 +33,8 @@ COPY validation ./validation
 RUN mkdir -p /app/uploads /app/scratch /app/corpus /app/evidence \
     && chown -R permitiq:permitiq /app
 
+ENV TEMP_DIR=/tmp/permitiq
+
 USER permitiq
 
 CMD ["sh", "-c", "python -m backend.workers.readiness && celery -A backend.workers.tasks worker --loglevel=INFO --concurrency=4"]

@@ -143,8 +143,20 @@ export const registerSendOtp = async (req: Request, res: Response) => {
       );
     }
 
-    const { sendOtpEmail } = require('../services/mail.service');
-    await sendOtpEmail(email, otp);
+    if (!IS_PRODUCTION) {
+      logger.info(`[DEV MODE] Verification OTP for ${email}: ${otp}`);
+      console.log(`\n========================================\n[DEV MODE] OTP for ${email}: ${otp}\n========================================\n`);
+    }
+
+    try {
+      const { sendOtpEmail } = require('../services/mail.service');
+      await sendOtpEmail(email, otp);
+    } catch (mailErr: any) {
+      logger.warn('Failed to send OTP email via SMTP:', mailErr.message || mailErr);
+      if (IS_PRODUCTION) {
+        throw mailErr;
+      }
+    }
 
     res.json({ message: 'If this email is eligible, a verification OTP will be sent shortly.' });
   } catch (error: any) {
@@ -382,8 +394,20 @@ export const forgotPassword = async (req: Request, res: Response) => {
       [hashedOtp, expiry, email]
     );
 
-    const { sendOtpEmail } = require('../services/mail.service');
-    await sendOtpEmail(email, otp);
+    if (!IS_PRODUCTION) {
+      logger.info(`[DEV MODE] Password Reset OTP for ${email}: ${otp}`);
+      console.log(`\n========================================\n[DEV MODE] Reset OTP for ${email}: ${otp}\n========================================\n`);
+    }
+
+    try {
+      const { sendOtpEmail } = require('../services/mail.service');
+      await sendOtpEmail(email, otp);
+    } catch (mailErr: any) {
+      logger.warn('Failed to send reset OTP email via SMTP:', mailErr.message || mailErr);
+      if (IS_PRODUCTION) {
+        throw mailErr;
+      }
+    }
 
     res.json({ message: 'If an account exists with this email, you will receive an OTP shortly.' });
   } catch (error) {

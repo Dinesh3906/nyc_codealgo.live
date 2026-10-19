@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https://checkout.razorpay.com https://cdn.razorpay.com https://*.razorpay.com https://vercel.live https://*.vercel.live`,
+    `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} 'nonce-${nonce}' https://checkout.razorpay.com https://cdn.razorpay.com https://*.razorpay.com https://vercel.live https://*.vercel.live`,
     "style-src 'self' 'unsafe-inline' https://vercel.live https://*.vercel.live",
     "img-src 'self' data: https:",
     `connect-src ${connectSrc} https://vercel.live https://*.vercel.live https://api.razorpay.com https://*.razorpay.com https://cdn.razorpay.com https://*.cdn.razorpay.com`,
