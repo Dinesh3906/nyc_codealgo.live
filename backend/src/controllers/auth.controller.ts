@@ -11,7 +11,23 @@ const logger = new Logger({ stage: 'auth-controller' });
 
 // ─── Cookie Configuration ───
 
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined; // e.g. '.codealgo.live'
+const sanitizeCookieDomain = (raw?: string, req?: Request): string | undefined => {
+  let d = (raw || process.env.COOKIE_DOMAIN || '')?.trim().replace(/^["']|["']$/g, '');
+  if (!d && req?.headers.host?.includes('codealgo.live')) {
+    d = '.codealgo.live';
+  }
+  if (!d) return undefined;
+  if (d.includes('://')) {
+    try { d = new URL(d).hostname; } catch {}
+  }
+  d = d.split('/')[0].split(':')[0].trim();
+  if (d.endsWith('codealgo.live')) return '.codealgo.live';
+  if (!/^\.?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(d)) return undefined;
+  return d;
+};
+
+const getGoogleClientId = (): string | undefined => process.env.GOOGLE_CLIENT_ID?.trim().replace(/^["']|["']$/g, '');
+const getGoogleClientSecret = (): string | undefined => process.env.GOOGLE_CLIENT_SECRET?.trim().replace(/^["']|["']$/g, '');
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OTP_PATTERN = /^\d{6}$/;
@@ -56,10 +72,7 @@ const getOAuthUrls = (req: Request) => {
 };
 
 const baseCookieOptions = (path: string, req?: Request): CookieOptions => {
-  let domain = COOKIE_DOMAIN;
-  if (!domain && req?.headers.host?.includes('codealgo.live')) {
-    domain = '.codealgo.live';
-  }
+  const domain = sanitizeCookieDomain(undefined, req);
   return {
     secure: IS_PRODUCTION,
     sameSite: 'lax',
@@ -479,24 +492,30 @@ export const resetPassword = async (req: Request, res: Response) => {
 // ─── Google OAuth ───
 
 export const googleAuthRedirect = async (req: Request, res: Response) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    return res.status(503).json({ message: 'Google OAuth is not configured.' });
+  try {
+    const clientId = getGoogleClientId();
+    if (!clientId) {
+      return res.status(503).json({ message: 'Google OAuth is not configured.' });
+    }
+
+    const { redirectUri, frontendUrl } = getOAuthUrls(req);
+
+    // Generate OAuth state to prevent CSRF
+    const state = crypto.randomBytes(32).toString('hex');
+    res.cookie('oauth_state', state, {
+      ...baseCookieOptions('/', req),
+      httpOnly: true,
+      maxAge: 10 * 60 * 1000, // 10 minutes
+    });
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email&state=${state}`;
+    
+    res.redirect(authUrl);
+  } catch (err: any) {
+    logger.error('Google Auth Redirect error', { message: err?.message, stack: err?.stack });
+    const { frontendUrl } = getOAuthUrls(req);
+    res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(err?.message || 'Failed to initialize Google login')}`);
   }
-
-  const { redirectUri } = getOAuthUrls(req);
-
-  // Generate OAuth state to prevent CSRF
-  const state = crypto.randomBytes(32).toString('hex');
-  res.cookie('oauth_state', state, {
-    ...baseCookieOptions('/'),
-    httpOnly: true,
-    maxAge: 10 * 60 * 1000, // 10 minutes
-  });
-
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=profile%20email&state=${state}`;
-  
-  res.redirect(authUrl);
 };
 
 export const googleAuthCallback = async (req: Request, res: Response) => {
@@ -515,8 +534,8 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
     return res.redirect(`${frontendUrl}/login?error=Google+authentication+failed`);
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = getGoogleClientId();
+  const clientSecret = getGoogleClientSecret();
 
   if (!clientId || !clientSecret) {
     return res.redirect(`${frontendUrl}/login?error=Google+OAuth+not+configured`);
@@ -589,8 +608,8 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
 };
 
 export const debugGoogleConfig = async (req: Request, res: Response) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = getGoogleClientId();
+  const clientSecret = getGoogleClientSecret();
   const { redirectUri, frontendUrl } = getOAuthUrls(req);
 
   if (!clientId || !clientSecret) {
